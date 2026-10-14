@@ -1,291 +1,591 @@
-
-// NEON STRIKE — serveur de jeu (Express + Socket.IO)
-// Héberge le jeu et gère : duels, comptes, sauvegarde, amis, chat, invitations, mode créateur.
+// NEON STRIKE — serveur de jeu
+// - Duels en ligne : relais de messages entre deux joueurs d'une même salle.
+// - Profils, liste d'amis, clavardage et invitations directes.
+// - Comptes avec pseudo et mot de passe : chaque joueur a sa propre progression.
+// - Sans compte, la progression est liée à l'appareil (en-tête X-Visitor-Id).
+// Socket.IO utilise WebSocket et retombe sur HTTP long-polling si nécessaire.
 const path = require('path');
+const fs = require('fs');
+const http = require('http');
 const crypto = require('crypto');
 const express = require('express');
-const http = require('http');
 const { Server } = require('socket.io');
 
-const PORT = process.env.PORT || 3000;
-const CREATOR_PASS = process.env.CREATOR_PASS || 'NEON-FKQX28';
-const SOCKET_PATH = '/port/5000/socket.io';
-
+const PORT = process.env.PORT || 5000;
 const app = express();
-const httpServer = http.createServer(app);
-const io = new Server(httpServer, { path: SOCKET_PATH, cors: { origin: '*' } });
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: true, credentials: true },
+  pingInterval: 10000,
+  pingTimeout: 15000,
+  maxHttpBufferSize: 64 * 1024,
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---------- Mémoire ----------
-const accounts = new Map();   // name -> {pass, token, save, creator, profile, friends, requests}
-const tokens = new Map();     // token -> name
-const guestSaves = new Map(); // vid -> save
-const guestProfiles = new Map(); // vid -> {name, code, creator, friends, requests}
-const chats = new Map();      // "codeA|codeB" -> [{f,t,x}]
-const rooms = new Map();      // code -> {sockets:[id,id], host:id}
-const socketToRoom = new Map();
+// ===================== SECRETS =====================
+let SECRET = {};
+try { SECRET = require('./creator-secret.json'); } catch (e) {}
+const CREATOR_HASH = process.env.CREATOR_PASSWORD_SHA256 || SECRET.sha256 || '';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || SECRET.adminToken || '';
 
-const genCode = (n) => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let c=''; for(let i=0;i<n;i++) c+=chars[Math.floor(Math.random()*chars.length)];
-  return c;
-};
-const hash = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
-const newToken = () => crypto.randomBytes(24).toString('hex');
-const chatKey = (a,b) => [a,b].sort().join('|');
+function safeEqual(a, b) {
+  const A = Buffer.from(String(a)), B = Buffer.from(String(b));
+  return A.length === B.length && A.length > 0 && crypto.timingSafeEqual(A, B);
+}
 
-function getAccountByToken(token){ if(!token) return null; const name=tokens.get(token); return name?accounts.get(name):null; }
-function publicProfile(acct){
-  return { name: acct.profile.name, code: acct.profile.code };
-}
-function socialState(acct){
-  return {
-    ok:true,
-    profile: publicProfile(acct),
-    friends: acct.friends.map(f=>{
-      const other = accounts.get(f);
-      const online = other && [...io.sockets.sockets.values()].some(s=>s.data.accountName===f);
-      const busy = other && [...rooms.values()].some(r=>r.sockets.some(id=>{const so=io.sockets.sockets.get(id); return so&&so.data.accountName===f;}));
-      return { name: other?other.profile.name:f, code:f, online, busy, unread: acct.unread&&acct.unread[f]||0 };
-    }),
-    requests: acct.requests.map(r=>({ name:(accounts.get(r)||{profile:{name:r}}).profile.name, code:r, online:!!accounts.get(r)&&[...io.sockets.sockets.values()].some(s=>s.data.accountName===r) }))
-  };
-}
-function ensureGuest(vid){
-  if(!guestProfiles.has(vid)){
-    guestProfiles.set(vid,{ name:'Joueur-'+vid.slice(0,4).toUpperCase(), code:genCode(6), creator:false, friends:[], requests:[], unread:{} });
+// ===================== DONNÉES =====================
+// db = { v: 2, saves: { visitorId: { data, creator, profile:{name,code}, friends:[], requests:[], unread:{} } }, chats: { "A|B": [{f,x,t}] } }
+// Render: configure un disque persistant et DATA_DIR=/var/data dans les variables d'environnement.
+// En local, les fichiers restent dans le dossier du serveur.
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
+// db.accounts = { cléPseudo: { id, name, salt, hash, t } } ; db.saves[id du compte] = progression du compte
+// db.sessions = { jeton: { a, t } } ; db.remember = { appareil: id du compte } ; db.devSeen = { appareil: [{ a, t }] }
+let db = null;
+
+function normalize(raw) {
+  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {} };
+  if (!raw || typeof raw !== 'object') return base;
+  if (raw.v === 2 || raw.v === 3) {
+    for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
+    return base;
   }
-  return guestProfiles.get(vid);
+  base.saves = raw; // ancien format : objet de sauvegardes
+  return base;
 }
-function guestSocial(vid){
-  const g=ensureGuest(vid);
-  return { ok:true, profile:{name:g.name,code:g.code}, friends:[], requests:[], guestProgress:true };
+db = normalize(null);
+try {
+  if (fs.existsSync(DATA_FILE)) db = normalize(JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')));
+  else if (fs.existsSync(RESTORE_FILE)) { db = normalize(JSON.parse(fs.readFileSync(RESTORE_FILE, 'utf8'))); console.log('[data] restauré depuis restore.json'); }
+} catch (e) { console.log('[data] lecture impossible', e.message); }
+
+let writeTimer = null;
+function persist() {
+  clearTimeout(writeTimer);
+  writeTimer = setTimeout(() => {
+    const tmp = DATA_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(db), (err) => { if (!err) fs.rename(tmp, DATA_FILE, () => {}); });
+  }, 400);
 }
 
-// ---------- Sauvegarde REST (secours) ----------
-app.get('/port/5000/api/save', (req,res)=>{
-  const auth=req.headers.authorization||'';
-  const acct=getAccountByToken(auth.replace('Bearer ',''));
-  if(acct) return res.json({ok:true, data:acct.save, creator:acct.creator});
-  const vid=req.query.vid;
-  if(vid&&guestSaves.has(vid)) return res.json({ok:true, data:guestSaves.get(vid), creator:ensureGuest(vid).creator});
-  res.json({ok:true, data:null});
+const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const codeIndex = new Map(); // code ami -> visitorId
+function rebuildIndex() {
+  codeIndex.clear();
+  for (const [vid, s] of Object.entries(db.saves)) if (s.profile && s.profile.code) codeIndex.set(s.profile.code, vid);
+}
+rebuildIndex();
+
+// ===================== COMPTES =====================
+const accIndex = new Map(); // id du compte -> compte
+for (const a of Object.values(db.accounts)) accIndex.set(a.id, a);
+function nameKey(n) { return cleanName(n).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function hashPass(pass, salt) { return crypto.scryptSync(String(pass), salt, 32).toString('hex'); }
+function newSession(accId) {
+  const tok = crypto.randomBytes(24).toString('hex');
+  db.sessions[tok] = { a: accId, t: Date.now() };
+  const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+  for (const [k, v] of Object.entries(db.sessions)) if (v.t < cutoff) delete db.sessions[k];
+  return tok;
+}
+function markSeen(dev, accId) {
+  const now = Date.now();
+  const list = (db.devSeen[dev] || []).filter(e => e.a !== accId && now - e.t < 30 * 24 * 3600 * 1000);
+  list.push({ a: accId, t: now });
+  db.devSeen[dev] = list.slice(-6);
+}
+function isShared(dev) { return (db.devSeen[dev] || []).length >= 2; }
+function hasProgress(r) { return !!(r && !r.claimedBy && (r.data || r.creator || (r.profile && r.profile.code))); }
+
+function rec(vid) {
+  if (!db.saves[vid]) db.saves[vid] = {};
+  const r = db.saves[vid];
+  if (!Array.isArray(r.friends)) r.friends = [];
+  if (!Array.isArray(r.requests)) r.requests = [];
+  if (!r.unread || typeof r.unread !== 'object') r.unread = {};
+  return r;
+}
+function newFriendCode() {
+  for (let i = 0; i < 5000; i++) {
+    let c = '';
+    for (let k = 0; k < 6; k++) c += CHARS[crypto.randomInt(CHARS.length)];
+    if (!codeIndex.has(c)) return c;
+  }
+  return null;
+}
+function cleanName(n) {
+  return String(n || '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+}
+function cleanCode(c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); }
+function chatKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
+
+// ===================== HTTP =====================
+function visitor(req) { return String(req.headers['x-visitor-id'] || 'local').slice(0, 100); }
+
+app.get('/api/save', (req, res) => {
+  const v = db.saves[visitor(req)];
+  res.json(v ? { ok: true, data: v.data || null, creator: !!v.creator } : { ok: true, data: null, creator: false });
 });
-app.post('/port/5000/api/save', (req,res)=>{
-  let body=''; req.on('data',c=>body+=c); req.on('end',()=>{
-    try{
-      const data=JSON.parse(body||'{}');
-      const vid=req.query.vid;
-      if(vid) guestSaves.set(vid,data);
-      res.json({ok:true});
-    }catch(e){ res.status(400).json({ok:false}); }
-  });
+app.post('/api/save', express.text({ type: '*/*', limit: '20kb' }), (req, res) => {
+  let data = null;
+  try { data = JSON.parse(req.body); } catch (e) { return res.status(400).json({ ok: false }); }
+  const r = rec(visitor(req));
+  r.data = data; r.t = Date.now();
+  persist();
+  res.json({ ok: true });
 });
 
-// ---------- Socket.IO ----------
-io.on('connection', (socket)=>{
-  const vid=socket.handshake.query.vid||socket.id;
-  socket.data.vid=vid;
+// Mode créateur : mot de passe vérifié côté serveur (empreinte SHA-256)
+const attempts = new Map();
+app.post('/api/creator', express.text({ type: '*/*', limit: '1kb' }), (req, res) => {
+  const id = visitor(req);
+  const now = Date.now();
+  const a = attempts.get(id) || { n: 0, t: now };
+  if (now - a.t > 10 * 60 * 1000) { a.n = 0; a.t = now; }
+  if (a.n >= 8) return res.status(429).json({ ok: false, error: "Trop d'essais. Réessaie dans 10 minutes." });
+  a.n++; attempts.set(id, a);
+  const pass = typeof req.body === 'string' ? req.body.trim() : '';
+  const ok = !!CREATOR_HASH && safeEqual(crypto.createHash('sha256').update(pass).digest('hex'), CREATOR_HASH);
+  if (ok) { attempts.delete(id); rec(id).creator = true; persist(); }
+  res.json(ok ? { ok: true } : { ok: false, error: 'Mot de passe incorrect.' });
+});
+app.post('/api/creator-off', (req, res) => {
+  const r = db.saves[visitor(req)];
+  if (r) { r.creator = false; persist(); }
+  res.json({ ok: true });
+});
 
-  // Reconnexion avec token de compte
-  const token=socket.handshake.auth&&socket.handshake.auth.token;
-  const acct=getAccountByToken(token);
-  if(acct){ socket.data.accountName=acct.profile.name; }
+// Sauvegarde complète (pour conserver la progression lors des mises à jour)
+app.get('/api/admin/export', (req, res) => {
+  const tok = req.headers['x-admin-token'] || req.query.token || '';
+  if (!ADMIN_TOKEN || !safeEqual(tok, ADMIN_TOKEN)) return res.status(403).json({ ok: false });
+  res.json(db);
+});
 
-  const emitAuth=()=>{
-    const a=getAccountByToken(socket.data.accountName?tokens.get([...tokens.entries()].find(([t,n])=>n===socket.data.accountName)[0]):null);
-    if(socket.data.accountName){
-      const name=socket.data.accountName, acc=accounts.get(name);
-      const tok=[...tokens.entries()].find(([t,n])=>n===name)[0];
-      socket.emit('m',{t:'auth:status',ok:true,token:tok,account:{name},shared:false,guestProgress:false,data:acc.save,creator:acc.creator});
-    } else {
-      const g=ensureGuest(vid);
-      socket.emit('m',{t:'auth:status',ok:true,token:null,account:null,shared:false,guestProgress:true,data:guestSaves.get(vid)||null,creator:g.creator});
-    }
+app.get('/health', (req, res) => res.json({ ok: true, rooms: rooms.size, players: io.engine.clientsCount }));
+io.engine.on('connection_error', (err) => console.log('[socket] erreur', err.code, err.message));
+
+// ===================== SALLES DE DUEL =====================
+const rooms = new Map(); // code -> { host, guest, created }
+function newRoomCode() {
+  for (let tries = 0; tries < 1000; tries++) {
+    let c = '';
+    for (let i = 0; i < 5; i++) c += CHARS[crypto.randomInt(CHARS.length)];
+    if (!rooms.has(c)) return c;
+  }
+  return null;
+}
+function other(room, id) { return room ? (room.host === id ? room.guest : room.host) : null; }
+function leaveRoom(socket, notify = true) {
+  const code = socket.data.room;
+  if (!code) return;
+  const room = rooms.get(code);
+  socket.data.room = null;
+  socket.leave(code);
+  if (!room) return;
+  const peer = other(room, socket.id);
+  rooms.delete(code);
+  if (peer && notify) {
+    const ps = io.sockets.sockets.get(peer);
+    if (ps) { ps.emit('peer-left'); ps.data.room = null; ps.leave(code); }
+  }
+  notifyFriendsOf(socket.data.vid);
+  if (peer) { const ps = io.sockets.sockets.get(peer); if (ps) notifyFriendsOf(ps.data.vid); }
+}
+
+// ===================== PRÉSENCE / AMIS =====================
+const online = new Map(); // visitorId -> Set(socketId)
+function socketsOf(vid) { return [...(online.get(vid) || [])].map(id => io.sockets.sockets.get(id)).filter(Boolean); }
+function emitTo(vid, ev, data) { for (const s of socketsOf(vid)) s.emit(ev, data); }
+function isBusy(vid) {
+  return socketsOf(vid).some(s => { const r = rooms.get(s.data.room); return r && r.guest; });
+}
+function notifyFriendsOf(vid) {
+  const r = db.saves[vid];
+  if (!r || !r.profile) return;
+  for (const code of r.friends || []) { const fv = codeIndex.get(code); if (fv) emitTo(fv, 'social'); }
+}
+function socialState(vid) {
+  const r = rec(vid);
+  const mk = (code) => {
+    const fv = codeIndex.get(code);
+    const fr = fv && db.saves[fv];
+    return { code, name: (fr && fr.profile && fr.profile.name) || '???', online: !!(fv && online.get(fv) && online.get(fv).size), busy: !!(fv && isBusy(fv)), unread: r.unread[code] || 0 };
   };
-  socket.on('auth:status', (cb)=>{ 
-    if(socket.data.accountName){
-      const name=socket.data.accountName, acc=accounts.get(name);
-      const tok=[...tokens.entries()].find(([t,n])=>n===name)[0];
-      cb({ok:true,token:tok,account:{name},shared:false,guestProgress:false,data:acc.save,creator:acc.creator});
-    } else {
-      const g=ensureGuest(vid);
-      cb({ok:true,token:null,account:null,shared:false,guestProgress:true,data:guestSaves.get(vid)||null,creator:g.creator});
-    }
-  });
+  return {
+    ok: true,
+    profile: r.profile || null,
+    friends: r.friends.map(mk).sort((a, b) => (b.online - a.online) || a.name.localeCompare(b.name)),
+    requests: r.requests.map(mk),
+  };
+}
+
+io.on('connection', (socket) => {
+  const hv = socket.handshake.headers['x-visitor-id'];
+  const q = socket.handshake.query || {};
+  // En production l'en-tête X-Visitor-Id est toujours présent ; ?vid= sert seulement aux tests locaux.
+  const dev = String(hv || ('local-' + String(q.vid || 'x').slice(0, 40))).slice(0, 100);
+  // Identité : compte connecté (jeton de session ou « rester connecté »), sinon l'appareil
+  let vid = dev;
+  socket.data.token = null;
+  const tok = String((socket.handshake.auth || {}).token || '').slice(0, 80);
+  if (tok && db.sessions[tok] && accIndex.has(db.sessions[tok].a)) {
+    vid = db.sessions[tok].a; socket.data.token = tok; db.sessions[tok].t = Date.now();
+  } else if (db.remember[dev] && accIndex.has(db.remember[dev])) {
+    vid = db.remember[dev]; socket.data.token = newSession(vid); persist();
+  }
+  socket.data.vid = vid;
+  socket.data.dev = dev;
+  socket.data.room = null;
+  socket.data.chatTimes = [];
+  if (!online.has(vid)) online.set(vid, new Set());
+  const wasOffline = online.get(vid).size === 0;
+  online.get(vid).add(socket.id);
+  if (wasOffline) notifyFriendsOf(vid);
+
+  const myRec = () => rec(vid);
+  const myCode = () => (myRec().profile || {}).code;
 
   // ----- Comptes -----
-  socket.on('auth:register', (p,cb)=>{
-    const name=String(p.name||'').trim().toLowerCase();
-    if(name.length<3||accounts.has(name)) return cb({ok:false,error:'Pseudo déjà pris ou trop court.'});
-    const token=newToken();
-    const acc={ pass:hash(p.pass), token, creator:false,
-      save:{credits:0,ownedShips:['default'],equippedShip:'default',ownedUpgrades:[],unlockedLevel:0,bestScores:{}},
-      profile:{name,code:genCode(6)}, friends:[], requests:[], unread:{} };
-    if(p.migrate&&guestSaves.has(vid)) acc.save=guestSaves.get(vid);
-    accounts.set(name,acc); tokens.set(token,name);
-    socket.data.accountName=name;
-    cb({ok:true,token,account:{name},migrated:!!(p.migrate&&guestSaves.has(vid)),data:acc.save,creator:false,guestProgress:false});
-    io.emit('social');
-  });
-  socket.on('auth:login', (p,cb)=>{
-    const name=String(p.name||'').trim().toLowerCase();
-    const acc=accounts.get(name);
-    if(!acc||acc.pass!==hash(p.pass)) return cb({ok:false,error:'Pseudo ou mot de passe incorrect.'});
-    const token=newToken(); tokens.set(token,name); acc.token=token;
-    socket.data.accountName=name;
-    cb({ok:true,token,account:{name},data:acc.save,creator:acc.creator,guestProgress:false});
-  });
-  socket.on('auth:logout', (cb)=>{
-    socket.data.accountName=null;
-    const g=ensureGuest(vid);
-    cb({ok:true,token:null,account:null,guestProgress:true,data:guestSaves.get(vid)||null,creator:g.creator});
-  });
-  socket.on('auth:changePass', (p,cb)=>{
-    const acc=socket.data.accountName?accounts.get(socket.data.accountName):null;
-    if(!acc) return cb({ok:false,error:'Non connecté.'});
-    if(acc.pass!==hash(p.old)) return cb({ok:false,error:'Ancien mot de passe incorrect.'});
-    acc.pass=hash(p.pass); cb({ok:true});
-  });
+  function switchTo(newId) {
+    if (newId === vid) return;
+    const set = online.get(vid);
+    if (set) { set.delete(socket.id); if (!set.size) { online.delete(vid); notifyFriendsOf(vid); } }
+    vid = newId; socket.data.vid = vid;
+    if (!online.has(vid)) online.set(vid, new Set());
+    const was = online.get(vid).size === 0;
+    online.get(vid).add(socket.id);
+    if (was) notifyFriendsOf(vid);
+  }
+  function authState(extra = {}) {
+    const acc = accIndex.get(vid);
+    const r = db.saves[vid] || {};
+    return {
+      ok: true, account: acc ? { name: acc.name } : null, token: acc ? socket.data.token : null,
+      data: r.data || null, creator: !!r.creator, shared: isShared(dev),
+      guestProgress: !acc && hasProgress(db.saves[dev]), ...extra,
+    };
+  }
+  function login(accId, remember) {
+    switchTo(accId);
+    socket.data.token = newSession(accId);
+    markSeen(dev, accId);
+    if (remember) db.remember[dev] = accId;
+    else if (db.remember[dev] === accId) delete db.remember[dev];
+    persist();
+  }
+  const fails = (k) => { const now = Date.now(); const a = attempts.get(k) || { n: 0, t: now }; if (now - a.t > 10 * 60 * 1000) { a.n = 0; a.t = now; } attempts.set(k, a); return a; };
 
-  // ----- Sauvegarde -----
-  socket.on('save:set', (data)=>{
-    if(socket.data.accountName) accounts.get(socket.data.accountName).save=data;
-    else guestSaves.set(vid,data);
-  });
+  socket.on('auth:status', (ack) => { if (typeof ack === 'function') ack(authState()); });
 
-  // ----- Mode créateur -----
-  socket.on('creator:on', (pass,cb)=>{
-    if(pass!==CREATOR_PASS) return cb({ok:false,error:'Mot de passe incorrect.'});
-    if(socket.data.accountName){ accounts.get(socket.data.accountName).creator=true; }
-    else { ensureGuest(vid).creator=true; }
-    cb({ok:true});
-  });
-  socket.on('creator:off', ()=>{
-    if(socket.data.accountName) accounts.get(socket.data.accountName).creator=false;
-    else ensureGuest(vid).creator=false;
-  });
-
-  // ----- Amis / chat / invitations -----
-  socket.on('social:get', (cb)=>{
-    if(socket.data.accountName) cb(socialState(accounts.get(socket.data.accountName)));
-    else cb(guestSocial(vid));
-  });
-  socket.on('social:add', (code,cb)=>{
-    const me=socket.data.accountName?accounts.get(socket.data.accountName):ensureGuest(vid);
-    const target=accounts.get(String(code).toLowerCase());
-    if(!target) return cb({ok:false,error:'Aucun compte trouvé avec ce pseudo ou ce code.'});
-    if(target.profile.code===me.profile.code) return cb({ok:false,error:'Tu ne peux pas t\'ajouter toi-même.'});
-    if(!target.requests.includes(me.profile.code)) target.requests.push(me.profile.code);
-    cb({ok:true,msg:'Demande envoyée.'});
-    io.emit('social');
-  });
-  socket.on('social:respond', (p,cb)=>{
-    const me=socket.data.accountName?accounts.get(socket.data.accountName):ensureGuest(vid);
-    me.requests=me.requests.filter(c=>c!==p.code);
-    if(p.accept){
-      if(!me.friends.includes(p.code)) me.friends.push(p.code);
-      const other=accounts.get(p.code);
-      if(other&&!other.friends.includes(me.profile.code)) other.friends.push(me.profile.code);
-    }
-    cb({ok:true,...socialState(me)});
-    io.emit('social');
-  });
-  socket.on('social:remove', (code,cb)=>{
-    const me=socket.data.accountName?accounts.get(socket.data.accountName):ensureGuest(vid);
-    me.friends=me.friends.filter(c=>c!==code);
-    const other=accounts.get(code);
-    if(other) other.friends=other.friends.filter(c=>c!==me.profile.code);
-    cb({ok:true,...socialState(me)});
-    io.emit('social');
-  });
-  socket.on('chat:history', (code,cb)=>{
-    const me=socket.data.accountName?accounts.get(socket.data.accountName):ensureGuest(vid);
-    cb({ok:true,messages:chats.get(chatKey(me.profile.code,code))||[]});
-  });
-  socket.on('chat:send', (p,cb)=>{
-    const me=socket.data.accountName?accounts.get(socket.data.accountName):ensureGuest(vid);
-    const msg={f:me.profile.code,t:Date.now(),x:String(p.text||'').slice(0,300)};
-    const key=chatKey(me.profile.code,p.to);
-    if(!chats.has(key)) chats.set(key,[]);
-    chats.get(key).push(msg);
-    if(chats.get(key).length>200) chats.get(key).shift();
-    cb({ok:true,msg});
-    // Livrer à tous les sockets du destinataire
-    for(const s of io.sockets.sockets.values()){
-      const other=s.data.accountName?accounts.get(s.data.accountName):ensureGuest(s.data.vid);
-      if(other&&other.profile.code===p.to){
-        s.emit('chat',{with:me.profile.code,name:me.profile.name,msg});
+  socket.on('auth:register', (d, ack) => {
+    if (typeof ack !== 'function' || !d) return;
+    const name = cleanName(d.name), key = nameKey(d.name), pass = String(d.pass || '');
+    if (name.length < 3) return ack({ ok: false, error: 'Ton pseudo doit avoir au moins 3 caractères.' });
+    if (!/^[\p{L}\p{N} _.-]+$/u.test(name)) return ack({ ok: false, error: 'Ton pseudo peut contenir des lettres, des chiffres, des espaces, « _ », « - » et « . ».' });
+    if (pass.length < 4 || pass.length > 64) return ack({ ok: false, error: 'Ton mot de passe doit avoir entre 4 et 64 caractères.' });
+    if (db.accounts[key]) return ack({ ok: false, error: 'Ce pseudo est déjà pris. Choisis-en un autre.' });
+    const f = fails('reg:' + dev);
+    if (f.n >= 6) return ack({ ok: false, error: 'Trop de comptes créés sur cet appareil. Réessaie dans 10 minutes.' });
+    f.n++;
+    const id = 'acc_' + crypto.randomBytes(9).toString('hex');
+    const salt = crypto.randomBytes(16).toString('hex');
+    const acc = { id, name, salt, hash: hashPass(pass, salt), t: Date.now() };
+    db.accounts[key] = acc; accIndex.set(id, acc);
+    const r = rec(id);
+    const g = db.saves[dev];
+    let migrated = false;
+    if (d.migrate && accIndex.get(vid) === undefined && hasProgress(g)) { // on garde la progression de l'appareil
+      r.data = g.data || null; r.creator = !!g.creator;
+      if (g.profile && g.profile.code) {
+        r.profile = { name, code: g.profile.code };
+        r.friends = g.friends || []; r.requests = g.requests || []; r.unread = g.unread || {};
+        codeIndex.set(g.profile.code, id);
       }
+      db.saves[dev] = { claimedBy: id };
+      migrated = true;
     }
-  });
-  socket.on('chat:read', (code)=>{
-    const me=socket.data.accountName?accounts.get(socket.data.accountName):ensureGuest(vid);
-    if(me.unread) me.unread[code]=0;
-    io.emit('social');
-  });
-  socket.on('invite:send', (p,cb)=>{
-    const me=socket.data.accountName?accounts.get(socket.data.accountName):ensureGuest(vid);
-    const room=socketToRoom.get(socket.id);
-    if(!room) return cb({ok:false,error:"Crée d'abord une partie."});
-    let sent=false;
-    for(const s of io.sockets.sockets.values()){
-      const other=s.data.accountName?accounts.get(s.data.accountName):ensureGuest(s.data.vid);
-      if(other&&other.profile.code===p.to){ s.emit('invite',{from:me.profile.code,name:me.profile.name,room,mode:p.mode}); sent=true; }
-    }
-    cb(sent?{ok:true}:{ok:false,error:'Joueur non trouvé ou hors ligne.'});
-  });
-  socket.on('invite:reply', (p)=>{
-    const from=io.sockets.sockets.get(p.to);
-    if(from) from.emit('invite:reply',{accept:!!p.accept,name:'Adversaire'});
+    if (!r.profile) { const code = newFriendCode(); r.profile = { name, code }; codeIndex.set(code, id); }
+    login(id, !!d.remember);
+    notifyFriendsOf(id);
+    ack(authState({ migrated }));
   });
 
-  // ----- Duels -----
-  socket.on('create', (cb)=>{
-    let code; do{ code=genCode(5); }while(rooms.has(code));
-    rooms.set(code,{sockets:[socket.id],host:socket.id});
-    socketToRoom.set(socket.id,code);
-    cb({ok:true,code});
-  });
-  socket.on('join', (code,cb)=>{
-    code=String(code||'').toUpperCase();
-    const room=rooms.get(code);
-    if(!room) return cb({ok:false,error:'Partie introuvable.'});
-    if(room.sockets.length>=2) return cb({ok:false,error:'Cette partie est déjà complète.'});
-    room.sockets.push(socket.id);
-    socketToRoom.set(socket.id,code);
-    cb({ok:true});
-    room.sockets.forEach(id=>{ const s=io.sockets.sockets.get(id); if(s) s.emit('peer-joined'); });
-  });
-  socket.on('m', (msg)=>{
-    const code=socketToRoom.get(socket.id);
-    const room=code&&rooms.get(code);
-    if(!room) return;
-    for(const id of room.sockets){
-      if(id!==socket.id){ const s=io.sockets.sockets.get(id); if(s) s.emit('m',msg); }
+  socket.on('auth:login', (d, ack) => {
+    if (typeof ack !== 'function' || !d) return;
+    const key = nameKey(d.name);
+    const f1 = fails('dev:' + dev), f2 = fails('acc:' + key);
+    if (f1.n >= 12 || f2.n >= 8) return ack({ ok: false, error: "Trop d'essais. Réessaie dans 10 minutes." });
+    const acc = db.accounts[key];
+    if (!acc || !safeEqual(hashPass(String(d.pass || ''), acc.salt), acc.hash)) {
+      f1.n++; f2.n++;
+      return ack({ ok: false, error: 'Pseudo ou mot de passe incorrect.' });
     }
+    attempts.delete('acc:' + key);
+    login(acc.id, !!d.remember);
+    ack(authState());
   });
-  socket.on('leave', ()=>{
-    const code=socketToRoom.get(socket.id);
-    const room=code&&rooms.get(code);
-    if(room){
-      room.sockets=room.sockets.filter(id=>id!==socket.id);
-      if(room.sockets.length===0) rooms.delete(code);
-      else for(const id of room.sockets){ const s=io.sockets.sockets.get(id); if(s) s.emit('peer-left'); }
-    }
-    socketToRoom.delete(socket.id);
+
+  socket.on('auth:logout', (ack) => {
+    if (socket.data.token) delete db.sessions[socket.data.token];
+    if (db.remember[dev] === vid) delete db.remember[dev];
+    socket.data.token = null;
+    leaveRoom(socket);
+    switchTo(dev);
+    persist();
+    if (typeof ack === 'function') ack(authState());
   });
-  socket.on('disconnect', ()=>{
-    const code=socketToRoom.get(socket.id);
-    const room=code&&rooms.get(code);
-    if(room){
-      room.sockets=room.sockets.filter(id=>id!==socket.id);
-      if(room.sockets.length===0) rooms.delete(code);
-      else for(const id of room.sockets){ const s=io.sockets.sockets.get(id); if(s) s.emit('peer-left'); }
+
+  socket.on('auth:delete', (d, ack) => {
+    if (typeof ack !== 'function') return;
+    const acc = accIndex.get(vid);
+    if (!acc || !socket.data.token) return ack({ ok: false, error: 'Connecte-toi pour supprimer ton compte.' });
+    const key = nameKey(acc.name);
+    // Retire le compte, sa progression, ses sessions et ses connexions mémorisées.
+    delete db.accounts[key];
+    accIndex.delete(acc.id);
+    delete db.saves[acc.id];
+    for (const [token, session] of Object.entries(db.sessions)) if (session.a === acc.id) delete db.sessions[token];
+    for (const [device, remembered] of Object.entries(db.remember)) if (remembered === acc.id) delete db.remember[device];
+    for (const [device, seen] of Object.entries(db.devSeen)) {
+      db.devSeen[device] = seen.filter(entry => entry.a !== acc.id);
+      if (!db.devSeen[device].length) delete db.devSeen[device];
     }
-    socketToRoom.delete(socket.id);
+    socket.data.token = null;
+    switchTo(dev);
+    persist();
+    ack(authState({ deleted: true }));
+  });
+
+  socket.on('auth:changePass', (d, ack) => {
+    if (typeof ack !== 'function' || !d) return;
+    const acc = accIndex.get(vid);
+    if (!acc) return ack({ ok: false, error: "Tu n'es pas connecté." });
+    if (!safeEqual(hashPass(String(d.old || ''), acc.salt), acc.hash)) return ack({ ok: false, error: 'Ancien mot de passe incorrect.' });
+    const np = String(d.pass || '');
+    if (np.length < 4 || np.length > 64) return ack({ ok: false, error: 'Ton mot de passe doit avoir entre 4 et 64 caractères.' });
+    acc.salt = crypto.randomBytes(16).toString('hex'); acc.hash = hashPass(np, acc.salt);
+    for (const [k, v] of Object.entries(db.sessions)) if (v.a === acc.id && k !== socket.data.token) delete db.sessions[k];
+    persist();
+    ack({ ok: true });
+  });
+
+  // ----- Sauvegarde de la progression (compte ou appareil) -----
+  socket.on('save:set', (data, ack) => {
+    let ok = false;
+    try { ok = !!data && typeof data === 'object' && JSON.stringify(data).length < 20000; } catch (e) {}
+    if (ok) { const r = myRec(); r.data = data; r.t = Date.now(); persist(); }
+    if (typeof ack === 'function') ack({ ok });
+  });
+
+  socket.on('creator:on', (pass, ack) => {
+    if (typeof ack !== 'function') return;
+    const a = fails('creator:' + dev);
+    if (a.n >= 8) return ack({ ok: false, error: "Trop d'essais. Réessaie dans 10 minutes." });
+    a.n++;
+    const ok = !!CREATOR_HASH && safeEqual(crypto.createHash('sha256').update(String(pass || '').trim()).digest('hex'), CREATOR_HASH);
+    if (ok) { attempts.delete('creator:' + dev); myRec().creator = true; persist(); }
+    ack(ok ? { ok: true } : { ok: false, error: 'Mot de passe incorrect.' });
+  });
+  socket.on('creator:off', () => { const r = db.saves[vid]; if (r) { r.creator = false; persist(); } });
+
+  // ----- Profil & amis -----
+  socket.on('social:get', (ack) => { if (typeof ack === 'function') ack(socialState(vid)); });
+
+  socket.on('social:setName', (name, ack) => {
+    if (typeof ack !== 'function') return;
+    if (!accIndex.get(vid)) return ack({ ok: false, error: 'Connecte-toi à ton compte pour ajouter des amis.' });
+    return ack({ ok: false, error: 'Ton pseudo est celui de ton compte.' });
+    const n = cleanName(name);
+    const r = myRec();
+    if (!r.profile) {
+      const code = newFriendCode();
+      if (!code) return ack({ ok: false, error: 'Erreur du serveur, réessaie.' });
+      r.profile = { name: n, code };
+      codeIndex.set(code, vid);
+    } else r.profile.name = n;
+    persist();
+    notifyFriendsOf(vid);
+    ack(socialState(vid));
+  });
+
+  socket.on('social:add', (rawCode, ack) => {
+    if (typeof ack !== 'function') return;
+    const me = myRec();
+    if (!me.profile) return ack({ ok: false, error: "Choisis d'abord un pseudo." });
+    let code = cleanCode(String(rawCode || '').replace(/^#/, ''));
+    let tv = String(rawCode || '').replace(/^#/, '').trim().length === 6 ? codeIndex.get(code) : null;
+    if (!tv) { // recherche par pseudo de compte
+      const acc = db.accounts[nameKey(rawCode)];
+      const ar = acc && db.saves[acc.id];
+      if (ar && ar.profile) { tv = acc.id; code = ar.profile.code; }
+    }
+    if (!tv) return ack({ ok: false, error: `Aucun joueur trouvé avec « ${cleanName(rawCode) || '?'} ».` });
+    if (tv === vid) return ack({ ok: false, error: "C'est ton propre code." });
+    if (me.friends.includes(code)) return ack({ ok: false, error: 'Vous êtes déjà amis.' });
+    const them = rec(tv);
+    if (me.requests.includes(code)) { // il m'avait déjà demandé : on devient amis
+      me.requests = me.requests.filter(c => c !== code);
+      me.friends.push(code);
+      if (!them.friends.includes(me.profile.code)) them.friends.push(me.profile.code);
+      them.requests = them.requests.filter(c => c !== me.profile.code);
+      persist(); emitTo(tv, 'social');
+      return ack({ ...socialState(vid), msg: `${them.profile.name} est maintenant ton ami.` });
+    }
+    if (!them.requests.includes(me.profile.code)) them.requests.push(me.profile.code);
+    if (them.requests.length > 50) them.requests.shift();
+    persist(); emitTo(tv, 'social');
+    ack({ ...socialState(vid), msg: `Demande envoyée à ${them.profile.name}.` });
+  });
+
+  socket.on('social:respond', (d, ack) => {
+    if (typeof ack !== 'function' || !d) return;
+    const me = myRec();
+    const code = cleanCode(d.code);
+    if (!me.profile || !me.requests.includes(code)) return ack(socialState(vid));
+    me.requests = me.requests.filter(c => c !== code);
+    const tv = codeIndex.get(code);
+    if (d.accept && tv) {
+      const them = rec(tv);
+      if (!me.friends.includes(code)) me.friends.push(code);
+      if (!them.friends.includes(me.profile.code)) them.friends.push(me.profile.code);
+      emitTo(tv, 'social');
+    }
+    persist();
+    ack(socialState(vid));
+  });
+
+  socket.on('social:remove', (rawCode, ack) => {
+    if (typeof ack !== 'function') return;
+    const me = myRec();
+    const code = cleanCode(rawCode);
+    me.friends = me.friends.filter(c => c !== code);
+    delete me.unread[code];
+    const tv = codeIndex.get(code);
+    if (tv && me.profile) { const them = rec(tv); them.friends = them.friends.filter(c => c !== me.profile.code); emitTo(tv, 'social'); }
+    persist();
+    ack(socialState(vid));
+  });
+
+  // ----- Clavardage -----
+  socket.on('chat:history', (rawCode, ack) => {
+    if (typeof ack !== 'function') return;
+    const me = myRec(), code = cleanCode(rawCode);
+    if (!me.profile || !me.friends.includes(code)) return ack({ ok: false, messages: [] });
+    me.unread[code] = 0; persist();
+    const msgs = (db.chats[chatKey(me.profile.code, code)] || []).slice(-60);
+    ack({ ok: true, me: me.profile.code, messages: msgs });
+  });
+
+  socket.on('chat:read', (rawCode) => {
+    const me = myRec(), code = cleanCode(rawCode);
+    if (me.unread[code]) { me.unread[code] = 0; persist(); }
+  });
+
+  socket.on('chat:send', (d, ack) => {
+    if (typeof ack !== 'function' || !d) return;
+    const me = myRec(), code = cleanCode(d.to);
+    const text = String(d.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, 300);
+    if (!me.profile || !me.friends.includes(code)) return ack({ ok: false, error: "Ce joueur n'est pas dans tes amis." });
+    if (!text) return ack({ ok: false });
+    const now = Date.now();
+    socket.data.chatTimes = socket.data.chatTimes.filter(t => now - t < 5000);
+    if (socket.data.chatTimes.length >= 6) return ack({ ok: false, error: 'Doucement, attends un peu avant de renvoyer un message.' });
+    socket.data.chatTimes.push(now);
+    const key = chatKey(me.profile.code, code);
+    const msg = { f: me.profile.code, x: text, t: now };
+    (db.chats[key] = db.chats[key] || []).push(msg);
+    if (db.chats[key].length > 100) db.chats[key].splice(0, db.chats[key].length - 100);
+    const tv = codeIndex.get(code);
+    if (tv) {
+      const them = rec(tv);
+      them.unread[me.profile.code] = (them.unread[me.profile.code] || 0) + 1;
+      emitTo(tv, 'chat', { with: me.profile.code, name: me.profile.name, msg });
+    }
+    for (const s of socketsOf(vid)) if (s.id !== socket.id) s.emit('chat', { with: code, msg });
+    persist();
+    ack({ ok: true, msg });
+  });
+
+  // ----- Invitations directes (sans partager de code) -----
+  socket.on('invite:send', (d, ack) => {
+    if (typeof ack !== 'function' || !d) return;
+    const me = myRec(), code = cleanCode(d.to);
+    if (!me.profile || !me.friends.includes(code)) return ack({ ok: false, error: "Ce joueur n'est pas dans tes amis." });
+    const tv = codeIndex.get(code);
+    const room = rooms.get(socket.data.room);
+    if (!room || room.host !== socket.id || room.guest) return ack({ ok: false, error: 'Partie introuvable.' });
+    if (!tv || !socketsOf(tv).length) return ack({ ok: false, error: "Ton ami n'est pas en ligne." });
+    if (isBusy(tv)) return ack({ ok: false, error: 'Ton ami est déjà en duel.' });
+    emitTo(tv, 'invite', { from: me.profile.code, name: me.profile.name, room: socket.data.room, mode: String(d.mode || '').slice(0, 20) });
+    ack({ ok: true });
+  });
+
+  socket.on('invite:reply', (d) => {
+    if (!d) return;
+    const me = myRec(), code = cleanCode(d.to);
+    const tv = codeIndex.get(code);
+    if (tv && me.profile) emitTo(tv, 'invite:reply', { from: me.profile.code, name: me.profile.name, accept: !!d.accept });
+  });
+
+  // ----- Salles de duel -----
+  socket.on('create', (ack) => {
+    if (typeof ack !== 'function') return;
+    leaveRoom(socket);
+    const code = newRoomCode();
+    if (!code) return ack({ ok: false, error: 'Serveur plein, réessaie.' });
+    rooms.set(code, { host: socket.id, guest: null, created: Date.now() });
+    socket.data.room = code;
+    socket.join(code);
+    ack({ ok: true, code });
+  });
+
+  socket.on('join', (rawCode, ack) => {
+    if (typeof ack !== 'function') return;
+    const code = String(rawCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    const room = rooms.get(code);
+    if (!room) return ack({ ok: false, error: `Aucune partie trouvée avec le code ${code}.` });
+    if (room.guest) return ack({ ok: false, error: 'Cette partie est déjà complète.' });
+    if (room.host === socket.id) return ack({ ok: false, error: 'Tu ne peux pas rejoindre ta propre partie.' });
+    leaveRoom(socket);
+    room.guest = socket.id;
+    socket.data.room = code;
+    socket.join(code);
+    ack({ ok: true, code });
+    const hs = io.sockets.sockets.get(room.host);
+    if (hs) hs.emit('peer-joined', { role: 'host' });
+    socket.emit('peer-joined', { role: 'guest' });
+    notifyFriendsOf(vid);
+    if (hs) notifyFriendsOf(hs.data.vid);
+  });
+
+  socket.on('m', (data) => {
+    const room = rooms.get(socket.data.room);
+    const peer = other(room, socket.id);
+    if (peer) io.to(peer).emit('m', data);
+  });
+
+  socket.on('leave', () => leaveRoom(socket));
+  socket.on('disconnect', () => {
+    leaveRoom(socket);
+    const set = online.get(vid);
+    if (set) { set.delete(socket.id); if (!set.size) { online.delete(vid); notifyFriendsOf(vid); } }
   });
 });
 
-httpServer.listen(PORT, ()=>console.log('NEON STRIKE server on port '+PORT));
+// Nettoyage des salles abandonnées sans adversaire (> 30 min)
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of rooms) {
+    if (!room.guest && now - room.created > 30 * 60 * 1000) {
+      const hs = io.sockets.sockets.get(room.host);
+      if (hs) hs.data.room = null;
+      rooms.delete(code);
+    }
+  }
+}, 60 * 1000);
+
+server.listen(PORT, '0.0.0.0', () => console.log(`NEON STRIKE serveur sur le port ${PORT}`));
