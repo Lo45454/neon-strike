@@ -36,8 +36,8 @@ function safeEqual(a, b) {
 
 // ===================== DONNÉES =====================
 // db = { v: 2, saves: { visitorId: { data, creator, profile:{name,code}, friends:[], requests:[], unread:{} } }, chats: { "A|B": [{f,x,t}] } }
-// Render: configure un disque persistant et DATA_DIR=/var/data dans les variables d'environnement.
-// En local, les fichiers restent dans le dossier du serveur.
+// Supabase est utilisé si SUPABASE_URL et SUPABASE_SECRET_KEY sont configurés.
+// Sinon, le serveur conserve le mode fichier local (non persistant sur Render Free).
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
@@ -63,11 +63,72 @@ try {
 } catch (e) { console.log('[data] lecture impossible', e.message); }
 
 let writeTimer = null;
+let persistChain = Promise.resolve();
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || '';
+const useSupabase = !!(SUPABASE_URL && SUPABASE_SECRET_KEY);
+async function supabaseRequest(pathname, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_SECRET_KEY,
+      Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  if (!response.ok) throw new Error(`Supabase HTTP ${response.status}: ${(await response.text()).slice(0, 300)}`);
+  if (response.status === 204) return null;
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+async function loadSupabaseData() {
+  if (!useSupabase) return false;
+  try {
+    const rows = await supabaseRequest('game_state?select=payload&id=eq.main&limit=1');
+    if (Array.isArray(rows) && rows[0] && rows[0].payload) {
+      db = normalize(rows[0].payload);
+      // Rebuild indexes after loading persisted account/profile data.
+      accIndex.clear();
+      for (const a of Object.values(db.accounts)) accIndex.set(a.id, a);
+      rebuildIndex();
+      console.log('[data] sauvegardes chargées depuis Supabase');
+    } else {
+      console.log('[data] première sauvegarde Supabase; migration des données locales disponibles');
+      await writeSupabaseSnapshot(JSON.stringify(db));
+    }
+    return true;
+  } catch (e) {
+    console.error('[data] connexion Supabase impossible:', e.message);
+    return false;
+  }
+}
+async function writeSupabaseSnapshot(snapshot) {
+  await supabaseRequest('game_state?on_conflict=id', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ id: 'main', payload: JSON.parse(snapshot), updated_at: new Date().toISOString() }),
+  });
+}
 function persist() {
   clearTimeout(writeTimer);
   writeTimer = setTimeout(() => {
-    const tmp = DATA_FILE + '.tmp';
-    fs.writeFile(tmp, JSON.stringify(db), (err) => { if (!err) fs.rename(tmp, DATA_FILE, () => {}); });
+    const snapshot = JSON.stringify(db);
+    persistChain = persistChain.then(async () => {
+      if (useSupabase) {
+        try {
+          await writeSupabaseSnapshot(snapshot);
+          console.log('[data] sauvegarde Supabase réussie');
+          return;
+        } catch (e) {
+          console.error('[data] écriture Supabase échouée:', e.message);
+        }
+      }
+      // Copie locale de secours; Render Free ne garantit pas sa conservation.
+      const tmp = DATA_FILE + '.tmp';
+      try { await fs.promises.writeFile(tmp, snapshot); await fs.promises.rename(tmp, DATA_FILE); }
+      catch (e) { console.error('[data] écriture locale échouée:', e.message); }
+    }).catch(e => console.error('[data] sauvegarde échouée:', e.message));
   }, 400);
 }
 
@@ -588,4 +649,8 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
-server.listen(PORT, '0.0.0.0', () => console.log(`NEON STRIKE serveur sur le port ${PORT}`));
+(async () => {
+  if (useSupabase) await loadSupabaseData();
+  else console.log('[data] Supabase non configuré; stockage local actif');
+  server.listen(PORT, '0.0.0.0', () => console.log(`NEON STRIKE serveur sur le port ${PORT}${useSupabase ? ' (Supabase)' : ''}`));
+})();
