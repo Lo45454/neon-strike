@@ -367,7 +367,7 @@ body {
 .mp-actions { display: flex; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; }
 .mp-rules { font-size: 0.7rem; color: rgba(255, 255, 255, 0.5); line-height: 1.7; margin-bottom: 1rem; }
 
-.ship-color-choices{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:8px 0 18px}.ship-color-swatch{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.35);cursor:pointer;box-shadow:0 0 12px currentColor;position:relative}.ship-color-swatch.selected{outline:3px solid white;outline-offset:3px}.ship-color-swatch.selected:after{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#07101c;font-weight:900;text-shadow:0 0 2px white}.chest-open-anim{animation:chestPop .75s cubic-bezier(.2,1.6,.4,1)}.chest-glow{animation:chestGlow .9s ease-out}.chest-particle{position:fixed;z-index:10000;pointer-events:none;font-size:22px;animation:chestBurst 1.15s ease-out forwards}@keyframes chestPop{0%{transform:scale(.7) rotate(-5deg);filter:brightness(1)}35%{transform:scale(1.18) rotate(4deg);filter:brightness(2.5)}70%{transform:scale(.96) rotate(-2deg)}100%{transform:scale(1);filter:brightness(1)}}@keyframes chestGlow{0%{box-shadow:0 0 0 rgba(255,221,0,0)}35%{box-shadow:0 0 55px rgba(255,221,0,.85)}100%{box-shadow:0 0 0 rgba(255,221,0,0)}}@keyframes chestBurst{0%{opacity:1;transform:translate(0,0) scale(.5) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.5) rotate(220deg)}}
+.ship-color-choices{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:8px 0 18px}.ship-color-swatch{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.35);cursor:pointer;box-shadow:0 0 12px currentColor;position:relative}.ship-color-swatch.selected{outline:3px solid white;outline-offset:3px}.ship-color-swatch.selected:after{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#07101c;font-weight:900;text-shadow:0 0 2px white}.chest-open-anim{animation:chestPop .75s cubic-bezier(.2,1.6,.4,1)}.chest-glow{animation:chestGlow .9s ease-out}.chest-particle{position:fixed;z-index:10000;pointer-events:none;font-size:22px;animation:chestBurst 1.15s ease-out forwards}@keyframes chestPop{0%{transform:scale(.7) rotate(-5deg);filter:brightness(1)}35%{transform:scale(1.18) rotate(4deg);filter:brightness(2.5)}70%{transform:scale(.96) rotate(-2deg)}100%{transform:scale(1);filter:brightness(1)}}@keyframes chestGlow{0%{box-shadow:0 0 0 rgba(255,221,0,0)}35%{box-shadow:0 0 55px rgba(255,221,0,.85)}100%{box-shadow:0 0 0 rgba(255,221,0,0)}}@keyframes chestFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(2deg)}}@keyframes chestBurst{0%{opacity:1;transform:translate(0,0) scale(.5) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.5) rotate(220deg)}}
 /* ---- Aperçu des vaisseaux (boutique) ---- */
 .shop-item.ship-item { display: flex; gap: 0.6rem; align-items: center; }
 .ship-preview { width: 72px; height: 72px; flex: none; background: radial-gradient(circle, rgba(255,255,255,0.05), transparent 70%); border-radius: 6px; }
@@ -578,6 +578,11 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <div class="shop-section">
       <p class="shop-section-title">Vaisseaux</p>
       <div class="shop-grid" id="shipGrid"></div>
+      <div class="ship-color-panel" style="margin:16px 0;padding:14px;border:1px solid rgba(0,240,255,.45);border-radius:12px;background:rgba(0,240,255,.06)">
+        <p class="shop-section-title" style="margin-bottom:6px">Couleur du vaisseau équipé</p>
+        <p style="font-size:.78rem;color:rgba(255,255,255,.65);margin:0 0 12px">Équipe un vaisseau, puis choisis sa couleur. Chaque vaisseau garde sa propre couleur.</p>
+        <div id="shipColorChoices" class="ship-color-choices"></div>
+      </div>
     </div>
     <div class="shop-section">
       <p class="shop-section-title">Améliorations</p>
@@ -789,6 +794,15 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       </section>
     </div>
     <p id="chestMessage" class="mp-status"></p>
+    <div id="chestReveal" class="hidden" style="position:fixed;inset:0;z-index:10020;background:rgba(2,5,18,.94);display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="text-align:center;max-width:520px;width:100%">
+        <p id="chestRevealTitle" class="shop-section-title">COFFRE NEON</p>
+        <p style="color:rgba(255,255,255,.7)">Clique sur le coffre pour l’ouvrir !</p>
+        <button id="chestBigButton" aria-label="Ouvrir le coffre" style="display:block;margin:20px auto;background:transparent;border:0;cursor:pointer;font-size:clamp(100px,24vw,180px);filter:drop-shadow(0 0 24px #ffdd00);animation:chestFloat 1.5s ease-in-out infinite">🧰</button>
+        <p id="chestRevealHint" class="final-wave">Touchez le coffre pour révéler votre récompense</p>
+        <button id="chestRevealBack" class="btn btn-small">Annuler</button>
+      </div>
+    </div>
     <button id="chestsBackBtn" class="btn btn-small">Retour</button>
   </div>
 </div>
@@ -3787,13 +3801,15 @@ Object.assign(Game, HazardMethods);
 
 // ===================== COFFRES GRATUITS =====================
 const Chests = {
-  last6h: 0, last24h: 0, timer: null,
+  last6h: 0, last24h: 0, timer: null, pendingHours: 0, opening: false,
   init() {
     const add = (id, fn) => document.getElementById(id).addEventListener('click', fn);
     add('chestsBtn', () => this.open());
     add('chestsBackBtn', () => { document.getElementById('chestsScreen').classList.add('hidden'); Game.goToMenu(); });
-    add('chest6Open', () => this.claim(6));
-    add('chest24Open', () => this.claim(24));
+    add('chest6Open', () => this.beginOpen(6));
+    add('chest24Open', () => this.beginOpen(24));
+    add('chestBigButton', () => this.reveal());
+    add('chestRevealBack', () => this.cancelReveal());
     this.timer = setInterval(() => this.render(), 1000);
     this.render();
   },
@@ -3809,20 +3825,40 @@ const Chests = {
       btn.disabled = !ready; btn.style.opacity = ready ? '1' : '.55';
     }
   },
-  claim(hours) {
-    if (!this.ready(hours)) return;
+  beginOpen(hours) {
+    if (!this.ready(hours) || this.opening) return;
+    this.pendingHours = hours; this.opening = true;
+    const reveal = document.getElementById('chestReveal');
+    reveal.classList.remove('hidden'); reveal.style.display = 'flex';
+    document.getElementById('chestRevealTitle').textContent = hours === 6 ? 'COFFRE RAPIDE' : 'COFFRE QUOTIDIEN';
+    document.getElementById('chestRevealHint').textContent = 'Clique sur le coffre pour révéler ta récompense';
+    document.getElementById('chestBigButton').textContent = '🧰';
+    document.getElementById('chestBigButton').disabled = false;
+    document.getElementById('chestMessage').textContent = '';
+  },
+  cancelReveal() { document.getElementById('chestReveal').classList.add('hidden'); document.getElementById('chestReveal').style.display = 'none'; this.pendingHours = 0; this.opening = false; },
+  reveal() {
+    if (!this.opening || !this.pendingHours) return;
+    const hours = this.pendingHours;
+    if (!this.ready(hours)) return this.cancelReveal();
     const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
     const amount = Math.floor(Math.random() * (max - min + 1)) + min;
     if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now();
-    Game.credits += amount; Save.save(); Game.renderShop?.(); this.render();
+    const chest = document.getElementById('chestBigButton');
+    chest.disabled = true; chest.style.animation = 'none'; chest.textContent = '💥';
+    chest.classList.remove('chest-open-anim'); void chest.offsetWidth; chest.classList.add('chest-open-anim');
+    const icons=['🟡','🪙','💰','✨','🪙','⚡','◆'];
+    for(let i=0;i<32;i++){
+      const el=document.createElement('span');el.className='chest-particle';el.textContent=icons[i%icons.length];
+      el.style.left=(window.innerWidth/2)+'px';el.style.top=(window.innerHeight/2)+'px';
+      el.style.setProperty('--dx',(Math.random()*520-260)+'px');el.style.setProperty('--dy',(Math.random()*420-210)+'px');
+      document.body.appendChild(el);setTimeout(()=>el.remove(),1250);
+    }
+    Game.credits += amount; Save.save(); Game.renderShop?.(); this.render(); playPurchase();
+    document.getElementById('chestRevealHint').textContent = `RÉCOMPENSE : +${amount} CRÉDITS`;
     document.getElementById('chestMessage').textContent = `Coffre ouvert : +${amount} crédits !`;
     document.getElementById('chestMessage').className = 'mp-status ok';
-    const chest = document.getElementById(hours === 6 ? 'chest6Open' : 'chest24Open');
-    const card = chest && chest.closest('section');
-    if (chest && card) { chest.classList.remove('chest-open-anim'); card.classList.remove('chest-glow'); void chest.offsetWidth; chest.classList.add('chest-open-anim'); card.classList.add('chest-glow'); }
-    const icons=['✨','💎','⭐','🟡','⚡','💫'];
-    for(let i=0;i<18;i++){const el=document.createElement('span');el.className='chest-particle';el.textContent=icons[i%icons.length];el.style.left=(window.innerWidth/2)+'px';el.style.top=(window.innerHeight/2)+'px';el.style.setProperty('--dx',(Math.random()*360-180)+'px');el.style.setProperty('--dy',(Math.random()*260-130)+'px');document.body.appendChild(el);setTimeout(()=>el.remove(),1250);}
-    playPurchase();
+    setTimeout(() => { this.cancelReveal(); document.getElementById('chestMessage').textContent = `Récompense ajoutée : +${amount} crédits !`; }, 2100);
   }
 };
 
@@ -4233,6 +4269,12 @@ const Versus = {
       reconnection: true,
     });
     s.on('m', (d) => this.onMsg(d));
+    s.on('admin:credits-updated', (d) => {
+      if (!d || !Number.isFinite(Number(d.credits))) return;
+      Game.credits = Math.max(0, Number(d.credits) | 0);
+      Save.save(); Game.renderShop?.();
+      Social.toast(`Le développeur a mis à jour ton solde : <b>${Game.formatCredits(Game.credits)}</b> crédits.`);
+    });
     Social.bindSocket(s);
     s.on('peer-joined', () => this.onPeerJoined());
     s.on('peer-left', () => { if (this.connected) this.onDisconnect(); });
