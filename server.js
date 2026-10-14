@@ -226,6 +226,52 @@ app.get('/api/admin/export', (req, res) => {
   res.json(db);
 });
 
+// Tableau de modération : seules les requêtes avec ADMIN_TOKEN valide sont autorisées.
+function adminAllowed(req) {
+  const tok = req.headers['x-admin-token'] || '';
+  return !!ADMIN_TOKEN && safeEqual(tok, ADMIN_TOKEN);
+}
+app.get('/api/admin/dashboard', (req, res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ ok: false, error: 'Accès refusé.' });
+  const accounts = Object.values(db.accounts).map(a => {
+    const r = db.saves[a.id] || {};
+    const sockets = online.get(a.id);
+    const liveSockets = sockets ? [...sockets].map(id => io.sockets.sockets.get(id)).filter(Boolean) : [];
+    const inRoom = liveSockets.some(s => !!s.data.room);
+    const data = r.data || {};
+    return {
+      id: a.id, name: a.name, createdAt: a.t || null,
+      credits: Number(data.credits) || 0,
+      level: Math.max(0, Number(data.unlockedLevel) || 0) + 1,
+      ships: Array.isArray(data.ownedShips) ? data.ownedShips : ['default'],
+      equippedShip: data.equippedShip || 'default',
+      bestScores: data.bestScores || {},
+      online: liveSockets.length > 0, connections: liveSockets.length,
+      activity: liveSockets.length ? (inRoom ? 'En partie multijoueur' : 'Connecté au jeu') : 'Hors ligne',
+      lastSave: r.t || null,
+    };
+  }).sort((a,b) => Number(b.online)-Number(a.online) || a.name.localeCompare(b.name));
+  const guests = Object.entries(db.saves).filter(([id,r]) => !accIndex.has(id) && !r.claimedBy && r.data).map(([id,r]) => ({
+    id, name: (r.profile && r.profile.name) || 'Invité', credits: Number((r.data||{}).credits)||0,
+    level: Math.max(0, Number((r.data||{}).unlockedLevel)||0)+1,
+    online: !!(online.get(id) && online.get(id).size), activity: (online.get(id)&&online.get(id).size) ? 'Connecté au jeu' : 'Hors ligne',
+    ships: Array.isArray((r.data||{}).ownedShips) ? r.data.ownedShips : ['default'], lastSave:r.t||null,
+  }));
+  res.json({ ok:true, accounts, guests, onlineCount:[...online.values()].reduce((n,set)=>n+(set.size?1:0),0), totalAccounts:accounts.length });
+});
+app.post('/api/admin/credits/:id', express.json({limit:'2kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id = String(req.params.id || '').slice(0,100);
+  if (!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  const amount = Number(req.body && req.body.amount);
+  if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1000000) return res.status(400).json({ok:false,error:'Montant invalide (entre -1 000 000 et 1 000 000, sans zéro).'});
+  const r = rec(id); if (!r.data || typeof r.data !== 'object') r.data = {};
+  const current = Math.max(0, Number(r.data.credits)||0);
+  r.data.credits = Math.max(0, Math.min(2147483647, current + amount)); r.t=Date.now(); persist();
+  for (const socket of socketsOf(id)) socket.emit('admin:credits-updated', { credits:r.data.credits });
+  res.json({ok:true,credits:r.data.credits});
+});
+
 app.get('/health', (req, res) => res.json({ ok: true, rooms: rooms.size, players: io.engine.clientsCount }));
 io.engine.on('connection_error', (err) => console.log('[socket] erreur', err.code, err.message));
 
