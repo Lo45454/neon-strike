@@ -367,6 +367,7 @@ body {
 .mp-actions { display: flex; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; }
 .mp-rules { font-size: 0.7rem; color: rgba(255, 255, 255, 0.5); line-height: 1.7; margin-bottom: 1rem; }
 
+.ship-color-choices{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:8px 0 18px}.ship-color-swatch{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.35);cursor:pointer;box-shadow:0 0 12px currentColor;position:relative}.ship-color-swatch.selected{outline:3px solid white;outline-offset:3px}.ship-color-swatch.selected:after{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#07101c;font-weight:900;text-shadow:0 0 2px white}.chest-open-anim{animation:chestPop .75s cubic-bezier(.2,1.6,.4,1)}.chest-glow{animation:chestGlow .9s ease-out}.chest-particle{position:fixed;z-index:10000;pointer-events:none;font-size:22px;animation:chestBurst 1.15s ease-out forwards}@keyframes chestPop{0%{transform:scale(.7) rotate(-5deg);filter:brightness(1)}35%{transform:scale(1.18) rotate(4deg);filter:brightness(2.5)}70%{transform:scale(.96) rotate(-2deg)}100%{transform:scale(1);filter:brightness(1)}}@keyframes chestGlow{0%{box-shadow:0 0 0 rgba(255,221,0,0)}35%{box-shadow:0 0 55px rgba(255,221,0,.85)}100%{box-shadow:0 0 0 rgba(255,221,0,0)}}@keyframes chestBurst{0%{opacity:1;transform:translate(0,0) scale(.5) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.5) rotate(220deg)}}
 /* ---- Aperçu des vaisseaux (boutique) ---- */
 .shop-item.ship-item { display: flex; gap: 0.6rem; align-items: center; }
 .ship-preview { width: 72px; height: 72px; flex: none; background: radial-gradient(circle, rgba(255,255,255,0.05), transparent 70%); border-radius: 6px; }
@@ -904,7 +905,11 @@ const SHIPS = [
   { id: 'tanker', name: 'Tank', desc: 'Résistant, lent', price: 800, color: '#ff6b35', speed: 260, fireRate: 0.32, bulletSpeed: 580, maxLives: 5, multishot: 0, bulletDamage: 1 },
   { id: 'multi', name: 'Multi-Tir', desc: 'Triple tir par défaut', price: 1200, color: '#9d00ff', speed: 320, fireRate: 0.25, bulletSpeed: 640, maxLives: 3, multishot: 1, bulletDamage: 1 },
   { id: 'sniper', name: 'Sniper', desc: 'Tir puissant et rapide', price: 1800, color: '#00ff88', speed: 350, fireRate: 0.20, bulletSpeed: 800, maxLives: 3, multishot: 0, bulletDamage: 2 },
-  { id: 'destroyer', name: 'Destructeur', desc: 'Quadruple tir, robuste', price: 3000, color: '#ff00ea', speed: 300, fireRate: 0.24, bulletSpeed: 700, maxLives: 4, multishot: 2, bulletDamage: 2 },
+  { id: 'destroyer', name: 'Destructeur', desc: 'Quadruple tir, robuste', price: 4200, color: '#ff00ea', speed: 300, fireRate: 0.24, bulletSpeed: 700, maxLives: 4, multishot: 2, bulletDamage: 2 },
+  { id: 'phantom', name: 'Fantôme', desc: 'Agile et difficile à toucher', price: 6500, color: '#8be9fd', speed: 390, fireRate: 0.23, bulletSpeed: 760, maxLives: 3, multishot: 1, bulletDamage: 2, unlockLevel: 3 },
+  { id: 'nova', name: 'Nova', desc: 'Salves explosives', price: 9000, color: '#ff7ad9', speed: 330, fireRate: 0.22, bulletSpeed: 680, maxLives: 4, multishot: 2, bulletDamage: 3, unlockLevel: 5 },
+  { id: 'vanguard', name: 'Avant-garde', desc: 'Blindage lourd et tirs puissants', price: 13500, color: '#a3ff12', speed: 285, fireRate: 0.20, bulletSpeed: 820, maxLives: 6, multishot: 1, bulletDamage: 3, unlockLevel: 7 },
+  { id: 'eclipse', name: 'Éclipse', desc: 'Vaisseau d’élite polyvalent', price: 20000, color: '#b388ff', speed: 370, fireRate: 0.17, bulletSpeed: 900, maxLives: 5, multishot: 2, bulletDamage: 4, unlockLevel: 10 },
 ];
 
 // ===================== AMÉLIORATIONS =====================
@@ -1608,7 +1613,7 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = 30 + level * 12;
+    this.maxHealth = Math.round((48 + level * 19) * (level >= 5 ? 1.18 : 1));
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
     this.t = 0; this.rotation = 0;
@@ -1617,7 +1622,7 @@ class Boss {
     this.flash = 0;       // flash quand touché
     this.rage = false;
     this.rageText = 0;
-    this.diff = 1 + Math.min(level, 25) * 0.035; // difficulté qui monte doucement
+    this.diff = 1.18 + Math.min(level, 25) * 0.045; // difficulté qui monte doucement
     this.st = {};         // état propre au type
     this.setup();
   }
@@ -2310,6 +2315,8 @@ const Game = {
   equippedShip: 'default',
   ownedUpgrades: [],
   upgradeState: {},
+  shipUpgradeStates: {},
+  shipColors: {},
   shopReturn: 'level',
   shopSnapshot: null,
   unlockedLevel: 0,
@@ -2381,7 +2388,9 @@ const Game = {
   },
 
   getShipData(id) {
-    return SHIPS.find(s => s.id === id) || SHIPS[0];
+    const ship = SHIPS.find(s => s.id === id) || SHIPS[0];
+    const color = this.shipColors && this.shipColors[ship.id];
+    return color ? {...ship, color} : ship;
   },
 
   start(levelIndex = 0) {
@@ -2549,28 +2558,33 @@ const Game = {
       let status = '';
       if (equipped) status = '<span class="shop-item-status equipped">Équipé</span>';
       else if (owned) status = `<span class="shop-item-status owned" style="cursor:pointer;">Équiper</span>`;
-      else status = `<span class="shop-item-price">${ship.price} crédits</span>` +
-        (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(ship.price - this.credits)} crédits</span>`);
+      else status = `<span class="shop-item-price">${ship.price.toLocaleString('fr-CA')} crédits</span>` + (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel ? `<span class="shop-item-missing">Niveau ${ship.unlockLevel + 1} requis</span>` : (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(ship.price - this.credits)} crédits</span>`));
 
       item.classList.add('ship-item');
       item.innerHTML = `
         <canvas class="ship-preview" width="72" height="72"></canvas>
         <div class="ship-info">
-          <div class="shop-item-name" style="color:${ship.color}; text-shadow: 0 0 8px ${ship.color};">${ship.name}</div>
-          <div class="shop-item-desc">${ship.desc} | Vies:${ship.maxLives} Cadence:${ship.fireRate}s</div>
+          <div class="shop-item-name" style="color:${this.shipColors[ship.id] || ship.color}; text-shadow: 0 0 8px ${this.shipColors[ship.id] || ship.color};">${ship.name}</div>
+          <div class="shop-item-desc">${ship.desc} | Vies:${ship.maxLives} Cadence:${ship.fireRate}s${ship.unlockLevel ? ` | Niveau ${ship.unlockLevel + 1}+` : ''}</div>
           ${status}
         </div>
       `;
-      this.drawShipPreview(item.querySelector('canvas'), ship);
+      this.drawShipPreview(item.querySelector('canvas'), {...ship, color:this.shipColors[ship.id] || ship.color});
 
-      if (!equipped) {
-        item.addEventListener('click', () => this.buyOrEquipShip(ship.id));
-      }
+      if (!equipped) { item.addEventListener('click', () => { if (!owned && ship.unlockLevel && this.unlockedLevel < ship.unlockLevel) return; this.buyOrEquipShip(ship.id); }); }
 
       shipGrid.appendChild(item);
     }
 
-    // Render upgrades
+    // Couleurs personnalisées par vaisseau
+    const colorGrid = document.getElementById('shipColorChoices');
+    if (colorGrid) {
+      const colors = [['Cyan','#00f0ff'],['Rose','#ff00ea'],['Vert','#00ff88'],['Jaune','#ffdd00'],['Orange','#ff6b35'],['Violet','#9d00ff'],['Bleu','#4387ff'],['Blanc','#ffffff'],['Rouge','#ff3d3d']];
+      colorGrid.innerHTML = '';
+      const current = this.shipColors[this.equippedShip] || this.getShipData(this.equippedShip).color;
+      colors.forEach(([name,color]) => { const b=document.createElement('button'); b.className='ship-color-swatch'+(current.toLowerCase()===color.toLowerCase()?' selected':''); b.style.background=color; b.style.color=color; b.title=name; b.setAttribute('aria-label',name); b.addEventListener('click',()=>{this.shipColors[this.equippedShip]=color; Save.save(); this.renderShop(); if(this.player){this.player.color=color;} }); colorGrid.appendChild(b); });
+    }
+    // Render upgrades for the currently equipped ship only
     const upgradeGrid = document.getElementById('upgradeGrid');
     upgradeGrid.innerHTML = '';
     for (const upg of UPGRADES) {
@@ -2620,15 +2634,20 @@ const Game = {
   buyOrEquipShip(shipId) {
     const ship = this.getShipData(shipId);
     if (this.ownedShips.includes(shipId)) {
-      // Equip
+      // Chaque vaisseau conserve ses propres améliorations.
+      this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
       this.equippedShip = shipId;
+      const saved = this.shipUpgradeStates[shipId] || {state:{}, owned:[]};
+      this.upgradeState = {...saved.state}; this.ownedUpgrades = [...saved.owned];
       playPurchase();
     } else {
       const price = this.priceOf(ship);
       if (this.credits < price) return;
       this.credits -= price;
+      if (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel) { this.credits += price; return; }
+      this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
       this.ownedShips.push(shipId);
-      this.equippedShip = shipId;
+      this.equippedShip = shipId; this.upgradeState = {}; this.ownedUpgrades = []; this.shipUpgradeStates[shipId] = {state:{},owned:[]};
       playPurchase();
       Save.save();
       this.renderShop();
@@ -2649,6 +2668,7 @@ const Game = {
     this.credits -= price;
     this.ownedUpgrades.push(upgradeId);
     upg.apply(this.upgradeState);
+    this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
     playPurchase();
     Save.save();
     this.renderShop();
@@ -3797,6 +3817,11 @@ const Chests = {
     Game.credits += amount; Save.save(); Game.renderShop?.(); this.render();
     document.getElementById('chestMessage').textContent = `Coffre ouvert : +${amount} crédits !`;
     document.getElementById('chestMessage').className = 'mp-status ok';
+    const chest = document.getElementById(hours === 6 ? 'chest6Open' : 'chest24Open');
+    const card = chest && chest.closest('section');
+    if (chest && card) { chest.classList.remove('chest-open-anim'); card.classList.remove('chest-glow'); void chest.offsetWidth; chest.classList.add('chest-open-anim'); card.classList.add('chest-glow'); }
+    const icons=['✨','💎','⭐','🟡','⚡','💫'];
+    for(let i=0;i<18;i++){const el=document.createElement('span');el.className='chest-particle';el.textContent=icons[i%icons.length];el.style.left=(window.innerWidth/2)+'px';el.style.top=(window.innerHeight/2)+'px';el.style.setProperty('--dx',(Math.random()*360-180)+'px');el.style.setProperty('--dy',(Math.random()*260-130)+'px');document.body.appendChild(el);setTimeout(()=>el.remove(),1250);}
     playPurchase();
   }
 };
@@ -3811,6 +3836,9 @@ const Save = {
       ownedShips: Game.creator && Creator.backup ? Creator.backup.ships : Game.ownedShips,
       equippedShip: Game.creator && Creator.backup && !Creator.backup.ships.includes(Game.equippedShip) ? 'default' : Game.equippedShip,
       ownedUpgrades: Game.ownedUpgrades,
+      upgradeState: Game.upgradeState,
+      shipUpgradeStates: Game.shipUpgradeStates,
+      shipColors: Game.shipColors,
       unlockedLevel: Game.creator && Creator.backup ? Creator.backup.unlocked : Game.unlockedLevel,
       bestScores: Game.bestScores,
       chestLast6h: Chests.last6h || 0,
@@ -3833,16 +3861,20 @@ const Save = {
     clearTimeout(this.timer);
     Game.creator = false; Creator.backup = null;
     Game.credits = 0; Game.ownedShips = ['default']; Game.equippedShip = 'default';
-    Game.ownedUpgrades = []; Game.upgradeState = {}; Game.unlockedLevel = 0; Game.bestScores = {};
+    Game.ownedUpgrades = []; Game.upgradeState = {}; Game.shipUpgradeStates = {}; Game.shipColors = {}; Game.unlockedLevel = 0; Game.bestScores = {};
     const d = res && res.data;
     if (d) {
       Game.credits = d.credits | 0;
       Game.ownedShips = Array.isArray(d.ownedShips) && d.ownedShips.length ? d.ownedShips.filter(id => SHIPS.some(s => s.id === id)) : ['default'];
       if (!Game.ownedShips.includes('default')) Game.ownedShips.unshift('default');
       Game.equippedShip = Game.ownedShips.includes(d.equippedShip) ? d.equippedShip : 'default';
-      for (const upg of UPGRADES) {
-        if ((d.ownedUpgrades || []).includes(upg.id)) { Game.ownedUpgrades.push(upg.id); upg.apply(Game.upgradeState); }
-      }
+      Game.shipColors = d.shipColors && typeof d.shipColors === 'object' ? d.shipColors : {};
+      Game.shipUpgradeStates = d.shipUpgradeStates && typeof d.shipUpgradeStates === 'object' ? d.shipUpgradeStates : {};
+      const savedShip = Game.shipUpgradeStates[Game.equippedShip];
+      const activeOwned = savedShip && Array.isArray(savedShip.owned) ? savedShip.owned : (d.ownedUpgrades || []);
+      Game.upgradeState = savedShip && savedShip.state ? {...savedShip.state} : (d.upgradeState || {});
+      for (const upg of UPGRADES) if (activeOwned.includes(upg.id)) { Game.ownedUpgrades.push(upg.id); if (!savedShip) upg.apply(Game.upgradeState); }
+      Game.shipUpgradeStates[Game.equippedShip] = {state:{...Game.upgradeState},owned:[...Game.ownedUpgrades]};
       Game.unlockedLevel = Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
       Game.bestScores = d.bestScores || {};
       Chests.last6h = Number(d.chestLast6h) || 0;
@@ -5165,16 +5197,21 @@ const Coop = {
   tick(dt) {
     if (!this.active || !Versus.socket || !Versus.socket.connected || !Versus.connected) return;
     this.sendClock += dt;
+    this.collisionCooldown = Math.max(0, (this.collisionCooldown||0) - dt);
     if (this.sendClock >= 0.08) {
       this.sendClock = 0;
       const p = Game.player;
-      Versus.send({ t:'coop-state', x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', hp:p?p.lives:0 });
+      Versus.send({ t:'coop-state', x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', ship:Game.equippedShip, bullets:(Game.bullets||[]).slice(-24).map(b=>[b.x/Game.width,b.y/Game.height]), hp:p?p.lives:0 });
     }
     if (Versus.isHost) {
       this.worldClock += dt;
       if (this.worldClock >= 0.08) { this.worldClock = 0; Versus.send(this.makeWorld()); }
     }
     if (this.peer && performance.now() - this.lastPeerAt > 6000) this.peer = null;
+    if (this.peer && this.peer.alive && Game.player && Game.state !== GameState.GAME_OVER && this.collisionCooldown <= 0) {
+      const px=Number(this.peer.x)*Game.width, py=Number(this.peer.y)*Game.height;
+      if (Utils.distance(Game.player.x,Game.player.y,px,py) < 27 && Game.player.hit()) { this.collisionCooldown=1.25; Game.screenShake=.25; playHit(); if(Game.player.lives<=0) Game.gameOver(); }
+    }
   },
   drawPartner(ctx) {
     if (!this.active) return;
@@ -5182,7 +5219,11 @@ const Coop = {
     const q=this.peer;
     if (!q || performance.now()-this.lastPeerAt>6000) { ctx.fillStyle='#ffdd00';ctx.font='9px "JetBrains Mono", monospace';ctx.fillText('RECONNEXION DU COÉQUIPIER…',W/2,34);ctx.restore();return; }
     const x=Utils.clamp((Number(q.x)||.5)*W,18,W-18), y=Utils.clamp((Number(q.y)||.25)*H,55,H-45), color=/^#[0-9a-f]{6}$/i.test(q.color||'')?q.color:'#00ff88';
-    ctx.save();ctx.translate(x,y);ctx.globalAlpha=q.alive?.95:.35;ctx.shadowBlur=14;ctx.shadowColor=color;ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(0,-15);ctx.lineTo(12,10);ctx.lineTo(0,5);ctx.lineTo(-12,10);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();ctx.fillStyle=color;ctx.font='bold 9px "JetBrains Mono", monospace';ctx.fillText(this.peerName.toUpperCase(),x,y+25);ctx.fillStyle='rgba(255,255,255,.72)';ctx.font='8px "JetBrains Mono", monospace';ctx.fillText(`VAGUE ${q.wave||1}`,x,y+37);ctx.restore();
+    // Le coéquipier est rendu comme un vrai vaisseau, avec sa couleur et ses tirs visibles.
+    ctx.save(); ctx.globalAlpha=q.alive?.98:.35; ctx.translate(x,y); ctx.shadowBlur=18; ctx.shadowColor=color; drawShipModel(ctx, q.ship || 'default', color, performance.now()/50); ctx.restore();
+    ctx.save(); ctx.fillStyle=color; ctx.shadowBlur=9; ctx.shadowColor=color;
+    (Array.isArray(q.bullets)?q.bullets:[]).forEach(b=>{if(!Array.isArray(b))return;const bx=Utils.clamp(Number(b[0])*W,2,W-2),by=Utils.clamp(Number(b[1])*H,2,H-2);ctx.beginPath();ctx.ellipse(bx,by,3,7,0,0,Math.PI*2);ctx.fill();});
+    ctx.shadowBlur=0;ctx.textAlign='center';ctx.fillStyle=color;ctx.font='bold 9px "JetBrains Mono", monospace';ctx.fillText((q.name||this.peerName||'COÉQUIPIER').toUpperCase(),x,y+27);ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='8px "JetBrains Mono", monospace';ctx.fillText(`♥ ${q.hp||0}`,x,y+39);ctx.restore();ctx.restore();
   },
   quit() { if (!this.active) return; this.active=false; this.peer=null; Versus.send({t:'bye'}); Versus.disconnect(); Game.goToMenu(); }
 };
