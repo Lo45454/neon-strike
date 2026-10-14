@@ -453,6 +453,25 @@ body.in-duel .emote-bar { display: flex; }
 .emote-bar button:active { background: rgba(0,240,255,0.2); }
 @media (max-width: 480px) { .fr-label { min-width: 0; width: 100%; } .fr-item { flex-wrap: wrap; } .fr-name { flex-basis: calc(100% - 20px); } .emote-bar { top: 54%; } }
 
+/* ---- Comptes ---- */
+.acct-bar { display: flex; justify-content: center; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.75rem; color: rgba(255,255,255,0.65); margin: -0.4rem 0 1rem; min-height: 1.6em; }
+.acct-bar b { color: #c77dff; font-family: var(--font-display); letter-spacing: 0.05em; }
+.acct-bar .fr-btn { padding: 5px 10px; }
+.acct-content { max-width: 440px; }
+.acct-intro { font-size: 0.78rem; color: rgba(255,255,255,0.65); line-height: 1.6; margin-bottom: 1rem; }
+.acct-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; margin-bottom: 1rem; }
+.acct-tab { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 10px 6px; border: none; border-radius: 7px; background: transparent; color: rgba(255,255,255,0.6); cursor: pointer; }
+.acct-tab.active { background: rgba(199,125,255,0.18); color: #fff; box-shadow: inset 0 0 0 1px rgba(199,125,255,0.5); }
+.acct-form { display: flex; flex-direction: column; gap: 0.45rem; text-align: left; }
+.acct-form .fr-label { min-width: 0; margin-top: 0.3rem; }
+.acct-form .btn { margin: 0.6rem auto 0; }
+.acct-form .mp-toggle { margin-top: 0.4rem; font-size: 0.75rem; }
+.acct-note { font-size: 0.68rem; color: rgba(255,255,255,0.5); line-height: 1.5; }
+.acct-note.warn { color: var(--neon-yellow); }
+.acct-me { color: #c77dff; font-family: var(--font-display); }
+.acct-pass { margin: 0.6rem 0 1rem; font-size: 0.78rem; color: rgba(255,255,255,0.7); text-align: left; }
+.acct-pass summary { cursor: pointer; color: var(--neon-cyan); margin-bottom: 0.5rem; }
+
 /* ---- Mobile (iPhone / Android) ---- */
 html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 #gameCanvas { touch-action: none; -webkit-user-select: none; user-select: none; }
@@ -482,6 +501,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   <div class="overlay-content">
     <h1 class="game-title">NEON STRIKE</h1>
     <p class="subtitle">Défenseur Spatial</p>
+    <div class="acct-bar" id="acctBar"></div>
     <div class="instructions keyboard-hint">
       <p><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> ou <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — Déplacement</p>
       <p><kbd>Espace</kbd> — Tirer</p>
@@ -625,21 +645,65 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   <div class="overlay-content">
     <h1 class="game-title fr-title">AMIS</h1>
     <div id="frSetup" class="hidden">
-      <p class="subtitle">Choisis ton pseudo pour que tes amis te trouvent</p>
-      <div class="fr-row"><input id="frNameInput" class="fr-input" maxlength="16" placeholder="Ton pseudo" autocomplete="off"><button class="btn btn-small btn-green" id="frNameBtn">Valider</button></div>
+      <p class="subtitle">Connecte-toi à ton compte pour ajouter des amis, clavarder et les inviter en duel.</p>
+      <button class="btn btn-green" id="frLoginBtn">Se connecter</button>
     </div>
     <div id="frMain" class="hidden">
       <div class="fr-me">
-        <div><span class="fr-label">Ton pseudo</span><strong id="frMyName"></strong><button class="fr-link" id="frRenameBtn">Modifier</button></div>
+        <div><span class="fr-label">Ton pseudo</span><strong id="frMyName"></strong></div>
         <div><span class="fr-label">Ton code ami</span><strong class="fr-code" id="frMyCode"></strong><button class="fr-link" id="frCopyBtn">Copier</button></div>
       </div>
-      <div class="fr-row"><input id="frAddInput" class="fr-input" maxlength="6" placeholder="Code ami" autocomplete="off" spellcheck="false"><button class="btn btn-small" id="frAddBtn">Ajouter</button></div>
+      <div class="fr-row"><input id="frAddInput" class="fr-input" maxlength="16" placeholder="Pseudo ou code ami" autocomplete="off" spellcheck="false"><button class="btn btn-small" id="frAddBtn">Ajouter</button></div>
       <div id="frRequests"></div>
       <p class="fr-section">Tes amis</p>
       <div id="frList"></div>
     </div>
     <p class="mp-status" id="frStatus"></p>
     <div class="mp-actions"><button class="btn btn-small" id="frBackBtn">Retour</button></div>
+  </div>
+</div>
+
+<div id="accountScreen" class="overlay hidden">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content acct-content">
+    <h1 class="game-title fr-title">COMPTE</h1>
+    <div id="acctOut">
+      <p class="acct-intro">Avec un compte, ta progression, tes amis et tes messages te suivent sur n'importe quel appareil.</p>
+      <div class="acct-tabs" role="tablist">
+        <button class="acct-tab active" data-tab="login" role="tab">Connexion</button>
+        <button class="acct-tab" data-tab="register" role="tab">Créer un compte</button>
+      </div>
+      <form id="acctForm" class="acct-form" autocomplete="on">
+        <label class="fr-label" for="acctName">Pseudo</label>
+        <input id="acctName" class="fr-input" maxlength="16" autocomplete="username" spellcheck="false" autocapitalize="off">
+        <label class="fr-label" for="acctPass">Mot de passe</label>
+        <input id="acctPass" type="password" class="fr-input" maxlength="64" autocomplete="current-password">
+        <div id="acctConfirmWrap" class="hidden">
+          <label class="fr-label" for="acctPass2">Confirme le mot de passe</label>
+          <input id="acctPass2" type="password" class="fr-input" maxlength="64" autocomplete="new-password">
+        </div>
+        <label class="mp-toggle"><input type="checkbox" id="acctRemember" checked> Rester connecté sur cet appareil</label>
+        <label class="mp-toggle hidden" id="acctMigrateWrap"><input type="checkbox" id="acctMigrate" checked> Mettre la progression actuelle de cet appareil dans ce nouveau compte</label>
+        <p class="acct-note" id="acctNote">Sur un ordi de l'école ou partagé, décoche « Rester connecté » et déconnecte-toi quand tu as fini.</p>
+        <button class="btn btn-green" type="submit" id="acctSubmit">Se connecter</button>
+      </form>
+    </div>
+    <div id="acctIn" class="hidden">
+      <p class="subtitle">Connecté en tant que <strong id="acctMe" class="acct-me"></strong></p>
+      <p class="acct-intro">Ta progression, tes amis et tes messages sont liés à ton compte.</p>
+      <details class="acct-pass">
+        <summary>Changer mon mot de passe</summary>
+        <form id="acctPassForm" class="acct-form">
+          <input id="acctOld" type="password" class="fr-input" maxlength="64" placeholder="Mot de passe actuel" autocomplete="current-password">
+          <input id="acctNew" type="password" class="fr-input" maxlength="64" placeholder="Nouveau mot de passe" autocomplete="new-password">
+          <button class="btn btn-small" type="submit">Changer</button>
+        </form>
+      </details>
+      <button class="btn btn-pink" id="acctLogoutBtn">Se déconnecter</button>
+      <button class="btn btn-small" id="acctDeleteBtn" style="margin-top:.6rem">Supprimer mon compte</button>
+    </div>
+    <p class="mp-status" id="acctStatus"></p>
+    <div class="mp-actions"><button class="btn btn-small" id="acctBackBtn">Jouer sans compte</button></div>
   </div>
 </div>
 
@@ -2254,6 +2318,7 @@ const Game = {
     document.getElementById('gameOverMenuBtn').addEventListener('click', () => this.goToMenu());
     document.getElementById('victoryMenuBtn').addEventListener('click', () => this.goToMenu());
     Creator.init();
+    Auth.init();
     Save.load();
     document.getElementById('resumeBtn').addEventListener('click', () => {
       if (this.state === GameState.MULTI) Versus.togglePause(); else this.togglePause();
@@ -2566,7 +2631,7 @@ const Game = {
   },
 
   hideAllOverlays() {
-    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'creatorScreen', 'friendsScreen', 'chatScreen'].forEach(id => {
+    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
       const el = document.getElementById(id);
       el.classList.add('hidden');
       el.classList.remove('active');
@@ -3654,41 +3719,186 @@ Object.assign(Game, HazardMethods);
 
 // ===================== SAUVEGARDE =====================
 const Save = {
-  timer: null,
+  timer: null, applied: false,
   url() { return Versus.serverBase() + '/api/save'; },
+  snapshot() {
+    return {
+      credits: Game.credits,
+      ownedShips: Game.creator && Creator.backup ? Creator.backup.ships : Game.ownedShips,
+      equippedShip: Game.creator && Creator.backup && !Creator.backup.ships.includes(Game.equippedShip) ? 'default' : Game.equippedShip,
+      ownedUpgrades: Game.ownedUpgrades,
+      unlockedLevel: Game.creator && Creator.backup ? Creator.backup.unlocked : Game.unlockedLevel,
+      bestScores: Game.bestScores,
+    };
+  },
   save() {
+    if (!this.applied) return; // jamais avant d'avoir reçu la progression (évite d'écraser une sauvegarde)
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
-      const body = JSON.stringify({
-        credits: Game.credits,
-        ownedShips: Game.creator && Creator.backup ? Creator.backup.ships : Game.ownedShips,
-        equippedShip: Game.creator && Creator.backup && !Creator.backup.ships.includes(Game.equippedShip) ? 'default' : Game.equippedShip,
-        ownedUpgrades: Game.ownedUpgrades,
-        unlockedLevel: Game.creator && Creator.backup ? Creator.backup.unlocked : Game.unlockedLevel,
-        bestScores: Game.bestScores,
-      });
-      fetch(this.url(), { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain' }, body }).catch(() => {});
+      const data = this.snapshot();
+      // Par la connexion au serveur (liée au compte connecté). Socket.IO garde le message si la connexion revient.
+      if (Versus.socket) { Versus.socket.emit('save:set', data); return; }
+      fetch(this.url(), { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data) }).catch(() => {});
     }, 300);
   },
-  load() {
-    fetch(this.url(), { credentials: 'omit' }).then(r => r.json()).then((res) => {
-      if (!res || !res.ok) return;
-      const d = res.data;
-      if (d) {
-        Game.credits = d.credits | 0;
-        Game.ownedShips = Array.isArray(d.ownedShips) && d.ownedShips.length ? d.ownedShips.filter(id => SHIPS.some(s => s.id === id)) : ['default'];
-        if (!Game.ownedShips.includes('default')) Game.ownedShips.unshift('default');
-        Game.equippedShip = Game.ownedShips.includes(d.equippedShip) ? d.equippedShip : 'default';
-        Game.ownedUpgrades = [];
-        Game.upgradeState = {};
-        for (const upg of UPGRADES) {
-          if ((d.ownedUpgrades || []).includes(upg.id)) { Game.ownedUpgrades.push(upg.id); upg.apply(Game.upgradeState); }
-        }
-        Game.unlockedLevel = Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
-        Game.bestScores = d.bestScores || {};
+  // Repart de zéro puis applique la progression reçue (compte ou appareil)
+  apply(res) {
+    this.applied = true;
+    clearTimeout(this.timer);
+    Game.creator = false; Creator.backup = null;
+    Game.credits = 0; Game.ownedShips = ['default']; Game.equippedShip = 'default';
+    Game.ownedUpgrades = []; Game.upgradeState = {}; Game.unlockedLevel = 0; Game.bestScores = {};
+    const d = res && res.data;
+    if (d) {
+      Game.credits = d.credits | 0;
+      Game.ownedShips = Array.isArray(d.ownedShips) && d.ownedShips.length ? d.ownedShips.filter(id => SHIPS.some(s => s.id === id)) : ['default'];
+      if (!Game.ownedShips.includes('default')) Game.ownedShips.unshift('default');
+      Game.equippedShip = Game.ownedShips.includes(d.equippedShip) ? d.equippedShip : 'default';
+      for (const upg of UPGRADES) {
+        if ((d.ownedUpgrades || []).includes(upg.id)) { Game.ownedUpgrades.push(upg.id); upg.apply(Game.upgradeState); }
       }
-      if (res.creator) Creator.enable(false); // le serveur décide si le mode créateur est actif
-    }).catch(() => {});
+      Game.unlockedLevel = Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
+      Game.bestScores = d.bestScores || {};
+    }
+    if (res && res.creator) Creator.enable(false); // le serveur décide si le mode créateur est actif
+  },
+  // Secours : si la connexion au serveur de jeu échoue, on charge la progression de l'appareil
+  load() {
+    setTimeout(() => {
+      if (this.applied) return;
+      fetch(this.url(), { credentials: 'omit' }).then(r => r.json()).then((res) => {
+        if (!this.applied && res && res.ok) this.apply(res);
+      }).catch(() => {});
+    }, 7000);
+  },
+};
+
+// ===================== COMPTES =====================
+const Auth = {
+  token: null, account: null, loadedFor: undefined, shared: false, guestProgress: false, prompted: false, tab: 'login', busy: false,
+  $(id) { return document.getElementById(id); },
+  init() {
+    this.$('acctBar').addEventListener('click', (e) => { if (e.target.closest('button')) this.open(); });
+    this.$('frLoginBtn').addEventListener('click', () => this.open());
+    this.$('acctBackBtn').addEventListener('click', () => Game.goToMenu());
+    document.querySelectorAll('.acct-tab').forEach(b => b.addEventListener('click', () => this.setTab(b.dataset.tab)));
+    this.$('acctForm').addEventListener('submit', (e) => { e.preventDefault(); this.submit(); });
+    this.$('acctPassForm').addEventListener('submit', (e) => { e.preventDefault(); this.changePass(); });
+    this.$('acctLogoutBtn').addEventListener('click', () => this.logout());
+    this.$('acctDeleteBtn').addEventListener('click', () => this.deleteAccount());
+    this.renderBar();
+  },
+  onConnect() { Social.emit('auth:status').then((st) => this.apply(st)); },
+  apply(st, force = false) {
+    if (!st || !st.ok) return;
+    this.token = st.token || null;
+    this.account = st.account || null;
+    this.shared = !!st.shared;
+    this.guestProgress = !!st.guestProgress;
+    const who = this.account ? 'a:' + this.account.name.toLowerCase() : 'guest';
+    if (force || who !== this.loadedFor) {
+      this.loadedFor = who;
+      Save.apply(st);
+      Social.st = null; Social.refresh();
+    }
+    this.renderBar();
+    if (this.isOpen()) this.render();
+    // Première visite sans compte : on propose de se connecter
+    if (!this.account && !this.prompted && this.$('startScreen').classList.contains('active')) { this.prompted = true; this.open(); }
+    this.prompted = true;
+  },
+  isOpen() { return this.$('accountScreen').classList.contains('active'); },
+  renderBar() {
+    const bar = this.$('acctBar');
+    bar.innerHTML = this.account
+      ? `<span>Connecté : <b>${Social.esc(this.account.name)}</b></span><button class="fr-btn">Mon compte</button>`
+      : `<span>Sans compte</span><button class="fr-btn ok">Se connecter</button>`;
+  },
+  open() {
+    Game.hideAllOverlays();
+    Game.state = GameState.MENU;
+    const el = this.$('accountScreen'); el.classList.remove('hidden'); el.classList.add('active');
+    this.setStatus('');
+    this.render();
+    if (!this.account) setTimeout(() => this.$('acctName').focus(), 50);
+  },
+  setStatus(msg, kind = '') { const el = this.$('acctStatus'); el.className = 'mp-status' + (kind ? ' ' + kind : ''); el.innerHTML = msg; },
+  setTab(t) {
+    this.tab = t;
+    document.querySelectorAll('.acct-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+    this.setStatus('');
+    this.render();
+  },
+  render() {
+    const inn = !!this.account;
+    this.$('acctOut').classList.toggle('hidden', inn);
+    this.$('acctIn').classList.toggle('hidden', !inn);
+    this.$('acctBackBtn').textContent = inn ? 'Retour' : 'Jouer sans compte';
+    if (inn) { this.$('acctMe').textContent = this.account.name; return; }
+    const reg = this.tab === 'register';
+    this.$('acctConfirmWrap').classList.toggle('hidden', !reg);
+    this.$('acctMigrateWrap').classList.toggle('hidden', !(reg && this.guestProgress));
+    this.$('acctSubmit').textContent = reg ? 'Créer mon compte' : 'Se connecter';
+    this.$('acctPass').autocomplete = reg ? 'new-password' : 'current-password';
+    const note = this.$('acctNote');
+    if (this.shared) {
+      note.className = 'acct-note warn';
+      note.textContent = 'Cet appareil semble utilisé par plusieurs personnes : laisse « Rester connecté » décoché et déconnecte-toi quand tu as fini.';
+      if (!this._sharedSet) { this._sharedSet = true; this.$('acctRemember').checked = false; }
+    } else {
+      note.className = 'acct-note';
+      note.textContent = "Sur un ordi de l'école ou partagé, décoche « Rester connecté » et déconnecte-toi quand tu as fini.";
+    }
+  },
+  submit() {
+    if (this.busy) return;
+    const reg = this.tab === 'register';
+    const name = this.$('acctName').value.trim(), pass = this.$('acctPass').value;
+    if (name.length < 3) return this.setStatus('Ton pseudo doit avoir au moins 3 caractères.', 'error');
+    if (pass.length < 4) return this.setStatus('Ton mot de passe doit avoir au moins 4 caractères.', 'error');
+    if (reg && pass !== this.$('acctPass2').value) return this.setStatus('Les deux mots de passe ne sont pas pareils.', 'error');
+    this.busy = true;
+    this.setStatus((reg ? 'Création du compte' : 'Connexion') + '<span class="mp-dots"></span>');
+    const payload = { name, pass, remember: this.$('acctRemember').checked, migrate: reg && this.guestProgress && this.$('acctMigrate').checked };
+    Social.emit(reg ? 'auth:register' : 'auth:login', payload).then((st) => {
+      this.busy = false;
+      if (!st || !st.ok) return this.setStatus(Social.esc((st && st.error) || 'Erreur, réessaie.'), 'error');
+      this.$('acctPass').value = ''; this.$('acctPass2').value = '';
+      this.apply(st, true);
+      Game.goToMenu();
+      Social.toast(reg
+        ? `Compte <b>${Social.esc(st.account.name)}</b> créé${st.migrated ? ', avec ta progression' : ''}.`
+        : `Bon retour, <b>${Social.esc(st.account.name)}</b>.`);
+    });
+  },
+  logout() {
+    Social.emit('auth:logout').then((st) => {
+      if (!st || !st.ok) return this.setStatus('Impossible de joindre le serveur.', 'error');
+      this.apply(st, true);
+      this.setTab('login');
+      this.setStatus('Tu es déconnecté.', 'ok');
+    });
+  },
+  deleteAccount() {
+    if (!this.account) return;
+    const name = this.account.name;
+    if (!confirm(`Supprimer définitivement le compte « ${name} » et toute sa progression ? Cette action est irréversible.`)) return;
+    if (!confirm('Dernière confirmation : veux-tu vraiment supprimer ce compte ?')) return;
+    Social.emit('auth:delete').then((st) => {
+      if (!st || !st.ok) return this.setStatus(Social.esc((st && st.error) || 'Impossible de supprimer le compte.'), 'error');
+      this.apply(st, true);
+      this.setTab('login');
+      this.setStatus('Compte supprimé.', 'ok');
+    });
+  },
+  changePass() {
+    const old = this.$('acctOld').value, np = this.$('acctNew').value;
+    if (np.length < 4) return this.setStatus('Ton nouveau mot de passe doit avoir au moins 4 caractères.', 'error');
+    Social.emit('auth:changePass', { old, pass: np }).then((r) => {
+      if (!r.ok) return this.setStatus(Social.esc(r.error || 'Erreur.'), 'error');
+      this.$('acctOld').value = ''; this.$('acctNew').value = '';
+      this.setStatus('Mot de passe changé.', 'ok');
+    });
   },
 };
 
@@ -3729,10 +3939,7 @@ const Creator = {
     const st = document.getElementById('creatorStatus');
     if (!pass) return;
     st.className = 'mp-status'; st.textContent = 'Vérification...';
-    fetch(Versus.serverBase() + '/api/creator', {
-      method: 'POST', credentials: 'omit',
-      headers: { 'Content-Type': 'text/plain' }, body: pass,
-    }).then(r => r.json()).then((res) => {
+    Social.emit('creator:on', pass).then((res) => {
       if (res && res.ok) {
         this.enable(true);
         st.className = 'mp-status ok';
@@ -3762,7 +3969,7 @@ const Creator = {
       this.backup = null;
       Save.save();
     }
-    fetch(Versus.serverBase() + '/api/creator-off', { method: 'POST', credentials: 'omit' }).catch(() => {});
+    if (Versus.socket) Versus.socket.emit('creator:off');
   },
 };
 
@@ -3782,7 +3989,7 @@ const EMOTES = ['GG', 'Bien joué', 'Oups', 'Ha ha', 'À toi'];
 const Versus = {
   PREFIX: 'neonstrike-duel-v1-',
   mode: 'classic', seed: 1, fightT: 0, inviteTarget: null, oppPseudo: '',
-  localVid: Math.random().toString(36).slice(2, 12), bubbles: {}, emoteCd: 0, rockPts: [],
+  localVid: (window.__vid || Math.random().toString(36).slice(2, 12)), bubbles: {}, emoteCd: 0, rockPts: [],
   socket: null, isHost: false, code: '', fair: false,
   connected: false, paused: false,
   phase: 'idle', phaseTimer: 0, round: 1, myWins: 0, oppWins: 0, winsNeeded: 2,
@@ -3859,7 +4066,7 @@ const Versus = {
 
   // ---------- Connexion au serveur de jeu ----------
   serverBase() {
-    const P = 'port/5000';
+    const P = '__PORT_5000__';
     if (P.startsWith('__')) return '';
     return new URL(P, location.href).pathname.replace(/\/$/, '');
   },
@@ -3882,6 +4089,7 @@ const Versus = {
       path: base + '/socket.io',
       transports,
       query: { vid: this.localVid }, // utilisé seulement en test local (en ligne, l'identité vient du serveur)
+      auth: (cb) => cb({ token: Auth.token || '' }), // garde la session du compte à chaque reconnexion
       withCredentials: false,
       reconnection: true,
     });
@@ -4739,13 +4947,9 @@ const Social = {
   init() {
     this.$('friendsBtn').addEventListener('click', () => this.open());
     this.$('frBackBtn').addEventListener('click', () => Game.goToMenu());
-    this.$('frNameBtn').addEventListener('click', () => this.setName());
-    this.$('frNameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') this.setName(); });
-    this.$('frRenameBtn').addEventListener('click', () => { this.editingName = true; this.render(); this.$('frNameInput').value = this.st.profile.name; this.$('frNameInput').focus(); });
     this.$('frCopyBtn').addEventListener('click', () => this.copyCode());
     this.$('frAddBtn').addEventListener('click', () => this.add());
     this.$('frAddInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') this.add(); });
-    this.$('frAddInput').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); });
     this.$('chatBackBtn').addEventListener('click', () => this.open());
     this.$('chatInviteBtn').addEventListener('click', () => this.invite(this.chatWith));
     this.$('chatForm').addEventListener('submit', (e) => { e.preventDefault(); this.send(); });
@@ -4756,7 +4960,7 @@ const Social = {
   },
 
   bindSocket(s) {
-    s.on('connect', () => this.refresh());
+    s.on('connect', () => Auth.onConnect());
     s.on('social', () => this.refresh());
     s.on('chat', (d) => this.onChat(d));
     s.on('invite', (d) => this.onInvite(d));
@@ -4805,10 +5009,10 @@ const Social = {
 
   render() {
     const st = this.st;
-    const hasProfile = !!(st && st.profile);
+    const hasProfile = !!(st && st.profile && Auth.account);
     this.$('frSetup').classList.toggle('hidden', hasProfile && !this.editingName);
     this.$('frMain').classList.toggle('hidden', !hasProfile || this.editingName);
-    if (!st) { this.setStatus('Connexion au serveur<span class="mp-dots"></span>'); return; }
+    if (!st && Auth.account) { this.setStatus('Connexion au serveur<span class="mp-dots"></span>'); return; }
     if (!hasProfile || this.editingName) return;
     this.$('frMyName').textContent = st.profile.name;
     this.$('frMyCode').textContent = '#' + st.profile.code;
@@ -4870,8 +5074,8 @@ const Social = {
   },
 
   add() {
-    const code = this.$('frAddInput').value.trim();
-    if (code.length !== 6) { this.setStatus('Un code ami a 6 caractères.', 'error'); return; }
+    const code = this.$('frAddInput').value.trim().replace(/^#/, '');
+    if (code.length < 3) { this.setStatus("Entre le pseudo ou le code ami de ton ami.", 'error'); return; }
     this.emit('social:add', code).then((st) => {
       if (!st.ok) { this.setStatus(st.error || 'Erreur.', 'error'); return; }
       this.$('frAddInput').value = '';
