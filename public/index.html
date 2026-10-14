@@ -516,6 +516,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       <button class="btn" id="startBtn">Solo</button>
       <button class="btn btn-green" id="levelsBtn">Niveaux</button>
       <button class="btn btn-yellow" id="menuShopBtn">Boutique</button>
+      <button class="btn btn-purple" id="chestsBtn">Coffres gratuits</button>
       <button class="btn btn-pink" id="multiBtn">Multijoueur</button>
       <button class="btn btn-purple" id="friendsBtn">Amis <span class="badge hidden" id="friendsBadge">0</span></button>
     </div>
@@ -602,7 +603,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 <div id="mpScreen" class="overlay hidden">
   <div class="overlay-bg"></div>
   <div class="overlay-content">
-    <h1 class="game-title mp-title">DUEL EN LIGNE</h1>
+    <h1 class="game-title mp-title">MULTIJOUEUR EN LIGNE</h1>
     <p class="subtitle">Affronte tes amis</p>
     <div id="mpMenu">
       <div class="mp-grid">
@@ -614,8 +615,10 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
             <option value="gravity">Trou noir</option>
             <option value="chaos">Chaos</option>
             <option value="sudden">Mort subite</option>
+            <option value="coop">Équipe coopérative (2 joueurs)</option>
           </select>
           <p class="mp-mode-desc" id="mpModeDesc"></p>
+          <label id="coopLevelWrap" class="hidden" style="display:block;margin:.5rem 0;color:var(--neon-green);font-size:.8rem">Niveau coopératif<br><select id="coopLevelSelect" class="mp-select" aria-label="Niveau coopératif"></select></label>
           <label class="mp-toggle"><input type="checkbox" id="mpFair"> Vaisseaux égaux (tous en Chasseur)</label>
           <button class="btn btn-pink btn-small" id="mpHostBtn">Créer</button>
         </div>
@@ -625,7 +628,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
           <button class="btn btn-small" id="mpJoinBtn">Rejoindre</button>
         </div>
       </div>
-      <p class="mp-rules">Duel 1 contre 1. Ton vaisseau et tes améliorations de la boutique sont utilisés.<br>Bonus : Rapide, Bouclier, Multi, Soin, Balles géantes. Émoticônes : touches 1 à 5.<br>Gagnant : +300 crédits — Perdant : +100 crédits.</p>
+      <p class="mp-rules">Duels 1 contre 1 ou campagne coop en ligne à 2 joueurs : mêmes vagues, ennemis, positions et bonus dans une arène partagée.<br>Bonus : Rapide, Bouclier, Multi, Soin, Balles géantes. Émoticônes : touches 1 à 5.<br>En duel : gagnant +300 crédits — perdant +100 crédits.</p>
     </div>
     <div id="mpWaiting" class="hidden">
       <p class="mp-label">Code de la partie</p>
@@ -682,7 +685,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
           <label class="fr-label" for="acctPass2">Confirme le mot de passe</label>
           <input id="acctPass2" type="password" class="fr-input" maxlength="64" autocomplete="new-password">
         </div>
-        <label class="mp-toggle"><input type="checkbox" id="acctRemember" checked> Rester connecté sur cet appareil</label>
+        <label class="mp-toggle"><input type="checkbox" id="acctRemember"> Rester connecté sur cet appareil</label>
         <label class="mp-toggle hidden" id="acctMigrateWrap"><input type="checkbox" id="acctMigrate" checked> Mettre la progression actuelle de cet appareil dans ce nouveau compte</label>
         <p class="acct-note" id="acctNote">Sur un ordi de l'école ou partagé, décoche « Rester connecté » et déconnecte-toi quand tu as fini.</p>
         <button class="btn btn-green" type="submit" id="acctSubmit">Se connecter</button>
@@ -768,6 +771,26 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 </div>
 
 <button class="touch-pause" id="touchPause" aria-label="Pause">II</button>
+
+<div id="chestsScreen" class="overlay hidden">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <h1 class="game-title" style="color:var(--neon-yellow);animation:none">COFFRES NEON</h1>
+    <p class="subtitle">Récompenses gratuites — les délais continuent hors ligne.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:min(620px,92vw)">
+      <section style="border:1px solid #00f0ff;border-radius:12px;padding:16px;background:rgba(0,240,255,.08)">
+        <h2 style="color:#00f0ff">Coffre rapide</h2><p>5 à 30 crédits · toutes les 6 heures</p>
+        <p id="chest6Timer" class="final-wave">Disponible !</p><button id="chest6Open" class="btn">Ouvrir</button>
+      </section>
+      <section style="border:1px solid #ffdd00;border-radius:12px;padding:16px;background:rgba(255,221,0,.08)">
+        <h2 style="color:#ffdd00">Coffre quotidien</h2><p>30 à 100 crédits · toutes les 24 heures</p>
+        <p id="chest24Timer" class="final-wave">Disponible !</p><button id="chest24Open" class="btn btn-yellow">Ouvrir</button>
+      </section>
+    </div>
+    <p id="chestMessage" class="mp-status"></p>
+    <button id="chestsBackBtn" class="btn btn-small">Retour</button>
+  </div>
+</div>
 
 <script>
 // ===================== NIVEAUX =====================
@@ -2320,12 +2343,14 @@ const Game = {
     Creator.init();
     Auth.init();
     Save.load();
+    Chests.init();
     document.getElementById('resumeBtn').addEventListener('click', () => {
       if (this.state === GameState.MULTI) Versus.togglePause(); else this.togglePause();
     });
     document.getElementById('pauseShopBtn').addEventListener('click', () => this.openShop('pause'));
     document.getElementById('pauseQuitBtn').addEventListener('click', () => {
       if (this.state === GameState.MULTI) { Versus.quit(); return; }
+      if (typeof Coop !== 'undefined' && Coop.active) { Coop.quit(); return; }
       this.goToMenu();
     });
     document.getElementById('nextLevelBtn').addEventListener('click', () => this.openShop('level'));
@@ -2361,7 +2386,7 @@ const Game = {
 
   start(levelIndex = 0) {
     if (typeof levelIndex !== 'number') levelIndex = 0;
-    levelIndex = Utils.clamp(levelIndex, 0, Math.min(this.unlockedLevel, LEVELS.length - 1));
+    levelIndex = Utils.clamp(levelIndex, 0, Coop.active ? LEVELS.length - 1 : Math.min(this.unlockedLevel, LEVELS.length - 1));
     initAudio();
     audioCtx.resume();
     stopMusic();
@@ -2675,6 +2700,10 @@ const Game = {
   },
 
   goToMenu() {
+    if (typeof Coop !== 'undefined' && Coop.active) {
+      Coop.active = false; Coop.peer = null;
+      if (typeof Versus !== 'undefined') { Versus.send({ t: 'bye' }); Versus.disconnect(); }
+    }
     stopMusic();
     this.state = GameState.MENU;
     this.boss = null; this.enemies = []; this.bullets = []; this.enemyBullets = []; this.powerUps = [];
@@ -2712,6 +2741,7 @@ const Game = {
     const mix = this.currentLevelData.enemyMix;
     const make = (x, y) => {
       const e = new Enemy(x, y, this.level, this.wave, mix);
+      if (typeof Coop !== 'undefined' && Coop.active && Versus.isHost) e.netId = Coop.nextEnemyId++;
       if (this.hasMod('speed')) e.speed *= 1.3;
       if (this.hasMod('elite') && Math.random() < 0.25) { e.elite = true; e.health = e.health * 2 + 1; e.maxHealth = e.health; }
       this.enemies.push(e);
@@ -2881,13 +2911,16 @@ const Game = {
     // Combo timer
     if (this.comboTimer > 0) { this.comboTimer -= dt; if (this.comboTimer <= 0) this.combo = 0; }
 
-    // Power-up timers
-    if (this.powerUp.rapid > 0) this.powerUp.rapid -= dt;
-    if (this.powerUp.shield > 0) this.powerUp.shield -= dt;
-    if (this.powerUp.multi > 0) this.powerUp.multi -= dt;
+    // Les durées des bonus sont gelées pendant la transition entre deux vagues.
+    if (this.state !== GameState.WAVE_BREAK) {
+      if (this.powerUp.rapid > 0) this.powerUp.rapid = Math.max(0, this.powerUp.rapid - dt);
+      if (this.powerUp.shield > 0) this.powerUp.shield = Math.max(0, this.powerUp.shield - dt);
+      if (this.powerUp.multi > 0) this.powerUp.multi = Math.max(0, this.powerUp.multi - dt);
+    }
 
     // WAVE BREAK
     if (this.state === GameState.WAVE_BREAK) {
+      if (Coop.active && !Versus.isHost) { this.particles.update(dt); Input.endFrame(); return; }
       this.waveBreakTimer -= dt;
       if (this.waveBreakTimer <= 0) {
         // FIX: Don't spawn another boss if level is completing
@@ -2908,7 +2941,7 @@ const Game = {
 
     // BOSS FIGHT
     if (this.state === GameState.BOSS_FIGHT) {
-      this.boss.update(dt, this.width, this.player, this);
+      if (!Coop.active || Versus.isHost) this.boss.update(dt, this.width, this.player, this);
       if (this.state === GameState.GAME_OVER) return;
 
       // Boss death sequence
@@ -2935,7 +2968,7 @@ const Game = {
       }
 
       // Boss collision with player
-      if (this.updateEnemies(dt)) return;
+      if ((!Coop.active || Versus.isHost) && this.updateEnemies(dt)) return;
       if (this.updateHazards(dt)) return;
       if (this.boss.touches(this.player.getBounds())) {
         if (this.player.hit()) {
@@ -2975,7 +3008,7 @@ const Game = {
 
     // Spawn enemies
     const enemiesThisWave = this.currentLevelData.enemiesPerWave + (this.wave - 1) * this.currentLevelData.waveIncrement;
-    if (this.enemiesSpawned < enemiesThisWave) {
+    if ((!Coop.active || Versus.isHost) && this.enemiesSpawned < enemiesThisWave) {
       this.spawnTimer -= dt;
       const spawnInterval = Math.max(CONFIG.enemy.minSpawnInterval, this.currentLevelData.spawnInterval - this.wave * CONFIG.enemy.spawnDecrease);
       if (this.spawnTimer <= 0) {
@@ -2985,7 +3018,7 @@ const Game = {
     }
 
     // Update enemies + événements du niveau
-    if (this.updateEnemies(dt)) return;
+    if ((!Coop.active || Versus.isHost) && this.updateEnemies(dt)) return;
     if (this.updateHazards(dt)) return;
 
     // Update player bullets
@@ -2996,7 +3029,7 @@ const Game = {
     this.updatePowerUps(dt);
 
     // Check wave complete
-    if (this.enemiesSpawned >= enemiesThisWave && this.enemies.length === 0) {
+    if ((!Coop.active || Versus.isHost) && this.enemiesSpawned >= enemiesThisWave && this.enemies.length === 0) {
       this.state = GameState.WAVE_BREAK;
       this.waveBreakTimer = CONFIG.wave.breakTime || 3.0;
       this.wave++;
@@ -3053,6 +3086,11 @@ const Game = {
       if (bullet.isOffScreen(this.height)) { this.bullets.splice(i, 1); continue; }
       if (this.applyGravity(bullet, dt) || this.hazardBulletHit(bullet)) { this.bullets.splice(i, 1); continue; }
 
+      // Boss partagé : le client invité transmet les dégâts au navigateur hôte, seul arbitre.
+      if (Coop.active && !Versus.isHost && this.boss && this.boss.phase === 1) {
+        Versus.send({ t: 'coop-boss-hit', x: bullet.x, y: bullet.y, radius: bullet.radius || CONFIG.bullet.radius, damage: this.player.bulletDamage });
+        this.bullets.splice(i, 1); continue;
+      }
       // Boss : chaque type a sa faiblesse
       if (this.boss && this.boss.phase === 1) {
         const res = this.boss.takeBullet(bullet, this.player.bulletDamage, this);
@@ -3073,6 +3111,11 @@ const Game = {
         const dx = bullet.x - (eb.x + eb.w / 2);
         const dy = bullet.y - (eb.y + eb.h / 2);
         if (Math.abs(dx) < eb.w / 2 && Math.abs(dy) < eb.h / 2) {
+          if (Coop.active && !Versus.isHost) {
+            Coop.requestEnemyHit(enemy.netId, this.player.bulletDamage);
+            this.bullets.splice(i, 1);
+            break;
+          }
           const killed = enemy.hit(this.player.bulletDamage);
           this.particles.emit(bullet.x, bullet.y, 5, { speedMin: 50, speedMax: 150, lifeMin: 0.2, lifeMax: 0.4, color: enemy.color, sizeMin: 1, sizeMax: 3 });
           if (killed) {
@@ -3156,6 +3199,7 @@ const Game = {
       pu.update(dt);
       if (pu.y > this.height + 30) { this.powerUps.splice(i, 1); continue; }
       if (this.checkCollision(pu.getBounds(), this.player.getBounds())) {
+        if (Coop.active && !Versus.isHost && pu.netId != null) Versus.send({ t: 'coop-pickup', id: pu.netId });
         const duration = 8;
         if (pu.type === 'rapid') this.powerUp.rapid = duration;
         else if (pu.type === 'shield') this.powerUp.shield = duration;
@@ -3440,6 +3484,10 @@ const Game = {
       Input.endFrame();
     }
 
+    if (typeof Coop !== 'undefined' && Coop.active) {
+      Coop.tick(dt);
+      if (this.state !== GameState.MULTI && this.state !== GameState.MENU) Coop.drawPartner(this.ctx);
+    }
     requestAnimationFrame((t) => this.loop(t));
   },
 };
@@ -3717,6 +3765,42 @@ const HazardMethods = {
 
 Object.assign(Game, HazardMethods);
 
+// ===================== COFFRES GRATUITS =====================
+const Chests = {
+  last6h: 0, last24h: 0, timer: null,
+  init() {
+    const add = (id, fn) => document.getElementById(id).addEventListener('click', fn);
+    add('chestsBtn', () => this.open());
+    add('chestsBackBtn', () => { document.getElementById('chestsScreen').classList.add('hidden'); Game.goToMenu(); });
+    add('chest6Open', () => this.claim(6));
+    add('chest24Open', () => this.claim(24));
+    this.timer = setInterval(() => this.render(), 1000);
+    this.render();
+  },
+  open() { Game.hideAllOverlays(); Game.state = GameState.MENU; document.getElementById('chestsScreen').classList.remove('hidden'); this.render(); },
+  ready(hours) { const last = hours === 6 ? this.last6h : this.last24h; return Date.now() - last >= hours * 3600000; },
+  remaining(hours) { return Math.max(0, hours * 3600000 - (Date.now() - (hours === 6 ? this.last6h : this.last24h))); },
+  fmt(ms) { const sec = Math.ceil(ms / 1000); return `${Math.floor(sec/3600)} h ${String(Math.floor(sec%3600/60)).padStart(2,'0')} min ${String(sec%60).padStart(2,'0')} s`; },
+  render() {
+    for (const h of [6,24]) {
+      const ready = this.ready(h), label = document.getElementById(`chest${h}Timer`), btn = document.getElementById(`chest${h}Open`);
+      if (!label || !btn) continue;
+      label.textContent = ready ? 'Disponible !' : `Disponible dans ${this.fmt(this.remaining(h))}`;
+      btn.disabled = !ready; btn.style.opacity = ready ? '1' : '.55';
+    }
+  },
+  claim(hours) {
+    if (!this.ready(hours)) return;
+    const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
+    const amount = Math.floor(Math.random() * (max - min + 1)) + min;
+    if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now();
+    Game.credits += amount; Save.save(); Game.renderShop?.(); this.render();
+    document.getElementById('chestMessage').textContent = `Coffre ouvert : +${amount} crédits !`;
+    document.getElementById('chestMessage').className = 'mp-status ok';
+    playPurchase();
+  }
+};
+
 // ===================== SAUVEGARDE =====================
 const Save = {
   timer: null, applied: false,
@@ -3729,6 +3813,8 @@ const Save = {
       ownedUpgrades: Game.ownedUpgrades,
       unlockedLevel: Game.creator && Creator.backup ? Creator.backup.unlocked : Game.unlockedLevel,
       bestScores: Game.bestScores,
+      chestLast6h: Chests.last6h || 0,
+      chestLast24h: Chests.last24h || 0,
     };
   },
   save() {
@@ -3738,7 +3824,7 @@ const Save = {
       const data = this.snapshot();
       // Par la connexion au serveur (liée au compte connecté). Socket.IO garde le message si la connexion revient.
       if (Versus.socket) { Versus.socket.emit('save:set', data); return; }
-      fetch(this.url(), { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data) }).catch(() => {});
+      fetch(this.url(), { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain', 'X-Visitor-Id': Versus.localVid }, body: JSON.stringify(data) }).catch(() => {});
     }, 300);
   },
   // Repart de zéro puis applique la progression reçue (compte ou appareil)
@@ -3759,6 +3845,8 @@ const Save = {
       }
       Game.unlockedLevel = Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
       Game.bestScores = d.bestScores || {};
+      Chests.last6h = Number(d.chestLast6h) || 0;
+      Chests.last24h = Number(d.chestLast24h) || 0;
     }
     if (res && res.creator) Creator.enable(false); // le serveur décide si le mode créateur est actif
   },
@@ -3766,7 +3854,7 @@ const Save = {
   load() {
     setTimeout(() => {
       if (this.applied) return;
-      fetch(this.url(), { credentials: 'omit' }).then(r => r.json()).then((res) => {
+      fetch(this.url(), { credentials: 'omit', headers: { 'X-Visitor-Id': Versus.localVid } }).then(r => r.json()).then((res) => {
         if (!this.applied && res && res.ok) this.apply(res);
       }).catch(() => {});
     }, 7000);
@@ -3983,19 +4071,33 @@ const VERSUS_MODES = {
   gravity:   { label: 'Trou noir',   desc: 'Un trou noir au centre attire les vaisseaux et courbe les balles. Vise en courbe.' },
   chaos:     { label: 'Chaos',       desc: 'Un bonus toutes les 3 secondes, avec soins et balles géantes.' },
   sudden:    { label: 'Mort subite', desc: 'Une seule manche, avec très peu de vie. Pas droit à l\'erreur.' },
+  coop:      { label: 'Campagne coop', desc: 'Campagne complète en duo : mêmes ennemis, mêmes vagues et progression partagée.' },
 };
 const EMOTES = ['GG', 'Bien joué', 'Oups', 'Ha ha', 'À toi'];
 
 const Versus = {
   PREFIX: 'neonstrike-duel-v1-',
   mode: 'classic', seed: 1, fightT: 0, inviteTarget: null, oppPseudo: '',
-  localVid: (window.__vid || Math.random().toString(36).slice(2, 12)), bubbles: {}, emoteCd: 0, rockPts: [],
+  localVid: (function () {
+    // Identifiant propre à ce navigateur : évite que des joueurs différents partagent
+    // la même identité « local-x » et récupèrent la session d'un autre joueur.
+    try {
+      let id = localStorage.getItem('neon-strike-visitor-v1');
+      if (!id) {
+        id = 'v_' + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+        localStorage.setItem('neon-strike-visitor-v1', id);
+      }
+      return id;
+    } catch (_) {
+      return 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+  })(), bubbles: {}, emoteCd: 0, rockPts: [],
   socket: null, isHost: false, code: '', fair: false,
   connected: false, paused: false,
   phase: 'idle', phaseTimer: 0, round: 1, myWins: 0, oppWins: 0, winsNeeded: 2,
   me: null, hp: 0, maxHp: 0, dead: false, damage: 1,
   oppShip: null, opp: null,
-  myBullets: [], oppBullets: [], powerUps: [], particles: null, texts: [],
+  myBullets: [], oppBullets: [], powerUps: [], oppPowerUps: [], particles: null, texts: [],
   powerUp: { rapid: 0, shield: 0, multi: 0 },
   bulletSeq: 0, sendTimer: 0, puTimer: 6, puSeq: 0, shake: 0, lastMsg: 0,
   rematchMe: false, rematchOpp: false, matchOver: false,
@@ -4012,7 +4114,10 @@ const Versus = {
     this.$('mpBackBtn').addEventListener('click', () => { this.inviteTarget = null; this.disconnect(); Game.goToMenu(); });
     const modeSel = this.$('mpMode');
     const showDesc = () => { this.$('mpModeDesc').textContent = VERSUS_MODES[modeSel.value].desc; };
-    modeSel.addEventListener('change', showDesc); showDesc();
+    modeSel.addEventListener('change', () => { showDesc(); this.$('coopLevelWrap').classList.toggle('hidden', modeSel.value !== 'coop'); });
+    const cls = this.$('coopLevelSelect');
+    LEVELS.forEach((lvl, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = `Niveau ${i + 1} — ${lvl.name}`; cls.appendChild(o); });
+    this.$('coopLevelWrap').classList.toggle('hidden', modeSel.value !== 'coop'); showDesc();
     const bar = this.$('emoteBar');
     EMOTES.forEach((t, i) => {
       const b = document.createElement('button');
@@ -4027,7 +4132,9 @@ const Versus = {
 
     // Lien d'invitation : ?duel=CODE
     const params = new URLSearchParams(location.search);
-    const code = (params.get('duel') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    const code = (params.get('duel') || params.get('coop') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    const linkMode = params.get('mode');
+    if (linkMode && VERSUS_MODES[linkMode]) this.$('mpMode').value = linkMode;
     if (code) {
       this.openLobby();
       this.$('mpCodeInput').value = code;
@@ -4162,6 +4269,7 @@ const Versus = {
     this.isHost = true;
     this.fair = this.$('mpFair').checked;
     this.mode = this.$('mpMode').value;
+    this.coopLevel = this.mode === 'coop' ? Math.max(0, Math.min(LEVELS.length - 1, Number(this.$('coopLevelSelect').value) || 0)) : 0;
     this.$('mpHostBtn').disabled = true;
     this.setStatus('Connexion au serveur<span class="mp-dots"></span>');
     this.ensureSocket().then((s) => {
@@ -4185,6 +4293,7 @@ const Versus = {
     this.disconnect();
     this.opp = null; this.oppShipId = null;
     this.isHost = false;
+    this.mode = this.$('mpMode').value;
     this.code = code;
     this.$('mpJoinBtn').disabled = true;
     this.setStatus(`Connexion à la partie ${code}<span class="mp-dots"></span>`);
@@ -4199,9 +4308,9 @@ const Versus = {
   onPeerJoined() {
     this.connected = true;
     this.lastMsg = performance.now();
-    this.setStatus('Adversaire connecté. Lancement du duel<span class="mp-dots"></span>', 'ok');
+    this.setStatus(this.mode === 'coop' ? 'Coéquipier connecté. Préparation de la mission…' : 'Adversaire connecté. Lancement du duel<span class="mp-dots"></span>', 'ok');
     this.inviteTarget = null;
-    this.send({ t: 'hello', ship: Game.equippedShip, name: Social.st && Social.st.profile ? Social.st.profile.name : '' });
+    this.send({ t: 'hello', ship: Game.equippedShip, mode: this.mode, level: this.coopLevel || 0, name: Social.st && Social.st.profile ? Social.st.profile.name : '' });
   },
 
   send(msg) {
@@ -4224,6 +4333,7 @@ const Versus = {
   },
 
   onDisconnect() {
+    if (typeof Coop !== 'undefined' && Coop.active) { Coop.active = false; Coop.peer = null; }
     const wasInMatch = Game.state === GameState.MULTI || !this.$('mpResultScreen').classList.contains('hidden');
     this.disconnect();
     if (wasInMatch) {
@@ -4248,7 +4358,7 @@ const Versus = {
   },
 
   copyInvite() {
-    const url = location.origin + location.pathname + '?duel=' + this.code;
+    const url = location.origin + location.pathname + '?duel=' + this.code + (this.mode === 'coop' ? '&mode=coop' : '');
     const done = () => this.setStatus('Lien copié. Envoie-le à ton ami<span class="mp-dots"></span>', 'ok');
     const fallback = () => {
       const ta = document.createElement('textarea');
@@ -4265,8 +4375,22 @@ const Versus = {
     if (!d || !d.t) return;
     this.lastMsg = performance.now();
     const W = Game.width, H = Game.height;
+    if (d.t === 'coop-state') { Coop.onMsg(d); return; }
+    if (d.t === 'coop-world') { Coop.applyWorld(d); return; }
+    if (d.t === 'coop-hit' && Versus.isHost) { Coop.applyHit(d.id, d.damage); return; }
+    if (d.t === 'coop-boss-hit' && Versus.isHost && Game.boss) { Game.boss.takeBullet({x:Number(d.x)||Game.boss.x,y:Number(d.y)||Game.boss.y,radius:Number(d.radius)||CONFIG.bullet.radius}, Math.max(1, Number(d.damage)||1), Game); return; }
+    if (d.t === 'coop-pickup' && Versus.isHost) { Game.powerUps = Game.powerUps.filter(p => p.netId !== d.id); return; }
     switch (d.t) {
       case 'hello':
+        if (this.mode === 'coop' || d.mode === 'coop') {
+          this.mode = 'coop';
+          if (this.isHost) {
+            const level = Math.max(0, Math.min(LEVELS.length - 1, Number(this.coopLevel) || 0));
+            this.send({ t: 'start', fair: false, mode: 'coop', seed: 1, level });
+            Coop.begin(level);
+          }
+          break;
+        }
         this.oppShipId = d.ship;
         this.oppPseudo = String(d.name || '').slice(0, 16);
         if (this.isHost) {
@@ -4276,6 +4400,7 @@ const Versus = {
         }
         break;
       case 'start':
+        if (d.mode === 'coop') { this.mode = 'coop'; Coop.begin(Math.max(0, Math.min(LEVELS.length - 1, Number(d.level) || 0))); break; }
         this.fair = !!d.fair;
         this.mode = VERSUS_MODES[d.mode] ? d.mode : 'classic';
         this.seed = d.seed || 1;
@@ -4299,6 +4424,7 @@ const Versus = {
         this.opp.hp = d.hp;
         this.opp.shield = !!d.sh;
         this.opp.dead = !!d.dd;
+        this.oppPowerUps = Array.isArray(d.pus) ? d.pus.filter(p => p && ['rapid','shield','multi','giant'].includes(p.k)).slice(0, 20) : [];
         break;
       case 'f': // tirs de l'adversaire : mis en file, apparaissent au rythme du vaisseau affiché
         this.clockSample(d.ts);
@@ -4446,7 +4572,7 @@ const Versus = {
     this.phase = 'countdown';
     this.phaseTimer = 3;
     this.dead = false;
-    this.myBullets = []; this.oppBullets = []; this.powerUps = []; this.texts = [];
+    this.myBullets = []; this.oppBullets = []; this.powerUps = []; this.oppPowerUps = []; this.texts = [];
     this.pendingShots = []; this.snaps = [];
     this.particles.clear();
     this.powerUp = { rapid: 0, shield: 0, multi: 0, giant: 0 };
@@ -4695,7 +4821,7 @@ const Versus = {
     this.sendTimer -= dt;
     if (this.sendTimer <= 0) {
       this.sendTimer = 1 / 30;
-      this.send({ t: 's', ts: Math.round(performance.now()), x: +(this.me.x / W).toFixed(4), y: +(this.me.y / H).toFixed(4), tl: +this.me.tiltAngle.toFixed(3), hp: this.hp, sh: this.powerUp.shield > 0 ? 1 : 0, dd: this.dead ? 1 : 0 });
+      this.send({ t: 's', ts: Math.round(performance.now()), x: +(this.me.x / W).toFixed(4), y: +(this.me.y / H).toFixed(4), tl: +this.me.tiltAngle.toFixed(3), hp: this.hp, sh: this.powerUp.shield > 0 ? 1 : 0, dd: this.dead ? 1 : 0, pus: this.powerUps.slice(0,20).map(p => ({ k:p.type, x:+(p.x/W).toFixed(4), y:+(p.y/H).toFixed(4) })) });
     }
   },
 
@@ -4825,6 +4951,14 @@ const Versus = {
     this.drawArena(ctx);
     this.particles.draw(ctx);
     for (const pu of this.powerUps) pu.draw(ctx);
+    for (const pu of this.oppPowerUps) {
+      const colors = { rapid:'#ffdd00', shield:'#00ff88', multi:'#9d00ff', giant:'#ff6b35' };
+      const x = W * (1 - pu.x), y = H * (1 - pu.y), color = colors[pu.k] || '#00f0ff';
+      ctx.save(); ctx.translate(x,y); ctx.shadowBlur = 16; ctx.shadowColor = color; ctx.fillStyle = color; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#080816'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(({rapid:'R',shield:'S',multi:'M',giant:'G'})[pu.k] || '?',0,0); ctx.restore();
+    }
     for (const b of this.myBullets) b.draw(ctx);
     for (const b of this.oppBullets) b.draw(ctx);
 
@@ -4935,6 +5069,122 @@ const Versus = {
     if (this.powerUp.giant > 0) { Game.drawPowerUpBar(ctx, 'GÉANT', this.powerUp.giant / 8, '#ff6b35', y); y -= 16; }
     ctx.restore();
   },
+};
+
+// ===================== NIVEAUX EN ÉQUIPE (COOP EN LIGNE) =====================
+// Les deux joueurs jouent une mission de vagues en parallèle et voient la position du coéquipier.
+// Les vagues/ennemis sont simulés localement sur chaque navigateur; seules les positions sont synchronisées.
+const Coop = {
+  active: false, peer: null, sendClock: 0, lastPeerAt: 0, peerName: 'COÉQUIPIER',
+  nextEnemyId: 1, worldClock: 0, selectedLevel: 0, lastWorld: 0,
+  begin(level = 0) {
+    level = Math.max(0, Math.min(LEVELS.length - 1, Number(level) || 0));
+    if (this.active && Game.level === level) return;
+    this.active = true; this.peer = null; this.sendClock = 0; this.worldClock = 0;
+    this.nextEnemyId = 1; this.selectedLevel = level; this.lastPeerAt = performance.now();
+    Game.hideAllOverlays();
+    Game.start(level);
+    this.toast('CAMPAGNE COOP — ARÈNE PARTAGÉE');
+  },
+  toast(message) {},
+  onMsg(d) {
+    this.peer = d;
+    this.peerName = String(d.name || 'COÉQUIPIER').slice(0, 16);
+    this.lastPeerAt = performance.now();
+  },
+  requestEnemyHit(id, damage) {
+    if (id == null) return;
+    Versus.send({ t: 'coop-hit', id, damage: Math.max(1, Math.min(20, Number(damage) || 1)) });
+  },
+  applyHit(id, damage) {
+    const e = Game.enemies.find(x => x.netId === id);
+    if (!e || !this.active || !Versus.isHost) return;
+    const killed = e.hit(damage);
+    if (killed) {
+      const points = (e.type === 'tank' ? 30 : e.type === 'fast' ? 20 : e.type === 'splitter' ? 25 : e.type === 'shooter' ? 35 : 10) * (e.elite ? 2 : 1);
+      Game.addScore(points, e.x, e.y); Game.emitExplosion(e.x, e.y, e.color);
+      if (e.type === 'splitter') for (let k = 0; k < 2; k++) {
+        const mini = new Enemy(e.x + (k ? 15 : -15), e.y, Game.level, Game.wave, { normal: 1 });
+        mini.type = 'fast'; mini.color = '#ffdd00'; mini.size = 20; mini.health = 1; mini.maxHealth = 1; mini.speed = e.speed * 1.3; mini.zigzagAmp = 50; mini.netId = this.nextEnemyId++; Game.enemies.push(mini);
+      }
+      Game.enemies = Game.enemies.filter(x => x !== e); Game.enemiesKilled++; playExplosion();
+      if (Math.random() < (e.elite ? 1 : 0.12)) Game.powerUps.push(new PowerUp(e.x, e.y, ['rapid','shield','multi'][Math.floor(Math.random()*3)]));
+    }
+  },
+  applyWorld(d) {
+    if (!this.active || Versus.isHost || !d) return;
+    this.lastWorld = performance.now();
+    Game.level = Math.max(0, Math.min(LEVELS.length - 1, Number(d.level) || 0));
+    Game.currentLevelData = LEVELS[Game.level];
+    Game.wave = Math.max(1, Number(d.wave) || 1);
+    Game.enemiesSpawned = Number(d.enemiesSpawned) || 0;
+    Game.enemiesKilled = Number(d.enemiesKilled) || 0;
+    Game.spawnTimer = Number(d.spawnTimer) || 0;
+    Game.waveBreakTimer = Number(d.waveBreakTimer) || 0;
+    Game.levelCompleting = !!d.levelCompleting;
+    const wanted = Array.isArray(d.enemies) ? d.enemies.slice(0, 100) : [];
+    const byId = new Map(Game.enemies.map(e => [e.netId, e]));
+    Game.enemies = wanted.map(o => {
+      let e = byId.get(o.id);
+      if (!e) e = new Enemy(o.x, o.y, Game.level, Game.wave, { normal: 1 });
+      Object.assign(e, o, { netId: o.id }); return e;
+    });
+    Game.enemyBullets = (Array.isArray(d.enemyBullets) ? d.enemyBullets : []).slice(0, 150).map(o => {
+      const b = new Bullet(o.x, o.y, o.vx, o.vy, false, o.color || '#ff3d7f');
+      Object.assign(b, o); return b;
+    });
+    const oldPowerUps = new Map(Game.powerUps.map(p => [p.netId, p]));
+    Game.powerUps = (Array.isArray(d.powerUps) ? d.powerUps : []).slice(0, 30).map(o => {
+      const p = oldPowerUps.get(o.id) || new PowerUp(o.x, o.y, o.type);
+      Object.assign(p, o, { netId: o.id }); return p;
+    });
+    const nextState = d.state;
+    if ([GameState.PLAYING, GameState.WAVE_BREAK, GameState.BOSS_FIGHT, GameState.LEVEL_COMPLETE].includes(nextState)) Game.state = nextState;
+    if (nextState === GameState.GAME_OVER && Game.state !== GameState.GAME_OVER) Game.gameOver();
+    if (nextState === GameState.LEVEL_COMPLETE && document.getElementById('levelCompleteScreen').classList.contains('hidden')) {
+      document.getElementById('levelCompleteTitle').textContent = 'MISSION COOP TERMINÉE';
+      document.getElementById('levelCompleteScore').textContent = `Score équipe : ${Game.score}`;
+      document.getElementById('levelCompleteText').textContent = `Niveau ${Game.level + 1} terminé ensemble`;
+      document.getElementById('levelCompleteScreen').classList.remove('hidden'); document.getElementById('levelCompleteScreen').classList.add('active');
+    }
+    if (d.boss && !Game.boss) Game.boss = new Boss(Game.level, Game.width);
+    if (d.boss && Game.boss) Object.assign(Game.boss, d.boss);
+    if (!d.boss) Game.boss = null;
+  },
+  makeWorld() {
+    return {
+      t: 'coop-world', level: Game.level, wave: Game.wave, state: Game.state,
+      enemiesSpawned: Game.enemiesSpawned, enemiesKilled: Game.enemiesKilled,
+      spawnTimer: Game.spawnTimer, waveBreakTimer: Game.waveBreakTimer, levelCompleting: Game.levelCompleting,
+      enemies: Game.enemies.map(e => ({ id: e.netId || (e.netId = this.nextEnemyId++), x:e.x,y:e.y,baseX:e.baseX,w:e.w,h:e.h,health:e.health,maxHealth:e.maxHealth,speed:e.speed,fireTimer:e.fireTimer,fireRate:e.fireRate,zigzagPhase:e.zigzagPhase,zigzagSpeed:e.zigzagSpeed,zigzagAmp:e.zigzagAmp,rotation:e.rotation,type:e.type,color:e.color,size:e.size,elite:!!e.elite,level:e.level,wave:e.wave })),
+      enemyBullets: Game.enemyBullets.map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,radius:b.radius,age:b.age,homing:b.homing,split:b.split})),
+      powerUps: Game.powerUps.map(p => ({id:p.netId || (p.netId = this.nextEnemyId++),x:p.x,y:p.y,type:p.type,vy:p.vy,size:p.size,rotation:p.rotation,bobPhase:p.bobPhase,color:p.color})),
+      boss: Game.boss ? { x:Game.boss.x,y:Game.boss.y,hp:Game.boss.hp,health:Game.boss.health,maxHealth:Game.boss.maxHealth,phase:Game.boss.phase,rotation:Game.boss.rotation,fire:Game.boss.fire,cycle:Game.boss.cycle, color:Game.boss.color } : null
+    };
+  },
+  tick(dt) {
+    if (!this.active || !Versus.socket || !Versus.socket.connected || !Versus.connected) return;
+    this.sendClock += dt;
+    if (this.sendClock >= 0.08) {
+      this.sendClock = 0;
+      const p = Game.player;
+      Versus.send({ t:'coop-state', x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', hp:p?p.lives:0 });
+    }
+    if (Versus.isHost) {
+      this.worldClock += dt;
+      if (this.worldClock >= 0.08) { this.worldClock = 0; Versus.send(this.makeWorld()); }
+    }
+    if (this.peer && performance.now() - this.lastPeerAt > 6000) this.peer = null;
+  },
+  drawPartner(ctx) {
+    if (!this.active) return;
+    const W=Game.width,H=Game.height; ctx.save(); ctx.textAlign='center'; ctx.font='bold 10px "JetBrains Mono", monospace'; ctx.fillStyle='#00ff88'; ctx.shadowBlur=8; ctx.shadowColor='#00ff88'; ctx.fillText(`CAMPAGNE COOP • NIVEAU ${Game.level+1} • VAGUE ${Game.wave}`,W/2,18); ctx.shadowBlur=0;
+    const q=this.peer;
+    if (!q || performance.now()-this.lastPeerAt>6000) { ctx.fillStyle='#ffdd00';ctx.font='9px "JetBrains Mono", monospace';ctx.fillText('RECONNEXION DU COÉQUIPIER…',W/2,34);ctx.restore();return; }
+    const x=Utils.clamp((Number(q.x)||.5)*W,18,W-18), y=Utils.clamp((Number(q.y)||.25)*H,55,H-45), color=/^#[0-9a-f]{6}$/i.test(q.color||'')?q.color:'#00ff88';
+    ctx.save();ctx.translate(x,y);ctx.globalAlpha=q.alive?.95:.35;ctx.shadowBlur=14;ctx.shadowColor=color;ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(0,-15);ctx.lineTo(12,10);ctx.lineTo(0,5);ctx.lineTo(-12,10);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();ctx.fillStyle=color;ctx.font='bold 9px "JetBrains Mono", monospace';ctx.fillText(this.peerName.toUpperCase(),x,y+25);ctx.fillStyle='rgba(255,255,255,.72)';ctx.font='8px "JetBrains Mono", monospace';ctx.fillText(`VAGUE ${q.wave||1}`,x,y+37);ctx.restore();
+  },
+  quit() { if (!this.active) return; this.active=false; this.peer=null; Versus.send({t:'bye'}); Versus.disconnect(); Game.goToMenu(); }
 };
 
 // ===================== AMIS & CLAVARDAGE =====================
