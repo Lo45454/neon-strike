@@ -194,6 +194,8 @@ app.post('/api/save', express.text({ type: '*/*', limit: '20kb' }), (req, res) =
   let data = null;
   try { data = JSON.parse(req.body); } catch (e) { return res.status(400).json({ ok: false }); }
   const r = rec(visitor(req));
+  // Les privilèges développeur sont conservés côté serveur même si le client sauvegarde sa progression.
+  if (r.data && r.data.devAccount) { data.devAccount = true; data.unlockedLevel = 999; data.credits = 2147483647; }
   r.data = data; r.t = Date.now();
   persist();
   res.json({ ok: true });
@@ -247,14 +249,17 @@ app.get('/api/admin/dashboard', (req, res) => {
       equippedShip: data.equippedShip || 'default',
       bestScores: data.bestScores || {},
       online: liveSockets.length > 0, connections: liveSockets.length,
-      activity: liveSockets.length ? (inRoom ? 'En partie multijoueur' : 'Connecté au jeu') : 'Hors ligne',
+      activity: liveSockets.length ? (liveSockets.map(s => s.data.activity || (s.data.room ? 'En partie multijoueur' : 'Connecté au jeu')).join(' · ')) : 'Hors ligne',
+      location: liveSockets.map(s => s.data.location || (s.data.room ? 'Salle multijoueur' : 'Menu / activité inconnue')).join(' · '),
+      room: liveSockets.map(s => s.data.room || '').filter(Boolean).join(', '),
+      lastActivityAt: liveSockets.reduce((m,s)=>Math.max(m,s.data.lastActivityAt||0),0) || null,
       lastSave: r.t || null,
     };
   }).sort((a,b) => Number(b.online)-Number(a.online) || a.name.localeCompare(b.name));
   const guests = Object.entries(db.saves).filter(([id,r]) => !accIndex.has(id) && !r.claimedBy && r.data).map(([id,r]) => ({
     id, name: (r.profile && r.profile.name) || 'Invité', credits: Number((r.data||{}).credits)||0,
     level: Math.max(0, Number((r.data||{}).unlockedLevel)||0)+1,
-    online: !!(online.get(id) && online.get(id).size), activity: (online.get(id)&&online.get(id).size) ? 'Connecté au jeu' : 'Hors ligne',
+    online: !!(online.get(id) && online.get(id).size), activity: (online.get(id)&&online.get(id).size) ? [...(online.get(id)||[])].map(sid=>{const s=io.sockets.sockets.get(sid);return s?(s.data.activity||'Connecté au jeu'):''}).filter(Boolean).join(' · ') : 'Hors ligne', location: (online.get(id)&&online.get(id).size) ? [...(online.get(id)||[])].map(sid=>{const s=io.sockets.sockets.get(sid);return s?(s.data.location||'Menu / activité inconnue'):''}).filter(Boolean).join(' · ') : '—',
     ships: Array.isArray((r.data||{}).ownedShips) ? r.data.ownedShips : ['default'], lastSave:r.t||null,
   }));
   res.json({ ok:true, accounts, guests, onlineCount:[...online.values()].reduce((n,set)=>n+(set.size?1:0),0), totalAccounts:accounts.length });
@@ -285,6 +290,15 @@ app.post('/api/admin/announcement', express.json({limit:'4kb'}), (req,res) => {
   const text = String(req.body?.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g,'').trim().slice(0,1000);
   db.announcements = { text, updatedAt: Date.now() }; audit('announcement','admin','all',{text}); res.json({ok:true,announcement:db.announcements});
 });
+app.get('/api/admin/chats', (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const conversations = Object.entries(db.chats || {}).map(([key, messages]) => {
+    const [a,b] = key.split('|');
+    const profile = id => (rec(id).profile || {}).name || (accIndex.get(id)||{}).name || id;
+    return { key, a, b, names: [profile(a), profile(b)], messages: (Array.isArray(messages)?messages:[]).slice(-100).map(m=>({from:String(m.f||''),text:String(m.x||''),at:Number(m.t)||0})) };
+  }).sort((a,b)=>(b.messages.at(-1)?.at||0)-(a.messages.at(-1)?.at||0)).slice(0,200);
+  res.json({ok:true,conversations});
+});
 app.get('/api/admin/audit', (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
   res.json({ok:true, entries:(db.audit||[]).slice(0,200)});
@@ -294,7 +308,7 @@ app.post('/api/admin/ban/:id', express.json({limit:'2kb'}), (req,res) => {
   const id=String(req.params.id||'').slice(0,100), reason=String(req.body?.reason||'Modération').slice(0,200);
   if (!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
   db.bans=db.bans||{}; db.bans[id]={reason,at:Date.now()}; audit('ban','admin',id,{reason});
-  for(const sock of socketsOf(id)){sock.emit('account:banned',{reason});sock.disconnect(true);}
+  for(const sock of socketsOf(id)){sock.emit('account:banned',{reason}); setTimeout(()=>{ if(sock.connected) sock.disconnect(true); },250);}
   res.json({ok:true});
 });
 app.post('/api/admin/unban/:id', express.json({limit:'1kb'}), (req,res) => {
@@ -398,6 +412,7 @@ io.on('connection', (socket) => {
   socket.data.dev = dev;
   if (db.bans && db.bans[vid]) { socket.emit('account:banned',{reason:db.bans[vid].reason||'Compte suspendu'}); return socket.disconnect(true); }
   socket.data.room = null;
+  socket.data.activity = 'Connecté au jeu'; socket.data.location = 'Menu principal'; socket.data.lastActivityAt = Date.now();
   socket.data.chatTimes = [];
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
@@ -740,6 +755,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('m', (data) => {
+    if (data && typeof data === 'object') {
+      socket.data.lastActivityAt = Date.now();
+      if (data.t === 'hello' || data.t === 'start') { socket.data.activity = 'Préparation / lancement de partie'; socket.data.location = 'Salle multijoueur'; }
+      else if (data.t === 'coop-state') { socket.data.activity = data.alive ? 'En mission coop' : 'Éliminé en coop'; socket.data.location = `Coop · niveau ${(Number(data.level)||0)+1}, vague ${Number(data.wave)||1}`; }
+      else if (data.t === 'coop-world') { socket.data.activity = 'En mission coop'; socket.data.location = `Coop · niveau ${(Number(data.level)||0)+1}, vague ${Number(data.wave)||1}`; }
+      else if (data.t === 'bye') { socket.data.activity = 'Fin de partie'; socket.data.location = 'Menu / sortie de partie'; }
+      else if (data.t === 'ship') { socket.data.activity = 'Sélection de vaisseau'; }
+    }
     const room = rooms.get(socket.data.room);
     const peer = other(room, socket.id);
     if (peer) io.to(peer).emit('m', data);
