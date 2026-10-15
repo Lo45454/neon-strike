@@ -494,7 +494,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 }
 </style>
 </head>
-<body><div id="devAnnouncement" class="hidden" style="position:relative;z-index:20000;text-align:center;padding:10px 14px;background:linear-gradient(90deg,#10223b,#073144);border-bottom:1px solid #00f0ff;color:#fff;font-weight:700;white-space:pre-wrap"></div>
+<body>
 <canvas id="gameCanvas"></canvas>
 
 <div id="startScreen" class="overlay active">
@@ -725,7 +725,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       <button class="btn btn-small btn-pink" id="chatInviteBtn">Inviter</button>
     </div>
     <div id="chatLog" class="chat-log"></div>
-    <form id="chatForm" class="chat-form"><input id="chatInput" class="fr-input" maxlength="300" placeholder="Écris un message" autocomplete="off"><button class="btn btn-small btn-green" type="submit">Envoyer</button><button id="chatPayBtn" class="btn btn-small btn-yellow" type="button" title="Envoyer des crédits">💸 Crédits</button></form>
+    <form id="chatForm" class="chat-form"><input id="chatInput" class="fr-input" maxlength="300" placeholder="Écris un message" autocomplete="off"><button class="btn btn-small btn-green" type="submit">Envoyer</button></form>
   </div>
 </div>
 
@@ -798,7 +798,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       <div style="text-align:center;max-width:520px;width:100%">
         <p id="chestRevealTitle" class="shop-section-title">COFFRE NEON</p>
         <p style="color:rgba(255,255,255,.7)">Clique sur le coffre pour l’ouvrir !</p>
-        <button id="chestBigButton" type="button" aria-label="Ouvrir le coffre" style="touch-action:manipulation;position:relative;z-index:10030;pointer-events:auto;display:block;margin:20px auto;background:transparent;border:0;cursor:pointer;font-size:clamp(100px,24vw,180px);filter:drop-shadow(0 0 24px #ffdd00);animation:chestFloat 1.5s ease-in-out infinite">🧰</button>
+        <button id="chestBigButton" aria-label="Ouvrir le coffre" style="display:block;margin:20px auto;background:transparent;border:0;cursor:pointer;font-size:clamp(100px,24vw,180px);filter:drop-shadow(0 0 24px #ffdd00);animation:chestFloat 1.5s ease-in-out infinite">🧰</button>
         <p id="chestRevealHint" class="final-wave">Touchez le coffre pour révéler votre récompense</p>
         <button id="chestRevealBack" class="btn btn-small">Annuler</button>
       </div>
@@ -2325,6 +2325,7 @@ const Game = {
   levelCompleting: false,
 
   // Shop state
+  devTest: false,
   ownedShips: ['default'],
   equippedShip: 'default',
   ownedUpgrades: [],
@@ -2338,7 +2339,6 @@ const Game = {
   levelStartScore: 0,
   lastStartLevel: 0,
   creator: false,
-  devAccount: false,
 
   init() {
     this.canvas = document.getElementById('gameCanvas');
@@ -2573,7 +2573,7 @@ const Game = {
       let status = '';
       if (equipped) status = '<span class="shop-item-status equipped">Équipé</span>';
       else if (owned) status = `<span class="shop-item-status owned" style="cursor:pointer;">Équiper</span>`;
-      else status = `<span class="shop-item-price">${ship.price.toLocaleString('fr-CA')} crédits</span>` + (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount ? `<span class="shop-item-missing">Niveau ${ship.unlockLevel + 1} requis</span>` : (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(ship.price - this.credits)} crédits</span>`));
+      else status = `<span class="shop-item-price">${ship.price.toLocaleString('fr-CA')} crédits</span>` + (ship.unlockLevel && (!this.devTest && this.unlockedLevel < ship.unlockLevel) ? `<span class="shop-item-missing">Niveau ${ship.unlockLevel + 1} requis</span>` : (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(ship.price - this.credits)} crédits</span>`));
 
       item.classList.add('ship-item');
       item.innerHTML = `
@@ -2586,7 +2586,7 @@ const Game = {
       `;
       this.drawShipPreview(item.querySelector('canvas'), {...ship, color:this.shipColors[ship.id] || ship.color});
 
-      if (!equipped) { item.addEventListener('click', () => { if (!owned && ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount) return; this.buyOrEquipShip(ship.id); }); }
+      if (!equipped) { item.addEventListener('click', () => { if (!owned && ship.unlockLevel && !this.devTest && this.unlockedLevel < ship.unlockLevel) return; this.buyOrEquipShip(ship.id); }); }
 
       shipGrid.appendChild(item);
     }
@@ -2659,7 +2659,7 @@ const Game = {
       const price = this.priceOf(ship);
       if (this.credits < price) return;
       this.credits -= price;
-      if (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount) { this.credits += price; return; }
+      if (ship.unlockLevel && !this.devTest && this.unlockedLevel < ship.unlockLevel) { this.credits += price; return; }
       this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
       this.ownedShips.push(shipId);
       this.equippedShip = shipId; this.upgradeState = {}; this.ownedUpgrades = []; this.shipUpgradeStates[shipId] = {state:{},owned:[]};
@@ -2714,7 +2714,7 @@ const Game = {
     const grid = document.getElementById('levelGrid');
     grid.innerHTML = '';
     LEVELS.forEach((lvl, i) => {
-      const unlocked = i <= this.unlockedLevel;
+      const unlocked = this.devTest || i <= this.unlockedLevel;
       const card = document.createElement('button');
       card.className = 'level-card' + (unlocked ? '' : ' locked');
       card.style.setProperty('--lvl', lvl.accentColor);
@@ -3802,26 +3802,20 @@ Object.assign(Game, HazardMethods);
 
 // ===================== COFFRES GRATUITS =====================
 const Chests = {
-  last6h: 0, last24h: 0, timer: null, pendingHours: 0, opening: false, taps: 0, requiredTaps: 1, pendingReward: 0,
+  last6h: 0, last24h: 0, timer: null, pendingHours: 0, opening: false,
   init() {
     const add = (id, fn) => document.getElementById(id).addEventListener('click', fn);
     add('chestsBtn', () => this.open());
     add('chestsBackBtn', () => { document.getElementById('chestsScreen').classList.add('hidden'); Game.goToMenu(); });
     add('chest6Open', () => this.beginOpen(6));
     add('chest24Open', () => this.beginOpen(24));
-    const bigChest = document.getElementById('chestBigButton');
-    const openChest = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } this.reveal(); };
-    bigChest.addEventListener('click', openChest, {capture:true});
-    bigChest.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') openChest(e); }, {capture:true});
-    bigChest.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openChest(e); }, {capture:true});
+    add('chestBigButton', () => this.reveal());
     add('chestRevealBack', () => this.cancelReveal());
-    const payBtn = document.getElementById('chatPayBtn');
-    if (payBtn) payBtn.addEventListener('click', () => { const amount = Number(prompt('Combien de crédits veux-tu envoyer à cet ami ?')); if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) return; const input=document.getElementById('chatInput'); if (!input) return; input.value='/pay '+amount; const form=document.getElementById('chatForm'); if(form) form.requestSubmit(); });
     this.timer = setInterval(() => this.render(), 1000);
     this.render();
   },
   open() { Game.hideAllOverlays(); Game.state = GameState.MENU; document.getElementById('chestsScreen').classList.remove('hidden'); this.render(); },
-  ready(hours) { if (Game.devAccount) return true; const last = hours === 6 ? this.last6h : this.last24h; return Date.now() - last >= hours * 3600000; },
+  ready(hours) { if (Game.devTest) return true; const last = hours === 6 ? this.last6h : this.last24h; return Date.now() - last >= hours * 3600000; },
   remaining(hours) { return Math.max(0, hours * 3600000 - (Date.now() - (hours === 6 ? this.last6h : this.last24h))); },
   fmt(ms) { const sec = Math.ceil(ms / 1000); return `${Math.floor(sec/3600)} h ${String(Math.floor(sec%3600/60)).padStart(2,'0')} min ${String(sec%60).padStart(2,'0')} s`; },
   render() {
@@ -3834,14 +3828,11 @@ const Chests = {
   },
   beginOpen(hours) {
     if (!this.ready(hours) || this.opening) return;
-    this.pendingHours = hours; this.opening = true; this.taps = 0;
-    const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
-    this.pendingReward = Math.floor(Math.random() * (max - min + 1)) + min;
-    this.requiredTaps = Math.max(3, Math.min(12, 3 + Math.floor((this.pendingReward - min) / Math.max(1, (max-min)/9)))); 
+    this.pendingHours = hours; this.opening = true;
     const reveal = document.getElementById('chestReveal');
     reveal.classList.remove('hidden'); reveal.style.display = 'flex';
     document.getElementById('chestRevealTitle').textContent = hours === 6 ? 'COFFRE RAPIDE' : 'COFFRE QUOTIDIEN';
-    document.getElementById('chestRevealHint').textContent = `Tape ${this.requiredTaps} fois sur le coffre pour l’ouvrir (0/${this.requiredTaps})`;
+    document.getElementById('chestRevealHint').textContent = 'Clique sur le coffre pour révéler ta récompense';
     document.getElementById('chestBigButton').textContent = '🧰';
     document.getElementById('chestBigButton').disabled = false;
     document.getElementById('chestMessage').textContent = '';
@@ -3851,15 +3842,9 @@ const Chests = {
     if (!this.opening || !this.pendingHours) return;
     const hours = this.pendingHours;
     if (!this.ready(hours)) return this.cancelReveal();
-    this.taps++;
-    const chestBtn = document.getElementById('chestBigButton');
-    chestBtn.classList.remove('chest-open-anim'); void chestBtn.offsetWidth; chestBtn.classList.add('chest-open-anim');
-    chestBtn.style.transform = `scale(${this.taps >= this.requiredTaps ? 1.12 : 0.94 + Math.random()*0.12})`;
-    document.getElementById('chestRevealHint').textContent = this.taps >= this.requiredTaps ? 'Le coffre s’ouvre…' : `Encore ${this.requiredTaps-this.taps} tape(s) ! (${this.taps}/${this.requiredTaps})`;
-    if (this.taps < this.requiredTaps) return;
-    this.opening = false;
-    const amount = this.pendingReward;
-    if (!Game.devAccount) { if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now(); }
+    const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
+    const amount = Math.floor(Math.random() * (max - min + 1)) + min;
+    if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now();
     const chest = document.getElementById('chestBigButton');
     chest.disabled = true; chest.style.animation = 'none'; chest.textContent = '💥';
     chest.classList.remove('chest-open-anim'); void chest.offsetWidth; chest.classList.add('chest-open-anim');
@@ -3870,7 +3855,7 @@ const Chests = {
       el.style.setProperty('--dx',(Math.random()*520-260)+'px');el.style.setProperty('--dy',(Math.random()*420-210)+'px');
       document.body.appendChild(el);setTimeout(()=>el.remove(),1250);
     }
-    Game.credits = Game.devAccount ? 2147483647 : Game.credits + amount; Save.save(); Game.renderShop?.(); this.render(); playPurchase();
+    Game.credits += amount; Save.save(); Game.renderShop?.(); this.render(); playPurchase();
     document.getElementById('chestRevealHint').textContent = `RÉCOMPENSE : +${amount} CRÉDITS`;
     document.getElementById('chestMessage').textContent = `Coffre ouvert : +${amount} crédits !`;
     document.getElementById('chestMessage').className = 'mp-status ok';
@@ -3885,6 +3870,7 @@ const Save = {
   snapshot() {
     return {
       credits: Game.credits,
+      devTest: !!Game.devTest,
       ownedShips: Game.creator && Creator.backup ? Creator.backup.ships : Game.ownedShips,
       equippedShip: Game.creator && Creator.backup && !Creator.backup.ships.includes(Game.equippedShip) ? 'default' : Game.equippedShip,
       ownedUpgrades: Game.ownedUpgrades,
@@ -3911,14 +3897,14 @@ const Save = {
   apply(res) {
     this.applied = true;
     clearTimeout(this.timer);
-    Game.creator = false; Creator.backup = null; Game.devAccount = false;
+    Game.creator = false; Creator.backup = null;
     Game.credits = 0; Game.ownedShips = ['default']; Game.equippedShip = 'default';
     Game.ownedUpgrades = []; Game.upgradeState = {}; Game.shipUpgradeStates = {}; Game.shipColors = {}; Game.unlockedLevel = 0; Game.bestScores = {};
     const d = res && res.data;
     if (d) {
-      Game.devAccount = !!d.devAccount;
-      Game.credits = d.devAccount ? 2147483647 : (d.credits | 0);
-      if (d.devAccount) { Game.unlockedLevel = LEVELS.length - 1; }
+      Game.credits = d.credits | 0;
+      Game.devTest = !!d.devTest;
+      if (Game.devTest) { Game.unlockedLevel = LEVELS.length - 1; Game.ownedShips = SHIPS.map(s => s.id); Chests.last6h = 0; Chests.last24h = 0; }
       Game.ownedShips = Array.isArray(d.ownedShips) && d.ownedShips.length ? d.ownedShips.filter(id => SHIPS.some(s => s.id === id)) : ['default'];
       if (!Game.ownedShips.includes('default')) Game.ownedShips.unshift('default');
       Game.equippedShip = Game.ownedShips.includes(d.equippedShip) ? d.equippedShip : 'default';
@@ -3929,10 +3915,11 @@ const Save = {
       Game.upgradeState = savedShip && savedShip.state ? {...savedShip.state} : (d.upgradeState || {});
       for (const upg of UPGRADES) if (activeOwned.includes(upg.id)) { Game.ownedUpgrades.push(upg.id); if (!savedShip) upg.apply(Game.upgradeState); }
       Game.shipUpgradeStates[Game.equippedShip] = {state:{...Game.upgradeState},owned:[...Game.ownedUpgrades]};
-      Game.unlockedLevel = d.devAccount ? LEVELS.length - 1 : Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
+      Game.unlockedLevel = Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
       Game.bestScores = d.bestScores || {};
-      Chests.last6h = d.devAccount ? 0 : (Number(d.chestLast6h) || 0);
-      Chests.last24h = d.devAccount ? 0 : (Number(d.chestLast24h) || 0);
+      Chests.last6h = Number(d.chestLast6h) || 0;
+      Chests.last24h = Number(d.chestLast24h) || 0;
+      if (Game.devTest) { Game.unlockedLevel = LEVELS.length - 1; Game.ownedShips = SHIPS.map(s => s.id); Chests.last6h = 0; Chests.last24h = 0; }
     }
     if (res && res.creator) Creator.enable(false); // le serveur décide si le mode créateur est actif
   },
@@ -4287,14 +4274,6 @@ const Versus = {
       reconnection: true,
     });
     s.on('m', (d) => this.onMsg(d));
-    s.on('account:banned', (d) => {
-      const reason = String(d && d.reason || 'Règles du jeu').slice(0,200);
-      this.connected = false; this.code = '';
-      const old = document.getElementById('banNotice'); if (old) old.remove();
-      const panel = document.createElement('div'); panel.id='banNotice'; panel.style.cssText='position:fixed;inset:0;z-index:999999;background:rgba(2,5,16,.97);display:flex;align-items:center;justify-content:center;padding:24px;color:#fff;font:16px system-ui';
-      panel.innerHTML='<div style="max-width:520px;text-align:center;border:1px solid #ff4f91;border-radius:18px;padding:28px;background:#101326;box-shadow:0 0 35px #ff006644"><div style="font-size:42px">⛔</div><h1 style="color:#ff6b9b">Compte banni</h1><p>Ton accès à NEON STRIKE a été suspendu.</p><p style="padding:14px;background:#080b18;border-radius:8px;white-space:pre-wrap"></p><button id="banClose" style="padding:10px 18px;cursor:pointer">Retour au menu</button></div>';
-      panel.querySelector('p[style]').textContent='Raison : '+reason; document.body.appendChild(panel); panel.querySelector('#banClose').onclick=()=>{panel.remove();Game.goToMenu()};
-    });
     s.on('admin:credits-updated', (d) => {
       if (!d || !Number.isFinite(Number(d.credits))) return;
       Game.credits = Math.max(0, Number(d.credits) | 0);
@@ -5923,7 +5902,5 @@ Game.init();
 })();
 
 
-</script><script>
-(async()=>{try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement');const j=await r.json();const el=document.getElementById('devAnnouncement');if(j.ok&&j.announcement&&j.announcement.text){el.textContent='📢 '+j.announcement.text;el.classList.remove('hidden')}}catch(e){}})();
 </script></body>
 </html>
