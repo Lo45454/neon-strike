@@ -474,7 +474,24 @@ body.in-duel .emote-bar { display: flex; }
 .acct-pass summary { cursor: pointer; color: var(--neon-cyan); margin-bottom: 0.5rem; }
 
 /* ---- Mobile (iPhone / Android) ---- */
-html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; width:100%; min-height:100%; }
+@media (max-width: 700px) {
+  .overlay { align-items:flex-start; overflow-y:auto; padding: max(.5rem,env(safe-area-inset-top)) .45rem max(.75rem,env(safe-area-inset-bottom)); }
+  .overlay-content { width:min(100%,560px); max-height:none; margin:auto; padding: .85rem .7rem; }
+  .game-title { font-size:clamp(1.8rem,8vw,3rem); line-height:1.05; }
+  .subtitle { margin:.35rem 0 .7rem; }
+  .btn-stack { gap:.45rem; }
+  .btn { width:100%; max-width:100%; min-height:44px; padding: .7rem .85rem; }
+  .mp-grid { grid-template-columns:1fr; }
+  .level-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .shop-grid { grid-template-columns:1fr; }
+  input,select,textarea { max-width:100%; font-size:16px; }
+}
+@media (max-height: 700px) and (max-width: 700px) {
+  .overlay-content { padding-top:.45rem; padding-bottom:.45rem; }
+  .game-title { font-size:clamp(1.55rem,7vw,2.2rem); }
+  .instructions p { margin:.25rem 0; }
+}
 #gameCanvas { touch-action: none; -webkit-user-select: none; user-select: none; }
 .overlay { -webkit-overflow-scrolling: touch; padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 .touch-pause {
@@ -516,10 +533,12 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <div class="btn-stack">
       <button class="btn" id="startBtn">Solo</button>
       <button class="btn btn-green" id="levelsBtn">Niveaux</button>
+      <button class="btn btn-green" id="coopLevelsBtn">Niveaux coop</button>
       <button class="btn btn-yellow" id="menuShopBtn">Boutique</button>
       <button class="btn btn-purple" id="chestsBtn">Coffres gratuits</button>
       <button class="btn btn-pink" id="multiBtn">Multijoueur</button>
       <button class="btn btn-purple" id="friendsBtn">Amis <span class="badge hidden" id="friendsBadge">0</span></button>
+      <button class="btn btn-small" id="feedbackBtn">Signaler un bug / suggérer</button>
     </div>
   </div>
 </div>
@@ -756,6 +775,9 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   </div>
 </div>
 
+<div id="coopLevelsScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content"><h1 class="game-title" style="color:var(--neon-green)">NIVEAUX COOP</h1><p class="subtitle">Choisis le niveau de la campagne coopérative en ligne.</p><label style="display:block;margin:1rem 0;color:var(--neon-green)">Niveau coop<br><select id="coopMenuLevelSelect" class="mp-select" aria-label="Niveau coop" style="margin-top:.5rem"></select></label><div class="btn-stack"><button class="btn btn-green" id="coopLevelsContinue">Continuer vers le multijoueur</button><button class="btn btn-small" id="coopLevelsBack">Retour</button></div></div></div>
+<div id="feedbackScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content"><h1 class="game-title" style="color:var(--neon-cyan)">AVIS DES JOUEURS</h1><p class="subtitle">Signale un bug ou propose une amélioration.</p><form id="feedbackForm"><select id="feedbackType" class="mp-select" required><option value="bug">Signaler un bug</option><option value="suggestion">Suggérer une amélioration</option></select><input id="feedbackTitle" class="mp-input" maxlength="90" placeholder="Titre (facultatif)" style="margin-top:.6rem;width:100%"><textarea id="feedbackMessage" class="mp-input" required maxlength="1500" rows="5" placeholder="Décris le bug ou ton idée..." style="margin-top:.6rem;width:100%;resize:vertical"></textarea><button class="btn btn-green" type="submit" style="margin-top:.6rem">Envoyer</button><p id="feedbackStatus" class="mp-status" aria-live="polite"></p></form><button class="btn btn-small" id="feedbackBack">Retour</button></div></div>
+
 <div id="creatorScreen" class="overlay hidden">
   <div class="overlay-bg"></div>
   <div class="overlay-content">
@@ -936,6 +958,10 @@ const SHIPS = [
   { id: 'nova', name: 'Nova', desc: 'Salves explosives', price: 9000, color: '#ff7ad9', speed: 330, fireRate: 0.22, bulletSpeed: 680, maxLives: 4, multishot: 2, bulletDamage: 3, unlockLevel: 5 },
   { id: 'vanguard', name: 'Avant-garde', desc: 'Blindage lourd et tirs puissants', price: 13500, color: '#a3ff12', speed: 285, fireRate: 0.20, bulletSpeed: 820, maxLives: 6, multishot: 1, bulletDamage: 3, unlockLevel: 7 },
   { id: 'eclipse', name: 'Éclipse', desc: 'Vaisseau d’élite polyvalent', price: 20000, color: '#b388ff', speed: 370, fireRate: 0.17, bulletSpeed: 900, maxLives: 5, multishot: 2, bulletDamage: 4, unlockLevel: 10 },
+  { id: 'comet', name: 'Comète', desc: 'Très rapide, tir concentré', price: 24500, color: '#ff9f43', speed: 445, fireRate: 0.25, bulletSpeed: 980, maxLives: 3, multishot: 0, bulletDamage: 5, unlockLevel: 12 },
+  { id: 'bulwark', name: 'Bastion', desc: 'Coque massive et solide', price: 28000, color: '#52ffa8', speed: 255, fireRate: 0.29, bulletSpeed: 720, maxLives: 8, multishot: 1, bulletDamage: 3, unlockLevel: 14 },
+  { id: 'arc', name: 'Arc', desc: 'Éventail de tirs multiples', price: 32000, color: '#ff4fd8', speed: 350, fireRate: 0.26, bulletSpeed: 800, maxLives: 4, multishot: 3, bulletDamage: 2, unlockLevel: 16 },
+  { id: 'wraith', name: 'Spectre-X', desc: 'Tirs précis et cadence élevée', price: 36500, color: '#7c83ff', speed: 385, fireRate: 0.145, bulletSpeed: 930, maxLives: 3, multishot: 1, bulletDamage: 4, unlockLevel: 18 },
 ];
 
 // ===================== AMÉLIORATIONS =====================
@@ -1316,6 +1342,10 @@ const SHIP_MODELS = {
     inner: [[0,-14],[10,4],[0,14],[-10,4]],
     engines: [[-8,16,5],[8,16,5]], guns: [[-23,-16],[-12,-12],[12,-12],[23,-16]], cockpit: [0,-2,4], spikes: true,
   },
+  comet: { hull:[[0,-29],[5,-8],[13,5],[9,18],[0,13],[-9,18],[-13,5],[-5,-8]], inner:[[0,-20],[4,2],[0,9],[-4,2]], engines:[[0,17,5]], guns:[[0,-24,3,12]], cockpit:[0,-4,3], longFlame:true, scope:true },
+  bulwark: { hull:[[-15,-17],[15,-17],[24,-7],[24,13],[15,22],[-15,22],[-24,13],[-24,-7]], inner:[[-11,-10],[11,-10],[15,6],[0,15],[-15,6]], engines:[[-12,20,7],[12,20,7]], guns:[[-13,-20,6,12],[13,-20,6,12]], plates:[[-22,-2,5,15],[17,-2,5,15]] },
+  arc: { hull:[[0,-23],[7,-8],[24,-15],[20,8],[11,15],[0,10],[-11,15],[-20,8],[-24,-15],[-7,-8]], inner:[[0,-14],[7,5],[0,9],[-7,5]], engines:[[-10,14,5],[0,17,5],[10,14,5]], guns:[[-20,-14],[0,-22,4,10],[20,-14]], cockpit:[0,-1,4], spikes:true },
+  wraith: { hull:[[0,-26],[4,-10],[15,-1],[10,17],[0,12],[-10,17],[-15,-1],[-4,-10]], inner:[[0,-18],[3,1],[0,8],[-3,1]], engines:[[-6,16,4],[6,16,4]], guns:[[-8,-19,3,12],[8,-19,3,12]], cockpit:[0,-4,3], scope:true },
 };
 
 function drawShipModel(ctx, id, color, flickerPhase = 0) {
@@ -1639,7 +1669,7 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = Math.round((48 + level * 19) * (level >= 5 ? 1.18 : 1));
+    this.maxHealth = Math.round(level < 5 ? (46 + level * 17) : (114 + (level - 4) * 29 + Math.pow(level - 4, 1.25) * 3));
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
     this.t = 0; this.rotation = 0;
@@ -1648,7 +1678,7 @@ class Boss {
     this.flash = 0;       // flash quand touché
     this.rage = false;
     this.rageText = 0;
-    this.diff = 1.18 + Math.min(level, 25) * 0.045; // difficulté qui monte doucement
+    this.diff = level < 5 ? (1.08 + level * 0.055) : (1.30 + Math.min(level - 4, 20) * 0.035); // premiers boss légèrement plus accessibles, progression renforcée dès le niveau 6
     this.st = {};         // état propre au type
     this.setup();
   }
@@ -1696,7 +1726,7 @@ class Boss {
       game.screenShake = 0.4; playBossSpawn();
     }
     const R = this.rage ? 0.7 : 1; // attaques plus rapides en rage
-    const speed = CONFIG.enemy.bulletSpeed * Math.min(1.35, this.diff);
+    const speed = CONFIG.enemy.bulletSpeed * Math.min(1.65, this.diff);
     const P = player;
     this['tick_' + this.type](dt, canvasW, P, game, R, speed);
     return false;
@@ -1777,7 +1807,7 @@ class Boss {
   // ---------- SERPENT ----------
   moveSerpent(dt, W) {
     const st = this.st;
-    const s = 0.55 * Math.min(1.3, this.diff);
+    const s = 0.55 * Math.min(1.5, this.diff);
     const px = this.x, py = this.y;
     this.x = W / 2 + Math.sin(this.t * s * 1.0) * (W / 2 - 50);
     this.y = 170 + Math.sin(this.t * s * 2.1) * 90;
@@ -2366,6 +2396,8 @@ const Game = {
     document.getElementById('startBtn').addEventListener('click', () => this.start(0));
     document.getElementById('restartBtn').addEventListener('click', () => this.start(this.lastStartLevel || 0));
     document.getElementById('levelsBtn').addEventListener('click', () => this.openLevels());
+    document.getElementById('coopLevelsBtn').addEventListener('click', () => { document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active')); document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden')); const sc=document.getElementById('coopLevelsScreen'); sc.classList.remove('hidden'); sc.classList.add('active'); });
+    document.getElementById('feedbackBtn').addEventListener('click', () => { document.querySelectorAll('.overlay').forEach(el => {el.classList.remove('active');el.classList.add('hidden')}); const sc=document.getElementById('feedbackScreen');sc.classList.remove('hidden');sc.classList.add('active'); });
     document.getElementById('menuShopBtn').addEventListener('click', () => this.openShop('menu'));
     document.getElementById('touchPause').addEventListener('click', (e) => {
       e.preventDefault();
@@ -2393,6 +2425,13 @@ const Game = {
     document.getElementById('multiBtn').addEventListener('click', () => Versus.openLobby());
     Versus.init();
     Social.init();
+    // Liste indépendante de niveaux coopératifs; la sélection est réutilisée dans le lobby.
+    const coopMenuSel = document.getElementById('coopMenuLevelSelect');
+    LEVELS.forEach((lvl,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=`Niveau ${i+1} — ${lvl.name}`;coopMenuSel.appendChild(o)});
+    document.getElementById('coopLevelsContinue').addEventListener('click',()=>{document.getElementById('coopLevelSelect').value=coopMenuSel.value;document.getElementById('mpMode').value='coop';document.getElementById('mpMode').dispatchEvent(new Event('change'));document.getElementById('coopLevelSelect').value=coopMenuSel.value;Versus.openLobby();});
+    document.getElementById('coopLevelsBack').addEventListener('click',()=>this.goToMenu());
+    document.getElementById('feedbackBack').addEventListener('click',()=>this.goToMenu());
+    document.getElementById('feedbackForm').addEventListener('submit',async(e)=>{e.preventDefault();const status=document.getElementById('feedbackStatus');status.textContent='Envoi…';try{const res=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:document.getElementById('feedbackType').value,title:document.getElementById('feedbackTitle').value,message:document.getElementById('feedbackMessage').value})});const j=await res.json();if(!res.ok||!j.ok)throw new Error(j.error||'Envoi impossible');status.textContent='Merci ! Ton message a été envoyé.';document.getElementById('feedbackTitle').value='';document.getElementById('feedbackMessage').value='';}catch(err){status.textContent='Impossible d’envoyer pour le moment. Réessaie plus tard.';}});
 
     this.lastTime = performance.now();
     requestAnimationFrame((t) => this.loop(t));
