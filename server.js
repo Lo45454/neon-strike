@@ -234,6 +234,18 @@ function adminAllowed(req) {
   const tok = req.headers['x-admin-token'] || '';
   return !!ADMIN_TOKEN && safeEqual(tok, ADMIN_TOKEN);
 }
+function adminResolvePlayer(input) {
+  const raw = String(input || '').trim();
+  if (!raw) return null;
+  if (accIndex.has(raw) || db.saves[raw]) return raw;
+  const wanted = nameKey(raw);
+  for (const [id, save] of Object.entries(db.saves)) {
+    const n = (save.profile && save.profile.name) || (accIndex.get(id) || {}).name || '';
+    if (nameKey(n) === wanted) return id;
+  }
+  for (const a of Object.values(db.accounts)) if (nameKey(a.name) === wanted) return a.id;
+  return null;
+}
 app.get('/api/admin/dashboard', (req, res) => {
   if (!adminAllowed(req)) return res.status(403).json({ ok: false, error: 'Accès refusé.' });
   const accounts = Object.values(db.accounts).map(a => {
@@ -267,8 +279,8 @@ app.get('/api/admin/dashboard', (req, res) => {
 });
 app.post('/api/admin/credits/:id', express.json({limit:'2kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const id = String(req.params.id || '').slice(0,100);
-  if (!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  const id = adminResolvePlayer(req.params.id);
+  if (!id) return res.status(404).json({ok:false,error:'Joueur introuvable. Vérifie le pseudo ou l’ID.'});
   const amount = Number(req.body && req.body.amount);
   if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1000000) return res.status(400).json({ok:false,error:'Montant invalide (entre -1 000 000 et 1 000 000, sans zéro).'});
   const r = rec(id); if (!r.data || typeof r.data !== 'object') r.data = {};
@@ -306,20 +318,20 @@ app.get('/api/admin/audit', (req,res) => {
 });
 app.post('/api/admin/ban/:id', express.json({limit:'2kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const id=String(req.params.id||'').slice(0,100), reason=String(req.body?.reason||'Modération').slice(0,200);
-  if (!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  const id=adminResolvePlayer(req.params.id), reason=String(req.body?.reason||'Modération').slice(0,200);
+  if (!id) return res.status(404).json({ok:false,error:'Joueur introuvable. Vérifie le pseudo ou l’ID.'});
   db.bans=db.bans||{}; db.bans[id]={reason,at:Date.now()}; audit('ban','admin',id,{reason});
   for(const sock of socketsOf(id)){sock.emit('account:banned',{reason}); setTimeout(()=>{ if(sock.connected) sock.disconnect(true); },250);}
   res.json({ok:true});
 });
 app.post('/api/admin/unban/:id', express.json({limit:'1kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const id=String(req.params.id||'').slice(0,100); if(db.bans) delete db.bans[id]; audit('unban','admin',id,{}); res.json({ok:true});
+  const id=adminResolvePlayer(req.params.id); if(!id) return res.status(404).json({ok:false,error:'Joueur introuvable. Vérifie le pseudo ou l’ID.'}); if(db.bans) delete db.bans[id]; audit('unban','admin',id,{}); res.json({ok:true});
 });
 app.post('/api/admin/grant-dev/:id', express.json({limit:'1kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const id=String(req.params.id||'').slice(0,100);
-  if(!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  const id=adminResolvePlayer(req.params.id);
+  if(!id) return res.status(404).json({ok:false,error:'Joueur introuvable. Vérifie le pseudo ou l’ID.'});
   const r=rec(id); r.data=r.data||{};
   r.data.credits=2147483647; r.data.unlockedLevel=999;
   r.data.ownedShips=["default", "speeder", "tanker", "multi", "sniper", "destroyer", "phantom", "nova", "vanguard", "eclipse"];
@@ -330,7 +342,8 @@ app.post('/api/admin/grant-dev/:id', express.json({limit:'1kb'}), (req,res) => {
 });
 app.post('/api/admin/friends/:id', express.json({limit:'2kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const id=String(req.params.id||'').slice(0,100), otherId=String(req.body?.otherId||'').slice(0,100);
+  const id=adminResolvePlayer(req.params.id), otherId=adminResolvePlayer(req.body?.otherId);
+  if(!id || !otherId) return res.status(404).json({ok:false,error:'Un des deux joueurs est introuvable. Vérifie les pseudos ou IDs.'});
   const a=rec(id), b=rec(otherId);
   if(!a.profile || !b.profile || id===otherId) return res.status(400).json({ok:false,error:'Les deux joueurs doivent avoir un profil distinct.'});
   a.friends=[...new Set([...(a.friends||[]),b.profile.code])]; b.friends=[...new Set([...(b.friends||[]),a.profile.code])];
