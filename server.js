@@ -47,7 +47,7 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {} };
+  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], announcements: { text: '', updatedAt: 0 } };
   if (!raw || typeof raw !== 'object') return base;
   if (raw.v === 2 || raw.v === 3) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
@@ -194,6 +194,9 @@ app.post('/api/save', express.text({ type: '*/*', limit: '20kb' }), (req, res) =
   let data = null;
   try { data = JSON.parse(req.body); } catch (e) { return res.status(400).json({ ok: false }); }
   const r = rec(visitor(req));
+  // Les privilèges développeur sont conservés côté serveur même si le client sauvegarde sa progression.
+  if (r.data && r.data.devAccount) { data.devAccount = true; data.unlockedLevel = 999; data.credits = 2147483647; }
+  if (r.data && (r.data.devAccount || r.data.devTest)) { data.devAccount = true; data.devTest = true; data.credits = 2147483647; data.unlockedLevel = 999; data.ownedShips = Array.from(new Set([...(Array.isArray(data.ownedShips)?data.ownedShips:[]), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse'])); data.ownedUpgrades = Array.from(new Set([...(Array.isArray(data.ownedUpgrades)?data.ownedUpgrades:[]), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])); data.chestLast6h=0; data.chestLast24h=0; data.chest6hAt=0; data.chest24hAt=0; }
   r.data = data; r.t = Date.now();
   persist();
   res.json({ ok: true });
@@ -244,62 +247,94 @@ app.get('/api/admin/dashboard', (req, res) => {
       credits: Number(data.credits) || 0,
       level: Math.max(0, Number(data.unlockedLevel) || 0) + 1,
       ships: Array.isArray(data.ownedShips) ? data.ownedShips : ['default'],
-      equippedShip: data.equippedShip || 'default', devTest: !!data.devTest,
+      equippedShip: data.equippedShip || 'default',
       bestScores: data.bestScores || {},
       online: liveSockets.length > 0, connections: liveSockets.length,
-      activity: liveSockets.length ? (inRoom ? 'En partie multijoueur' : 'Connecté au jeu') : 'Hors ligne',
+      activity: liveSockets.length ? (liveSockets.map(s => s.data.activity || (s.data.room ? 'En partie multijoueur' : 'Connecté au jeu')).join(' · ')) : 'Hors ligne',
+      location: liveSockets.map(s => s.data.location || (s.data.room ? 'Salle multijoueur' : 'Menu / activité inconnue')).join(' · '),
+      room: liveSockets.map(s => s.data.room || '').filter(Boolean).join(', '),
+      lastActivityAt: liveSockets.reduce((m,s)=>Math.max(m,s.data.lastActivityAt||0),0) || null,
       lastSave: r.t || null,
     };
   }).sort((a,b) => Number(b.online)-Number(a.online) || a.name.localeCompare(b.name));
   const guests = Object.entries(db.saves).filter(([id,r]) => !accIndex.has(id) && !r.claimedBy && r.data).map(([id,r]) => ({
     id, name: (r.profile && r.profile.name) || 'Invité', credits: Number((r.data||{}).credits)||0,
     level: Math.max(0, Number((r.data||{}).unlockedLevel)||0)+1,
-    online: !!(online.get(id) && online.get(id).size), activity: (online.get(id)&&online.get(id).size) ? 'Connecté au jeu' : 'Hors ligne',
-    ships: Array.isArray((r.data||{}).ownedShips) ? r.data.ownedShips : ['default'], devTest:!!(r.data||{}).devTest, lastSave:r.t||null,
+    online: !!(online.get(id) && online.get(id).size), activity: (online.get(id)&&online.get(id).size) ? [...(online.get(id)||[])].map(sid=>{const s=io.sockets.sockets.get(sid);return s?(s.data.activity||'Connecté au jeu'):''}).filter(Boolean).join(' · ') : 'Hors ligne', location: (online.get(id)&&online.get(id).size) ? [...(online.get(id)||[])].map(sid=>{const s=io.sockets.sockets.get(sid);return s?(s.data.location||'Menu / activité inconnue'):''}).filter(Boolean).join(' · ') : '—',
+    ships: Array.isArray((r.data||{}).ownedShips) ? r.data.ownedShips : ['default'], lastSave:r.t||null,
   }));
   res.json({ ok:true, accounts, guests, onlineCount:[...online.values()].reduce((n,set)=>n+(set.size?1:0),0), totalAccounts:accounts.length });
 });
-function resolveAdminTarget(raw) {
-  const target = String(raw || '').trim();
-  if (!target) return null;
-  if (accIndex.has(target) || db.saves[target]) return target;
-  const key = nameKey(target);
-  const account = db.accounts[key];
-  if (account && db.saves[account.id]) return account.id;
-  const matches = Object.entries(db.saves).filter(([id, r]) => nameKey((db.accounts[id] && db.accounts[id].name) || (r.profile && r.profile.name) || '') === key);
-  return matches.length === 1 ? matches[0][0] : null;
-}
-app.post('/api/admin/test/:target', express.json({limit:'2kb'}), (req,res) => {
-  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const id = resolveAdminTarget(decodeURIComponent(req.params.target));
-  if (!id) return res.status(404).json({ok:false,error:'Joueur introuvable ou pseudo ambigu. Utilise son ID.'});
-  const r = rec(id); if (!r.data || typeof r.data !== 'object') r.data = {};
-  const enabled = !!(req.body && req.body.enabled);
-  r.data.devTest = enabled;
-  if (enabled) {
-    r.data.credits = 2147483647;
-    r.data.unlockedLevel = 999;
-    r.data.ownedShips = ['default','scout','phantom','nova','vanguard','eclipse'];
-    r.data.chestLast6h = 0; r.data.chestLast24h = 0;
-    r.data.ownedUpgrades = Array.isArray(r.data.ownedUpgrades) ? r.data.ownedUpgrades : [];
-    r.data.shipUpgradeStates = r.data.shipUpgradeStates || {};
-  }
-  r.t = Date.now(); persist();
-  for (const socket of socketsOf(id)) socket.emit('admin:test-updated', {enabled});
-  res.json({ok:true,id,enabled});
-});
-
 app.post('/api/admin/credits/:id', express.json({limit:'2kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const id = resolveAdminTarget(decodeURIComponent(req.params.id));
-  if (!id) return res.status(404).json({ok:false,error:'Joueur introuvable ou pseudo ambigu. Utilise son ID.'});
+  const id = String(req.params.id || '').slice(0,100);
+  if (!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
   const amount = Number(req.body && req.body.amount);
   if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1000000) return res.status(400).json({ok:false,error:'Montant invalide (entre -1 000 000 et 1 000 000, sans zéro).'});
   const r = rec(id); if (!r.data || typeof r.data !== 'object') r.data = {};
   const current = Math.max(0, Number(r.data.credits)||0);
-  r.data.credits = Math.max(0, Math.min(2147483647, current + amount)); r.t=Date.now(); persist();
+  r.data.credits = Math.max(0, Math.min(2147483647, current + amount)); r.t=Date.now(); audit('credits','admin',id,{amount,balance:r.data.credits});
   for (const socket of socketsOf(id)) socket.emit('admin:credits-updated', { credits:r.data.credits });
   res.json({ok:true,credits:r.data.credits});
+});
+
+
+function audit(action, actor='admin', target='', detail={}) {
+  db.audit = Array.isArray(db.audit) ? db.audit : [];
+  db.audit.unshift({ id: crypto.randomBytes(6).toString('hex'), at: Date.now(), action, actor, target, detail });
+  if (db.audit.length > 500) db.audit.length = 500;
+  persist();
+}
+app.get('/api/announcement', (req,res) => res.json({ok:true, announcement: db.announcements || {text:'',updatedAt:0}}));
+app.post('/api/admin/announcement', express.json({limit:'4kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const text = String(req.body?.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g,'').trim().slice(0,1000);
+  db.announcements = { text, updatedAt: Date.now() }; audit('announcement','admin','all',{text}); res.json({ok:true,announcement:db.announcements});
+});
+app.get('/api/admin/chats', (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const conversations = Object.entries(db.chats || {}).map(([key, messages]) => {
+    const [a,b] = key.split('|');
+    const profile = id => (rec(id).profile || {}).name || (accIndex.get(id)||{}).name || id;
+    return { key, a, b, names: [profile(a), profile(b)], messages: (Array.isArray(messages)?messages:[]).slice(-100).map(m=>({from:String(m.f||''),text:String(m.x||''),at:Number(m.t)||0})) };
+  }).sort((a,b)=>(b.messages.at(-1)?.at||0)-(a.messages.at(-1)?.at||0)).slice(0,200);
+  res.json({ok:true,conversations});
+});
+app.get('/api/admin/audit', (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  res.json({ok:true, entries:(db.audit||[]).slice(0,200)});
+});
+app.post('/api/admin/ban/:id', express.json({limit:'2kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100), reason=String(req.body?.reason||'Modération').slice(0,200);
+  if (!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  db.bans=db.bans||{}; db.bans[id]={reason,at:Date.now()}; audit('ban','admin',id,{reason});
+  for(const sock of socketsOf(id)){sock.emit('account:banned',{reason}); setTimeout(()=>{ if(sock.connected) sock.disconnect(true); },250);}
+  res.json({ok:true});
+});
+app.post('/api/admin/unban/:id', express.json({limit:'1kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100); if(db.bans) delete db.bans[id]; audit('unban','admin',id,{}); res.json({ok:true});
+});
+app.post('/api/admin/grant-dev/:id', express.json({limit:'1kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100);
+  if(!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  const r=rec(id); r.data=r.data||{};
+  r.data.credits=2147483647; r.data.unlockedLevel=999;
+  r.data.ownedShips=["default", "speeder", "tanker", "multi", "sniper", "destroyer", "phantom", "nova", "vanguard", "eclipse"];
+  r.data.ownedUpgrades=["speed1", "fire1", "life1", "dmg1", "speed2", "fire2", "life2", "dmg2"];
+  r.data.devAccount=true; r.data.devTest=true; r.data.chestLast6h=0; r.data.chestLast24h=0; r.data.chest6hAt=0; r.data.chest24hAt=0; r.t=Date.now(); audit('dev-grant','admin',id,{credits:'max',level:999}); persist();
+  for(const sock of socketsOf(id)) sock.emit('admin:credits-updated',{credits:r.data.credits});
+  res.json({ok:true});
+});
+app.post('/api/admin/friends/:id', express.json({limit:'2kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100), otherId=String(req.body?.otherId||'').slice(0,100);
+  const a=rec(id), b=rec(otherId);
+  if(!a.profile || !b.profile || id===otherId) return res.status(400).json({ok:false,error:'Les deux joueurs doivent avoir un profil distinct.'});
+  a.friends=[...new Set([...(a.friends||[]),b.profile.code])]; b.friends=[...new Set([...(b.friends||[]),a.profile.code])];
+  audit('force-friend','admin',id,{otherId}); persist(); emitTo(id,'social',socialState(id)); emitTo(otherId,'social',socialState(otherId)); res.json({ok:true});
 });
 
 app.get('/health', (req, res) => res.json({ ok: true, rooms: rooms.size, players: io.engine.clientsCount }));
@@ -376,7 +411,9 @@ io.on('connection', (socket) => {
   }
   socket.data.vid = vid;
   socket.data.dev = dev;
+  if (db.bans && db.bans[vid]) { socket.emit('account:banned',{reason:db.bans[vid].reason||'Compte suspendu'}); return socket.disconnect(true); }
   socket.data.room = null;
+  socket.data.activity = 'Connecté au jeu'; socket.data.location = 'Menu principal'; socket.data.lastActivityAt = Date.now();
   socket.data.chatTimes = [];
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
@@ -625,6 +662,25 @@ io.on('connection', (socket) => {
   socket.on('chat:send', (d, ack) => {
     if (typeof ack !== 'function' || !d) return;
     const me = myRec(), code = cleanCode(d.to);
+    const rawText = String(d.text || '').trim();
+    const pay = rawText.match(/^\/pay\s+(\d+)$/i);
+    if (pay) {
+      const amount = Number(pay[1]), friendCode = code;
+      if (!me.profile || !me.friends.includes(friendCode)) return ack({ok:false,error:'Ajoute ce joueur comme ami avant de lui envoyer des crédits.'});
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) return ack({ok:false,error:'Montant invalide (1 à 1 000 000).'});
+      const targetId=codeIndex.get(friendCode); if(!targetId) return ack({ok:false,error:'Joueur introuvable.'});
+      const from=rec(vid), to=rec(targetId); from.data=from.data||{}; to.data=to.data||{};
+      const balance=Math.max(0,Number(from.data.credits)||0);
+      if(balance<amount) return ack({ok:false,error:'Tu n’as pas assez de crédits.'});
+      from.data.credits=balance-amount; to.data.credits=Math.min(2147483647,(Number(to.data.credits)||0)+amount);
+      from.t=to.t=Date.now(); audit('credit-transfer',myCode()||vid,targetId,{amount,from:vid,to:targetId});
+      const msg={f:me.profile.code,x:`💸 ${me.profile.name} t’a envoyé ${amount} crédits !`,t:Date.now()};
+      const key=chatKey(me.profile.code,friendCode); (db.chats[key]=db.chats[key]||[]).push(msg);
+      emitTo(targetId,'chat',{with:me.profile.code,name:me.profile.name,msg});
+      for(const ss of socketsOf(vid)) ss.emit('admin:credits-updated',{credits:from.data.credits});
+      for(const ss of socketsOf(targetId)) ss.emit('admin:credits-updated',{credits:to.data.credits});
+      persist(); return ack({ok:true,msg,transfer:{amount,balance:from.data.credits}});
+    }
     const text = String(d.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, 300);
     if (!me.profile || !me.friends.includes(code)) return ack({ ok: false, error: "Ce joueur n'est pas dans tes amis." });
     if (!text) return ack({ ok: false });
@@ -700,6 +756,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('m', (data) => {
+    if (data && typeof data === 'object') {
+      socket.data.lastActivityAt = Date.now();
+      if (data.t === 'hello' || data.t === 'start') { socket.data.activity = 'Préparation / lancement de partie'; socket.data.location = 'Salle multijoueur'; }
+      else if (data.t === 'coop-state') { socket.data.activity = data.alive ? 'En mission coop' : 'Éliminé en coop'; socket.data.location = `Coop · niveau ${(Number(data.level)||0)+1}, vague ${Number(data.wave)||1}`; }
+      else if (data.t === 'coop-world') { socket.data.activity = 'En mission coop'; socket.data.location = `Coop · niveau ${(Number(data.level)||0)+1}, vague ${Number(data.wave)||1}`; }
+      else if (data.t === 'bye') { socket.data.activity = 'Fin de partie'; socket.data.location = 'Menu / sortie de partie'; }
+      else if (data.t === 'ship') { socket.data.activity = 'Sélection de vaisseau'; }
+    }
     const room = rooms.get(socket.data.room);
     const peer = other(room, socket.id);
     if (peer) io.to(peer).emit('m', data);
