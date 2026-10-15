@@ -494,7 +494,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 }
 </style>
 </head>
-<body>
+<body><div id="devAnnouncement" class="hidden" style="position:relative;z-index:20000;text-align:center;padding:10px 14px;background:linear-gradient(90deg,#10223b,#073144);border-bottom:1px solid #00f0ff;color:#fff;font-weight:700;white-space:pre-wrap"></div>
 <canvas id="gameCanvas"></canvas>
 
 <div id="startScreen" class="overlay active">
@@ -798,7 +798,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       <div style="text-align:center;max-width:520px;width:100%">
         <p id="chestRevealTitle" class="shop-section-title">COFFRE NEON</p>
         <p style="color:rgba(255,255,255,.7)">Clique sur le coffre pour l’ouvrir !</p>
-        <button id="chestBigButton" aria-label="Ouvrir le coffre" style="display:block;margin:20px auto;background:transparent;border:0;cursor:pointer;font-size:clamp(100px,24vw,180px);filter:drop-shadow(0 0 24px #ffdd00);animation:chestFloat 1.5s ease-in-out infinite">🧰</button>
+        <button id="chestBigButton" type="button" aria-label="Ouvrir le coffre" style="touch-action:manipulation;position:relative;z-index:10030;pointer-events:auto;display:block;margin:20px auto;background:transparent;border:0;cursor:pointer;font-size:clamp(100px,24vw,180px);filter:drop-shadow(0 0 24px #ffdd00);animation:chestFloat 1.5s ease-in-out infinite">🧰</button>
         <p id="chestRevealHint" class="final-wave">Touchez le coffre pour révéler votre récompense</p>
         <button id="chestRevealBack" class="btn btn-small">Annuler</button>
       </div>
@@ -3808,7 +3808,11 @@ const Chests = {
     add('chestsBackBtn', () => { document.getElementById('chestsScreen').classList.add('hidden'); Game.goToMenu(); });
     add('chest6Open', () => this.beginOpen(6));
     add('chest24Open', () => this.beginOpen(24));
-    add('chestBigButton', () => this.reveal());
+    const bigChest = document.getElementById('chestBigButton');
+    const openChest = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } this.reveal(); };
+    bigChest.addEventListener('click', openChest, {capture:true});
+    bigChest.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') openChest(e); }, {capture:true});
+    bigChest.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openChest(e); }, {capture:true});
     add('chestRevealBack', () => this.cancelReveal());
     this.timer = setInterval(() => this.render(), 1000);
     this.render();
@@ -3840,6 +3844,7 @@ const Chests = {
   reveal() {
     if (!this.opening || !this.pendingHours) return;
     const hours = this.pendingHours;
+    this.opening = false; // évite qu'un événement tactile + clic donne deux récompenses
     if (!this.ready(hours)) return this.cancelReveal();
     const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
     const amount = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -5897,5 +5902,7 @@ Game.init();
 })();
 
 
+</script><script>
+(async()=>{try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement');const j=await r.json();const el=document.getElementById('devAnnouncement');if(j.ok&&j.announcement&&j.announcement.text){el.textContent='📢 '+j.announcement.text;el.classList.remove('hidden')}}catch(e){}})();
 </script></body>
 </html>
