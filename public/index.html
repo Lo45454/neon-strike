@@ -792,6 +792,18 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
         <h2 style="color:#ffdd00">Coffre quotidien</h2><p>30 à 100 crédits · toutes les 24 heures</p>
         <p id="chest24Timer" class="final-wave">Disponible !</p><button id="chest24Open" class="btn btn-yellow">Ouvrir</button>
       </section>
+      <section style="border:1px solid #b36bff;border-radius:12px;padding:16px;background:rgba(179,107,255,.08)">
+        <h2 style="color:#c99aff">Coffre violet</h2><p>Coût : 300 crédits · Récompense aléatoire : 120–900 crédits</p><small>Récompenses : 120 (40 %) · 300 (35 %) · 450 (20 %) · 900 (5 %)</small>
+        <button id="buyChest300" class="btn">Acheter pour 300 ◆</button>
+      </section>
+      <section style="border:1px solid #ff8b45;border-radius:12px;padding:16px;background:rgba(255,139,69,.08)">
+        <h2 style="color:#ffad75">Coffre solaire</h2><p>Coût : 750 crédits · Récompense aléatoire : 300–2 250 crédits</p><small>Récompenses : 300 (40 %) · 750 (35 %) · 1 125 (20 %) · 2 250 (5 %)</small>
+        <button id="buyChest750" class="btn">Acheter pour 750 ◆</button>
+      </section>
+      <section style="border:1px solid #ffdd00;border-radius:12px;padding:16px;background:rgba(255,221,0,.08)">
+        <h2 style="color:#ffdd00">Coffre galactique</h2><p>Coût : 1 500 crédits · Récompense aléatoire : 600–4 500 crédits</p><small>Récompenses : 600 (40 %) · 1 500 (35 %) · 2 250 (20 %) · 4 500 (5 %)</small>
+        <button id="buyChest1500" class="btn btn-yellow">Acheter pour 1 500 ◆</button>
+      </section>
     </div>
     <p id="chestMessage" class="mp-status"></p>
     <div id="chestReveal" class="hidden" style="position:fixed;inset:0;z-index:10020;background:rgba(2,5,18,.94);display:flex;align-items:center;justify-content:center;padding:20px">
@@ -2822,6 +2834,25 @@ const Game = {
     document.getElementById('levelCompleteScore').textContent = `Score du niveau : ${levelScore}`;
     document.getElementById('levelCompleteCredits').innerHTML =
       `◆ +${this.formatCredits(earnedCredits)} crédits <span>(${base} de base + ${this.formatCredits(bonus)} bonus score)</span>`;
+    const bossChestBtnOld = document.getElementById('bossRewardChestBtn'); if (bossChestBtnOld) bossChestBtnOld.remove();
+    // Coffre bonus garanti à la fin de certains niveaux difficiles (niveaux 5, 10, 15, ...).
+    if ((this.level + 1) % 5 === 0) {
+      const bossChestBtn = document.createElement('button');
+      bossChestBtn.id = 'bossRewardChestBtn'; bossChestBtn.className = 'btn btn-yellow';
+      bossChestBtn.style.margin = '10px'; bossChestBtn.textContent = '🎁 Ouvrir le coffre du boss (récompense aléatoire)';
+      bossChestBtn.onclick = () => {
+        if (bossChestBtn.dataset.claimed === '1') return;
+        bossChestBtn.dataset.claimed = '1'; bossChestBtn.disabled = true;
+        const bossTable = [{amount:150,chance:40},{amount:300,chance:30},{amount:550,chance:20},{amount:900,chance:8},{amount:1600,chance:2}];
+        const roll = Math.random() * 100; let cumulative = 0; let bossReward = bossTable[bossTable.length - 1].amount;
+        for (const entry of bossTable) { cumulative += entry.chance; if (roll < cumulative) { bossReward = entry.amount; break; } }
+        this.credits = this.devAccount ? 2147483647 : this.credits + bossReward;
+        Save.save(); this.renderShop?.(); playPurchase();
+        bossChestBtn.textContent = `✓ Coffre du boss ouvert : +${bossReward} crédits`;
+        document.getElementById('levelCompleteCredits').innerHTML += `<br><span>🎁 Coffre du boss : +${bossReward} crédits</span>`;
+      };
+      document.getElementById('levelCompleteScreen').querySelector('.overlay-content').insertBefore(bossChestBtn, document.getElementById('nextLevelBtn'));
+    }
     if (this.level + 1 < LEVELS.length) {
       document.getElementById('levelCompleteTitle').textContent = `${LEVELS[this.level].name} TERMINÉ`;
       document.getElementById('levelCompleteText').textContent = `Prochain: ${LEVELS[this.level + 1].name}`;
@@ -3809,6 +3840,9 @@ const Chests = {
     add('chestsBackBtn', () => { document.getElementById('chestsScreen').classList.add('hidden'); Game.goToMenu(); });
     add('chest6Open', () => this.beginOpen(6));
     add('chest24Open', () => this.beginOpen(24));
+    add('buyChest300', () => this.buyCreditsChest(300, [{amount:120, chance:40},{amount:300, chance:35},{amount:450, chance:20},{amount:900, chance:5}], 'COFFRE VIOLET'));
+    add('buyChest750', () => this.buyCreditsChest(750, [{amount:300, chance:40},{amount:750, chance:35},{amount:1125, chance:20},{amount:2250, chance:5}], 'COFFRE SOLAIRE'));
+    add('buyChest1500', () => this.buyCreditsChest(1500, [{amount:600, chance:40},{amount:1500, chance:35},{amount:2250, chance:20},{amount:4500, chance:5}], 'COFFRE GALACTIQUE'));
     const bigChest = document.getElementById('chestBigButton');
     const openChest = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } this.reveal(); };
     bigChest.addEventListener('click', openChest, {capture:true});
@@ -3832,8 +3866,38 @@ const Chests = {
       btn.disabled = !ready; btn.style.opacity = ready ? '1' : '.55';
     }
   },
+  buyCreditsChest(cost, rewardTable, label) {
+    if (this.opening) return;
+    if (!Game.devAccount && Game.credits < cost) {
+      const msg = document.getElementById('chestMessage');
+      msg.textContent = `Crédits insuffisants : il faut ${Game.formatCredits(cost)} crédits.`;
+      msg.className = 'mp-status'; return;
+    }
+    // Tirage aléatoire de récompenses en crédits de jeu. Les gains restent sous le prix d'achat,
+    // afin que les coffres achetables soient un puits de crédits et ne génèrent pas de crédits infinis.
+    const roll = Math.random() * 100;
+    let cumulative = 0;
+    let reward = rewardTable[rewardTable.length - 1].amount;
+    for (const entry of rewardTable) { cumulative += entry.chance; if (roll < cumulative) { reward = entry.amount; break; } }
+    if (!Game.devAccount) Game.credits -= cost;
+    this.pendingReward = reward;
+    this.pendingHours = 0;
+    this.opening = true;
+    this.taps = 0;
+    this.requiredTaps = 3;
+    const reveal = document.getElementById('chestReveal');
+    reveal.classList.remove('hidden'); reveal.style.display = 'flex';
+    document.getElementById('chestRevealTitle').textContent = label;
+    document.getElementById('chestRevealHint').textContent = `Tape 3 fois sur le coffre pour révéler la récompense (0/3)`;
+    document.getElementById('chestBigButton').textContent = '🎁';
+    document.getElementById('chestBigButton').disabled = false;
+    document.getElementById('chestMessage').textContent = '';
+    this.paidChest = {cost, reward, label};
+    Save.save(); Game.renderShop?.();
+  },
   beginOpen(hours) {
     if (!this.ready(hours) || this.opening) return;
+    this.paidChest = null;
     this.pendingHours = hours; this.opening = true; this.taps = 0;
     const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
     this.pendingReward = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -3846,11 +3910,11 @@ const Chests = {
     document.getElementById('chestBigButton').disabled = false;
     document.getElementById('chestMessage').textContent = '';
   },
-  cancelReveal() { document.getElementById('chestReveal').classList.add('hidden'); document.getElementById('chestReveal').style.display = 'none'; this.pendingHours = 0; this.opening = false; },
+  cancelReveal() { if (this.opening && this.paidChest && !Game.devAccount) { Game.credits += this.paidChest.cost; Save.save(); Game.renderShop?.(); } document.getElementById('chestReveal').classList.add('hidden'); document.getElementById('chestReveal').style.display = 'none'; this.pendingHours = 0; this.opening = false; this.paidChest = null; },
   reveal() {
-    if (!this.opening || !this.pendingHours) return;
+    if (!this.opening || (!this.pendingHours && !this.paidChest)) return;
     const hours = this.pendingHours;
-    if (!this.ready(hours)) return this.cancelReveal();
+    if (!this.paidChest && !this.ready(hours)) return this.cancelReveal();
     this.taps++;
     const chestBtn = document.getElementById('chestBigButton');
     chestBtn.classList.remove('chest-open-anim'); void chestBtn.offsetWidth; chestBtn.classList.add('chest-open-anim');
@@ -3859,7 +3923,7 @@ const Chests = {
     if (this.taps < this.requiredTaps) return;
     this.opening = false;
     const amount = this.pendingReward;
-    if (!Game.devAccount) { if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now(); }
+    if (!this.paidChest && !Game.devAccount) { if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now(); }
     const chest = document.getElementById('chestBigButton');
     chest.disabled = true; chest.style.animation = 'none'; chest.textContent = '💥';
     chest.classList.remove('chest-open-anim'); void chest.offsetWidth; chest.classList.add('chest-open-anim');
@@ -3874,7 +3938,7 @@ const Chests = {
     document.getElementById('chestRevealHint').textContent = `RÉCOMPENSE : +${amount} CRÉDITS`;
     document.getElementById('chestMessage').textContent = `Coffre ouvert : +${amount} crédits !`;
     document.getElementById('chestMessage').className = 'mp-status ok';
-    setTimeout(() => { this.cancelReveal(); document.getElementById('chestMessage').textContent = `Récompense ajoutée : +${amount} crédits !`; }, 2100);
+    setTimeout(() => { this.cancelReveal(); this.paidChest = null; document.getElementById('chestMessage').textContent = `Récompense ajoutée : +${amount} crédits !`; }, 2100);
   }
 };
 
@@ -4292,8 +4356,8 @@ const Versus = {
       this.connected = false; this.code = '';
       const old = document.getElementById('banNotice'); if (old) old.remove();
       const panel = document.createElement('div'); panel.id='banNotice'; panel.style.cssText='position:fixed;inset:0;z-index:999999;background:rgba(2,5,16,.97);display:flex;align-items:center;justify-content:center;padding:24px;color:#fff;font:16px system-ui';
-      panel.innerHTML='<div style="max-width:520px;text-align:center;border:1px solid #ff4f91;border-radius:18px;padding:28px;background:#101326;box-shadow:0 0 35px #ff006644"><div style="font-size:42px">⛔</div><h1 style="color:#ff6b9b">Compte banni</h1><p>Ton accès à NEON STRIKE a été suspendu.</p><p style="padding:14px;background:#080b18;border-radius:8px;white-space:pre-wrap"></p><button id="banClose" style="padding:10px 18px;cursor:pointer">Retour au menu</button></div>';
-      panel.querySelector('p[style]').textContent='Raison : '+reason; document.body.appendChild(panel); panel.querySelector('#banClose').onclick=()=>{panel.remove();Game.goToMenu()};
+      panel.innerHTML='<div style="max-width:520px;text-align:center;border:1px solid #ff4f91;border-radius:18px;padding:28px;background:#101326;box-shadow:0 0 35px #ff006644"><div style="font-size:42px">⛔</div><h1 style="color:#ff6b9b">Compte banni</h1><p>Ton accès à NEON STRIKE a été suspendu.</p><p style="padding:14px;background:#080b18;border-radius:8px;white-space:pre-wrap"></p><p style="color:#aab3cc;font-size:13px">Cette session est fermée. Actualiser la page ne réactive pas le compte.</p></div>';
+      panel.querySelector('p[style]').textContent='Raison : '+reason; document.body.appendChild(panel);
     });
     s.on('admin:credits-updated', (d) => {
       if (!d || !Number.isFinite(Number(d.credits))) return;
