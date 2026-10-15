@@ -47,7 +47,7 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {} };
+  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], announcements: { text: '', updatedAt: 0 } };
   if (!raw || typeof raw !== 'object') return base;
   if (raw.v === 2 || raw.v === 3) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
@@ -267,9 +267,59 @@ app.post('/api/admin/credits/:id', express.json({limit:'2kb'}), (req,res) => {
   if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1000000) return res.status(400).json({ok:false,error:'Montant invalide (entre -1 000 000 et 1 000 000, sans zéro).'});
   const r = rec(id); if (!r.data || typeof r.data !== 'object') r.data = {};
   const current = Math.max(0, Number(r.data.credits)||0);
-  r.data.credits = Math.max(0, Math.min(2147483647, current + amount)); r.t=Date.now(); persist();
+  r.data.credits = Math.max(0, Math.min(2147483647, current + amount)); r.t=Date.now(); audit('credits','admin',id,{amount,balance:r.data.credits});
   for (const socket of socketsOf(id)) socket.emit('admin:credits-updated', { credits:r.data.credits });
   res.json({ok:true,credits:r.data.credits});
+});
+
+
+function audit(action, actor='admin', target='', detail={}) {
+  db.audit = Array.isArray(db.audit) ? db.audit : [];
+  db.audit.unshift({ id: crypto.randomBytes(6).toString('hex'), at: Date.now(), action, actor, target, detail });
+  if (db.audit.length > 500) db.audit.length = 500;
+  persist();
+}
+app.get('/api/announcement', (req,res) => res.json({ok:true, announcement: db.announcements || {text:'',updatedAt:0}}));
+app.post('/api/admin/announcement', express.json({limit:'4kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const text = String(req.body?.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g,'').trim().slice(0,1000);
+  db.announcements = { text, updatedAt: Date.now() }; audit('announcement','admin','all',{text}); res.json({ok:true,announcement:db.announcements});
+});
+app.get('/api/admin/audit', (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  res.json({ok:true, entries:(db.audit||[]).slice(0,200)});
+});
+app.post('/api/admin/ban/:id', express.json({limit:'2kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100), reason=String(req.body?.reason||'Modération').slice(0,200);
+  if (!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  db.bans=db.bans||{}; db.bans[id]={reason,at:Date.now()}; audit('ban','admin',id,{reason});
+  for(const sock of socketsOf(id)){sock.emit('account:banned',{reason});sock.disconnect(true);}
+  res.json({ok:true});
+});
+app.post('/api/admin/unban/:id', express.json({limit:'1kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100); if(db.bans) delete db.bans[id]; audit('unban','admin',id,{}); res.json({ok:true});
+});
+app.post('/api/admin/grant-dev/:id', express.json({limit:'1kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100);
+  if(!accIndex.has(id) && !db.saves[id]) return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  const r=rec(id); r.data=r.data||{};
+  r.data.credits=2147483647; r.data.unlockedLevel=999;
+  r.data.ownedShips=["default", "speeder", "tanker", "multi", "sniper", "destroyer", "phantom", "nova", "vanguard", "eclipse"];
+  r.data.ownedUpgrades=["speed1", "fire1", "life1", "dmg1", "speed2", "fire2", "life2", "dmg2"];
+  r.data.devAccount=true; r.t=Date.now(); audit('dev-grant','admin',id,{credits:'max',level:999}); persist();
+  for(const sock of socketsOf(id)) sock.emit('admin:credits-updated',{credits:r.data.credits});
+  res.json({ok:true});
+});
+app.post('/api/admin/friends/:id', express.json({limit:'2kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=String(req.params.id||'').slice(0,100), otherId=String(req.body?.otherId||'').slice(0,100);
+  const a=rec(id), b=rec(otherId);
+  if(!a.profile || !b.profile || id===otherId) return res.status(400).json({ok:false,error:'Les deux joueurs doivent avoir un profil distinct.'});
+  a.friends=[...new Set([...(a.friends||[]),b.profile.code])]; b.friends=[...new Set([...(b.friends||[]),a.profile.code])];
+  audit('force-friend','admin',id,{otherId}); persist(); emitTo(id,'social',socialState(id)); emitTo(otherId,'social',socialState(otherId)); res.json({ok:true});
 });
 
 app.get('/health', (req, res) => res.json({ ok: true, rooms: rooms.size, players: io.engine.clientsCount }));
@@ -346,6 +396,7 @@ io.on('connection', (socket) => {
   }
   socket.data.vid = vid;
   socket.data.dev = dev;
+  if (db.bans && db.bans[vid]) { socket.emit('account:banned',{reason:db.bans[vid].reason||'Compte suspendu'}); return socket.disconnect(true); }
   socket.data.room = null;
   socket.data.chatTimes = [];
   if (!online.has(vid)) online.set(vid, new Set());
@@ -595,6 +646,25 @@ io.on('connection', (socket) => {
   socket.on('chat:send', (d, ack) => {
     if (typeof ack !== 'function' || !d) return;
     const me = myRec(), code = cleanCode(d.to);
+    const rawText = String(d.text || '').trim();
+    const pay = rawText.match(/^\/pay\s+(\d+)$/i);
+    if (pay) {
+      const amount = Number(pay[1]), friendCode = code;
+      if (!me.profile || !me.friends.includes(friendCode)) return ack({ok:false,error:'Ajoute ce joueur comme ami avant de lui envoyer des crédits.'});
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) return ack({ok:false,error:'Montant invalide (1 à 1 000 000).'});
+      const targetId=codeIndex.get(friendCode); if(!targetId) return ack({ok:false,error:'Joueur introuvable.'});
+      const from=rec(vid), to=rec(targetId); from.data=from.data||{}; to.data=to.data||{};
+      const balance=Math.max(0,Number(from.data.credits)||0);
+      if(balance<amount) return ack({ok:false,error:'Tu n’as pas assez de crédits.'});
+      from.data.credits=balance-amount; to.data.credits=Math.min(2147483647,(Number(to.data.credits)||0)+amount);
+      from.t=to.t=Date.now(); audit('credit-transfer',myCode()||vid,targetId,{amount,from:vid,to:targetId});
+      const msg={f:me.profile.code,x:`💸 ${me.profile.name} t’a envoyé ${amount} crédits !`,t:Date.now()};
+      const key=chatKey(me.profile.code,friendCode); (db.chats[key]=db.chats[key]||[]).push(msg);
+      emitTo(targetId,'chat',{with:me.profile.code,name:me.profile.name,msg});
+      for(const ss of socketsOf(vid)) ss.emit('admin:credits-updated',{credits:from.data.credits});
+      for(const ss of socketsOf(targetId)) ss.emit('admin:credits-updated',{credits:to.data.credits});
+      persist(); return ack({ok:true,msg,transfer:{amount,balance:from.data.credits}});
+    }
     const text = String(d.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, 300);
     if (!me.profile || !me.friends.includes(code)) return ack({ ok: false, error: "Ce joueur n'est pas dans tes amis." });
     if (!text) return ack({ ok: false });
