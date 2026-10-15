@@ -332,13 +332,49 @@ app.post('/api/admin/grant-dev/:id', express.json({limit:'1kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
   const id=adminResolvePlayer(req.params.id);
   if(!id) return res.status(404).json({ok:false,error:'Joueur introuvable. Vérifie le pseudo ou l’ID.'});
-  const r=rec(id); r.data=r.data||{};
-  r.data.credits=2147483647; r.data.unlockedLevel=999;
-  r.data.ownedShips=["default", "speeder", "tanker", "multi", "sniper", "destroyer", "phantom", "nova", "vanguard", "eclipse"];
-  r.data.ownedUpgrades=["speed1", "fire1", "life1", "dmg1", "speed2", "fire2", "life2", "dmg2"];
-  r.data.devAccount=true; r.data.devTest=true; r.data.chestLast6h=0; r.data.chestLast24h=0; r.data.chest6hAt=0; r.data.chest24hAt=0; r.t=Date.now(); audit('dev-grant','admin',id,{credits:'max',level:999}); persist();
-  for(const sock of socketsOf(id)) sock.emit('admin:credits-updated',{credits:r.data.credits});
-  res.json({ok:true});
+  const r=rec(id); r.data={...(r.data||{}), credits:2147483647, unlockedLevel:999,
+    ownedShips:Array.from(new Set([...(Array.isArray(r.data?.ownedShips)?r.data.ownedShips:[]), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse'])),
+    ownedUpgrades:Array.from(new Set([...(Array.isArray(r.data?.ownedUpgrades)?r.data.ownedUpgrades:[]), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])),
+    devAccount:true, devTest:true, chestLast6h:0, chestLast24h:0, chest6hAt:0, chest24hAt:0};
+  r.t=Date.now(); audit('dev-grant','admin',id,{credits:'max',level:999,ships:'all configured',chests:'no cooldown'}); persist();
+  for(const sock of socketsOf(id)) sock.emit('admin:test-updated',{ok:true});
+  res.json({ok:true,id,name:(accIndex.get(id)||{}).name||((r.profile||{}).name)||id, data:r.data});
+});
+
+// Réinitialise uniquement la progression d'un compte, sans supprimer son pseudo ni ses amis.
+app.post('/api/admin/reset-account/:id', express.json({limit:'1kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=adminResolvePlayer(req.params.id);
+  const acc=id && accIndex.get(id);
+  if(!acc) return res.status(404).json({ok:false,error:'Compte enregistré introuvable. Les invités ne peuvent pas être réinitialisés ici.'});
+  const r=rec(id);
+  r.data={credits:0,unlockedLevel:0,ownedShips:['default'],equippedShip:'default',ownedUpgrades:[],upgradeState:{},shipUpgradeStates:{},shipColors:{},bestScores:{},chestLast6h:0,chestLast24h:0,chest6hAt:0,chest24hAt:0};
+  r.t=Date.now(); audit('account-reset','admin',id,{name:acc.name}); persist();
+  for(const sock of socketsOf(id)) sock.emit('admin:account-reset',{ok:true});
+  res.json({ok:true,name:acc.name});
+});
+
+// Supprime définitivement le compte et libère le pseudo. Les autres comptes restent intacts.
+app.post('/api/admin/delete-account/:id', express.json({limit:'1kb'}), (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=adminResolvePlayer(req.params.id);
+  const acc=id && accIndex.get(id);
+  if(!acc) return res.status(404).json({ok:false,error:'Compte enregistré introuvable. Les invités ne peuvent pas être supprimés ici.'});
+  const key=nameKey(acc.name);
+  for(const sock of socketsOf(id)){ sock.emit('admin:account-deleted',{ok:true}); sock.disconnect(true); }
+  delete db.accounts[key]; accIndex.delete(id); delete db.saves[id];
+  for(const [tok,session] of Object.entries(db.sessions||{})) if(session.a===id) delete db.sessions[tok];
+  for(const [device,remembered] of Object.entries(db.remember||{})) if(remembered===id) delete db.remember[device];
+  for(const [device,seen] of Object.entries(db.devSeen||{})){db.devSeen[device]=seen.filter(e=>e.a!==id);if(!db.devSeen[device].length)delete db.devSeen[device];}
+  if(db.bans) delete db.bans[id];
+  for(const r of Object.values(db.saves)){
+    const code=(r.profile||{}).code;
+    if(code){r.friends=(r.friends||[]).filter(c=>c!==code);r.requests=(r.requests||[]).filter(c=>c!==code);delete r.unread?.[code];}
+  }
+  for(const k of Object.keys(db.chats||{})) if(k.split('|').includes(id)) delete db.chats[k];
+  for(const [code,owner] of codeIndex.entries()) if(owner===id) codeIndex.delete(code);
+  audit('account-delete','admin',id,{name:acc.name,pseudoReleased:true}); persist();
+  res.json({ok:true,name:acc.name,pseudoReleased:true});
 });
 app.post('/api/admin/friends/:id', express.json({limit:'2kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
@@ -564,7 +600,18 @@ io.on('connection', (socket) => {
   socket.on('save:set', (data, ack) => {
     let ok = false;
     try { ok = !!data && typeof data === 'object' && JSON.stringify(data).length < 20000; } catch (e) {}
-    if (ok) { const r = myRec(); r.data = data; r.t = Date.now(); persist(); }
+    if (ok) {
+      const r = myRec();
+      // Ne jamais laisser une sauvegarde client effacer les privilèges accordés par la console.
+      if (r.data && (r.data.devAccount || r.data.devTest)) {
+        data = { ...data, devAccount: true, devTest: true, credits: 2147483647,
+          unlockedLevel: 999,
+          ownedShips: Array.from(new Set([...(Array.isArray(data.ownedShips) ? data.ownedShips : []), ...(Array.isArray(r.data.ownedShips) ? r.data.ownedShips : []), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse'])),
+          ownedUpgrades: Array.from(new Set([...(Array.isArray(data.ownedUpgrades) ? data.ownedUpgrades : []), ...(Array.isArray(r.data.ownedUpgrades) ? r.data.ownedUpgrades : []), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])),
+          chestLast6h: 0, chestLast24h: 0, chest6hAt: 0, chest24hAt: 0 };
+      }
+      r.data = data; r.t = Date.now(); persist();
+    }
     if (typeof ack === 'function') ack({ ok });
   });
 
