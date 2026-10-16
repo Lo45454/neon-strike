@@ -485,6 +485,13 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   touch-action: manipulation;
 }
 .touch-hint { display: none; }
+@media (max-width: 700px) {
+  #gameCanvas { width:100vw; height:100dvh; }
+  .overlay-content { box-sizing:border-box; max-width:100vw; }
+  .level-grid { gap:.55rem; }
+  .shop-item { min-width:0; }
+  .shop-item-name, .shop-item-desc { overflow-wrap:anywhere; }
+}
 @media (pointer: coarse) {
   .touch-pause { display: block; }
   .touch-hint { display: block; }
@@ -516,6 +523,8 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <div class="btn-stack">
       <button class="btn" id="startBtn">Solo</button>
       <button class="btn btn-green" id="levelsBtn">Niveaux</button>
+      <button class="btn btn-small" id="feedbackBtn">Signaler un bug / suggérer</button>
+      <button class="btn btn-green" id="coopCampaignBtn">Campagne coopérative</button>
       <button class="btn btn-yellow" id="menuShopBtn">Boutique</button>
       <button class="btn btn-purple" id="chestsBtn">Coffres gratuits</button>
       <button class="btn btn-pink" id="multiBtn">Multijoueur</button>
@@ -585,7 +594,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       </div>
     </div>
     <div class="shop-section">
-      <p class="shop-section-title">Pilotes de vaisseau — un seul pilote équipé à la fois</p>
+      <p class="shop-section-title">Pilotes — un seul équipé à la fois</p>
       <div class="shop-grid" id="upgradeGrid"></div>
     </div>
     <button class="btn btn-green" id="shopContinueBtn">Lancer le prochain niveau</button>
@@ -729,7 +738,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   </div>
 </div>
 
-<button id="bugReportOpen" type="button" style="position:fixed;right:12px;bottom:12px;z-index:1000;padding:9px 12px;border:1px solid var(--neon-cyan);border-radius:10px;background:#07101d;color:#fff">🐞 Signaler / suggérer</button><div id="bugReportPanel" class="overlay hidden" style="z-index:12000"><div class="overlay-bg"></div><div class="overlay-content" style="max-width:560px"><h2 style="color:var(--neon-cyan)">Signaler un bug / suggérer une amélioration</h2><form id="bugReportForm"><label style="display:block;text-align:left;margin:10px 0">Type<select id="bugReportType" class="mp-select" style="width:100%"><option value="bug">Bug</option><option value="suggestion">Suggestion</option></select></label><label style="display:block;text-align:left;margin:10px 0">Description<textarea id="bugReportText" required maxlength="1500" rows="5" style="width:100%;background:#07101d;color:white;border:1px solid #31546a;border-radius:8px;padding:10px" placeholder="Décris le problème ou ton idée..."></textarea></label><div class="btn-stack"><button class="btn btn-green" type="submit">Envoyer</button><button class="btn btn-small" id="bugReportClose" type="button">Fermer</button></div><p id="bugReportStatus" class="mp-status"></p></form></div></div>
+<div id="feedbackScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content"><h1 class="game-title" style="animation:none">BUG / SUGGESTION</h1><p class="subtitle">Aide-nous à améliorer NEON STRIKE</p><form id="feedbackForm"><select id="feedbackType" class="mp-select"><option value="bug">Signaler un bug</option><option value="suggestion">Suggestion d’amélioration</option></select><textarea id="feedbackMessage" required minlength="5" maxlength="1500" placeholder="Décris le problème ou ton idée…" style="width:min(90vw,440px);min-height:110px;margin:12px 0;background:#07111f;color:white;border:1px solid #00f0ff;border-radius:8px;padding:10px"></textarea><div class="btn-stack"><button class="btn btn-green" type="submit">Envoyer</button><button class="btn btn-pink btn-small" id="feedbackBackBtn" type="button">Retour</button></div><p id="feedbackStatus" role="status"></p></form></div></div>
 <div id="toasts" class="toasts"></div>
 <div class="emote-bar" id="emoteBar"></div>
 
@@ -747,6 +756,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   </div>
 </div>
 
+<div id="coopCampaignScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content"><h1 class="game-title" style="color:var(--neon-green);animation:none">CAMPAGNE COOP</h1><p class="subtitle">Joue la campagne avec un ami</p><p>Ouvre le multijoueur puis sélectionne « Équipe coopérative » pour créer ou rejoindre une partie.</p><div class="btn-stack"><button class="btn btn-green" id="coopCampaignGoBtn">Jouer en coop</button><button class="btn btn-pink btn-small" id="coopCampaignBackBtn">Retour</button></div></div></div>
 <div id="levelsScreen" class="overlay hidden">
   <div class="overlay-bg"></div>
   <div class="overlay-content">
@@ -925,9 +935,6 @@ const LEVELS = [
   });
 })();
 
-// Formulaire de retour joueur : clic/tactile et clavier fonctionnent via un vrai formulaire.
-window.addEventListener('DOMContentLoaded',()=>{const open=document.getElementById('bugReportOpen'),panel=document.getElementById('bugReportPanel'),close=document.getElementById('bugReportClose'),form=document.getElementById('bugReportForm');if(open&&panel)open.addEventListener('click',()=>panel.classList.remove('hidden'));if(close&&panel)close.addEventListener('click',()=>panel.classList.add('hidden'));if(form)form.addEventListener('submit',async e=>{e.preventDefault();const status=document.getElementById('bugReportStatus'),text=document.getElementById('bugReportText').value.trim();if(!text){status.textContent='Écris une description avant d’envoyer.';return;}try{const res=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:document.getElementById('bugReportType').value,text,gameVersion:'web'})});const j=await res.json();if(!res.ok||!j.ok)throw new Error(j.error||'Envoi impossible');status.textContent='Merci ! Ton retour a été envoyé.';form.reset();}catch(err){status.textContent='Envoi impossible pour le moment. Réessaie plus tard.';}});});
-
 // ===================== VAISSEAUX =====================
 const SHIPS = [
   { id: 'default', name: 'Chasseur', desc: 'Équilibré', price: 0, color: '#00f0ff', speed: 340, fireRate: 0.28, bulletSpeed: 620, maxLives: 3, multishot: 0, bulletDamage: 1 },
@@ -935,11 +942,15 @@ const SHIPS = [
   { id: 'tanker', name: 'Tank', desc: 'Résistant, lent', price: 800, color: '#ff6b35', speed: 260, fireRate: 0.32, bulletSpeed: 580, maxLives: 5, multishot: 0, bulletDamage: 1 },
   { id: 'multi', name: 'Multi-Tir', desc: 'Triple tir par défaut', price: 1200, color: '#9d00ff', speed: 320, fireRate: 0.25, bulletSpeed: 640, maxLives: 3, multishot: 1, bulletDamage: 1 },
   { id: 'sniper', name: 'Sniper', desc: 'Tir puissant et rapide', price: 1800, color: '#00ff88', speed: 350, fireRate: 0.20, bulletSpeed: 800, maxLives: 3, multishot: 0, bulletDamage: 2 },
-  { id: 'destroyer', name: 'Destructeur', desc: 'Quadruple tir, robuste', price: 9000, color: '#ff00ea', speed: 285, fireRate: 0.26, bulletSpeed: 680, maxLives: 4, multishot: 1, bulletDamage: 2 },
-  { id: 'phantom', name: 'Fantôme', desc: 'Agile et difficile à toucher', price: 12500, color: '#8be9fd', speed: 365, fireRate: 0.25, bulletSpeed: 730, maxLives: 3, multishot: 1, bulletDamage: 2, unlockLevel: 3 },
-  { id: 'nova', name: 'Nova', desc: 'Salves explosives', price: 18000, color: '#ff7ad9', speed: 315, fireRate: 0.24, bulletSpeed: 660, maxLives: 4, multishot: 1, bulletDamage: 2, unlockLevel: 5 },
-  { id: 'vanguard', name: 'Avant-garde', desc: 'Blindage lourd et tirs puissants', price: 27000, color: '#a3ff12', speed: 270, fireRate: 0.22, bulletSpeed: 780, maxLives: 5, multishot: 1, bulletDamage: 3, unlockLevel: 7 },
-  { id: 'eclipse', name: 'Éclipse', desc: 'Vaisseau d’élite polyvalent', price: 42000, color: '#b388ff', speed: 350, fireRate: 0.20, bulletSpeed: 850, maxLives: 5, multishot: 2, bulletDamage: 3, unlockLevel: 10 },
+  { id: 'destroyer', name: 'Destructeur', desc: 'Quadruple tir, robuste', price: 4200, color: '#ff00ea', speed: 300, fireRate: 0.24, bulletSpeed: 700, maxLives: 4, multishot: 2, bulletDamage: 2 },
+  { id: 'phantom', name: 'Fantôme', desc: 'Agile et difficile à toucher', price: 6500, color: '#8be9fd', speed: 390, fireRate: 0.23, bulletSpeed: 760, maxLives: 3, multishot: 1, bulletDamage: 2, unlockLevel: 3 },
+  { id: 'nova', name: 'Nova', desc: 'Salves explosives', price: 9000, color: '#ff7ad9', speed: 330, fireRate: 0.22, bulletSpeed: 680, maxLives: 4, multishot: 2, bulletDamage: 3, unlockLevel: 5 },
+  { id: 'vanguard', name: 'Avant-garde', desc: 'Blindage lourd et tirs puissants', price: 13500, color: '#a3ff12', speed: 285, fireRate: 0.20, bulletSpeed: 820, maxLives: 6, multishot: 1, bulletDamage: 3, unlockLevel: 7 },
+  { id: 'eclipse', name: 'Éclipse', desc: 'Vaisseau d’élite polyvalent', price: 20000, color: '#b388ff', speed: 370, fireRate: 0.17, bulletSpeed: 900, maxLives: 5, multishot: 2, bulletDamage: 4, unlockLevel: 10 },
+  { id: 'manta', name: 'Manta', desc: 'Ailes larges, rapide et agile', price: 41000, color: '#22d3ee', speed: 425, fireRate: 0.22, bulletSpeed: 820, maxLives: 3, multishot: 1, bulletDamage: 3, unlockLevel: 20 },
+  { id: 'lance', name: 'Lance-Photon', desc: 'Canon central précis, dégâts élevés', price: 44500, color: '#fbbf24', speed: 315, fireRate: 0.31, bulletSpeed: 1120, maxLives: 4, multishot: 0, bulletDamage: 7, unlockLevel: 22 },
+  { id: 'trident', name: 'Trident', desc: 'Trois canons, couverture large', price: 48500, color: '#fb7185', speed: 355, fireRate: 0.24, bulletSpeed: 850, maxLives: 4, multishot: 3, bulletDamage: 3, unlockLevel: 24 },
+  { id: 'prism', name: 'Prisme Royal', desc: 'Coque renforcée et équilibrée', price: 53000, color: '#c4b5fd', speed: 325, fireRate: 0.19, bulletSpeed: 900, maxLives: 6, multishot: 1, bulletDamage: 4, unlockLevel: 26 },
 ];
 
 // ===================== AMÉLIORATIONS =====================
@@ -1318,6 +1329,10 @@ const SHIP_MODELS = {
     inner: [[0,-14],[10,4],[0,14],[-10,4]],
     engines: [[-8,16,5],[8,16,5]], guns: [[-23,-16],[-12,-12],[12,-12],[23,-16]], cockpit: [0,-2,4], spikes: true,
   },
+  manta: { hull:[[0,-22],[10,-10],[28,-19],[20,-2],[24,15],[8,10],[0,17],[-8,10],[-24,15],[-20,-2],[-28,-19],[-10,-10]], inner:[[0,-14],[8,1],[0,10],[-8,1]], engines:[[-13,13,5],[13,13,5]], guns:[[-22,-13,4,10],[22,-13,4,10]], cockpit:[0,-2,4], spikes:true },
+  lance: { hull:[[0,-32],[4,-12],[8,6],[5,20],[0,15],[-5,20],[-8,6],[-4,-12]], inner:[[0,-24],[2,0],[0,10],[-2,0]], engines:[[0,19,4]], guns:[[0,-28,4,18]], cockpit:[0,-5,3], longFlame:true, scope:true },
+  trident: { hull:[[0,-27],[5,-10],[15,-22],[14,-5],[25,12],[10,10],[0,18],[-10,10],[-25,12],[-14,-5],[-15,-22],[-5,-10]], inner:[[0,-16],[7,5],[0,11],[-7,5]], engines:[[-10,14,5],[0,17,5],[10,14,5]], guns:[[-15,-18,4,11],[0,-25,4,12],[15,-18,4,11]], cockpit:[0,-2,4] },
+  prism: { hull:[[0,-24],[13,-13],[22,0],[13,15],[0,23],[-13,15],[-22,0],[-13,-13]], inner:[[0,-15],[8,0],[0,14],[-8,0]], engines:[[-13,14,5],[13,14,5]], guns:[[-12,-17,4,10],[12,-17,4,10]], cockpit:[0,-2,5], plates:[[-19,-2,4,10],[15,-2,4,10]] },
 };
 
 function drawShipModel(ctx, id, color, flickerPhase = 0) {
@@ -1641,7 +1656,7 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = Math.round((48 + level * 19) * (level >= 5 ? 1.18 : 1));
+    this.maxHealth = Math.round(level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4));
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
     this.t = 0; this.rotation = 0;
@@ -2368,6 +2383,12 @@ const Game = {
     document.getElementById('startBtn').addEventListener('click', () => this.start(0));
     document.getElementById('restartBtn').addEventListener('click', () => this.start(this.lastStartLevel || 0));
     document.getElementById('levelsBtn').addEventListener('click', () => this.openLevels());
+    document.getElementById('feedbackBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('feedbackScreen').classList.remove('hidden'); });
+    document.getElementById('feedbackBackBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('startScreen').classList.remove('hidden'); document.getElementById('startScreen').classList.add('active'); });
+    document.getElementById('feedbackForm').addEventListener('submit', async (e) => { e.preventDefault(); const status=document.getElementById('feedbackStatus'); status.textContent='Envoi…'; try { const r=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:document.getElementById('feedbackType').value,message:document.getElementById('feedbackMessage').value})}); const d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.error||'Erreur'); status.textContent='Merci ! Ton message a été envoyé.'; document.getElementById('feedbackMessage').value=''; } catch(err) { status.textContent='Impossible d’envoyer le message. Réessaie plus tard.'; } });
+    document.getElementById('coopCampaignBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('coopCampaignScreen').classList.remove('hidden'); });
+    document.getElementById('coopCampaignBackBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('startScreen').classList.remove('hidden'); document.getElementById('startScreen').classList.add('active'); });
+    document.getElementById('coopCampaignGoBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('mpScreen').classList.remove('hidden'); document.getElementById('mpScreen').classList.add('active'); const m=document.getElementById('mpMode'); if(m){m.value='coop';m.dispatchEvent(new Event('change'));} });
     document.getElementById('menuShopBtn').addEventListener('click', () => this.openShop('menu'));
     document.getElementById('touchPause').addEventListener('click', (e) => {
       e.preventDefault();
@@ -2642,7 +2663,7 @@ const Game = {
       `;
 
       if (!owned && reqMet && canAfford) {
-        item.addEventListener('click', () => { if (this.ownedUpgrades.length) { const old=this.ownedUpgrades[0]; const oldUpg=UPGRADES.find(x=>x.id===old); if(oldUpg && old.startsWith('pilot_')) { this.ownedUpgrades=[]; this.upgradeState={}; this.shipUpgradeStates[this.equippedShip]={state:{},owned:[]}; } else { this.showToast && this.showToast('Retire d’abord l’amélioration actuelle.'); return; } } this.buyUpgrade(upg.id); });
+        item.addEventListener('click', () => this.buyUpgrade(upg.id));
       }
 
       upgradeGrid.appendChild(item);
@@ -2706,7 +2727,7 @@ const Game = {
   },
 
   hideAllOverlays() {
-    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
+    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'coopCampaignScreen', 'feedbackScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
       const el = document.getElementById(id);
       el.classList.add('hidden');
       el.classList.remove('active');
