@@ -246,23 +246,6 @@ function adminResolvePlayer(input) {
   for (const a of Object.values(db.accounts)) if (nameKey(a.name) === wanted) return a.id;
   return null;
 }
-const FEEDBACK_FILE = path.join(DATA_DIR, 'feedback.json');
-app.post('/api/feedback', express.json({limit:'4kb'}), (req,res) => {
-  const type = String(req.body?.type || 'suggestion').slice(0,30);
-  const message = String(req.body?.message || '').trim().slice(0,1500);
-  if (message.length < 5) return res.status(400).json({ok:false,error:'Message trop court.'});
-  let list=[]; try { list=JSON.parse(fs.readFileSync(FEEDBACK_FILE,'utf8')); if(!Array.isArray(list)) list=[]; } catch(e) {}
-  list.push({id:crypto.randomBytes(8).toString('hex'),type,message,createdAt:new Date().toISOString()});
-  if(list.length>1000) list=list.slice(-1000);
-  fs.writeFileSync(FEEDBACK_FILE,JSON.stringify(list)); res.json({ok:true});
-});
-app.get('/api/admin/feedback', (req,res) => {
-  const tok = req.headers['x-admin-token'] || req.query.token || '';
-  if (!ADMIN_TOKEN || !safeEqual(tok, ADMIN_TOKEN)) return res.status(403).json({ok:false});
-  let list=[]; try { list=JSON.parse(fs.readFileSync(FEEDBACK_FILE,'utf8')); if(!Array.isArray(list)) list=[]; } catch(e) {}
-  res.json({ok:true,items:list.slice(-300).reverse()});
-});
-
 app.get('/api/admin/dashboard', (req, res) => {
   if (!adminAllowed(req)) return res.status(403).json({ ok: false, error: 'Accès refusé.' });
   const accounts = Object.values(db.accounts).map(a => {
@@ -283,6 +266,7 @@ app.get('/api/admin/dashboard', (req, res) => {
       location: liveSockets.map(s => s.data.location || (s.data.room ? 'Salle multijoueur' : 'Menu / activité inconnue')).join(' · '),
       room: liveSockets.map(s => s.data.room || '').filter(Boolean).join(', '),
       lastActivityAt: liveSockets.reduce((m,s)=>Math.max(m,s.data.lastActivityAt||0),0) || null,
+      lastOnlineAt: r.lastOnlineAt || null, lastSessionSeconds: r.lastSessionSeconds || 0,
       lastSave: r.t || null,
     };
   }).sort((a,b) => Number(b.online)-Number(a.online) || a.name.localeCompare(b.name));
@@ -403,6 +387,8 @@ app.post('/api/admin/friends/:id', express.json({limit:'2kb'}), (req,res) => {
   audit('force-friend','admin',id,{otherId}); persist(); emitTo(id,'social',socialState(id)); emitTo(otherId,'social',socialState(otherId)); res.json({ok:true});
 });
 
+app.post('/api/feedback', express.json({limit:'3kb'}), (req,res)=>{const type=req.body?.type==='suggestion'?'suggestion':'bug';const body=String(req.body?.text||'').replace(/[\u0000-\u0008\u000b-\u001f]/g,'').trim().slice(0,1500);if(body.length<4)return res.status(400).json({ok:false,error:'Description trop courte.'});db.feedback=Array.isArray(db.feedback)?db.feedback:[];db.feedback.unshift({id:crypto.randomBytes(6).toString('hex'),type,text:body,version:String(req.body?.gameVersion||'').slice(0,40),at:Date.now()});db.feedback=db.feedback.slice(0,500);persist();res.json({ok:true});});
+app.get('/api/admin/feedback',(req,res)=>{if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,entries:(db.feedback||[]).slice(0,300)});});
 app.get('/health', (req, res) => res.json({ ok: true, rooms: rooms.size, players: io.engine.clientsCount }));
 io.engine.on('connection_error', (err) => console.log('[socket] erreur', err.code, err.message));
 
@@ -480,7 +466,7 @@ io.on('connection', (socket) => {
   if (db.bans && db.bans[vid]) { socket.emit('account:banned',{reason:db.bans[vid].reason||'Compte suspendu'}); return socket.disconnect(true); }
   socket.data.room = null;
   socket.data.activity = 'Connecté au jeu'; socket.data.location = 'Menu principal'; socket.data.lastActivityAt = Date.now();
-  socket.data.chatTimes = [];
+  socket.data.chatTimes = []; socket.data.connectedAt=Date.now();
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
   online.get(vid).add(socket.id);
@@ -848,6 +834,7 @@ io.on('connection', (socket) => {
 
   socket.on('leave', () => leaveRoom(socket));
   socket.on('disconnect', () => {
+    const sr=rec(vid); sr.lastOnlineAt=Date.now(); sr.lastSessionSeconds=Math.max(0,Math.round((Date.now()-(socket.data.connectedAt||Date.now()))/1000)); persist();
     leaveRoom(socket);
     const set = online.get(vid);
     if (set) { set.delete(socket.id); if (!set.size) { online.delete(vid); notifyFriendsOf(vid); } }
