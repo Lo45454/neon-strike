@@ -2559,11 +2559,28 @@ const Game = {
       : returnTo === 'lobby' ? 'Retour au multijoueur'
       : returnTo === 'menu' ? 'Retour au menu'
       : 'Lancer le prochain niveau';
-    this.renderShop();
     const ss = document.getElementById('shopScreen');
+    // Afficher la boutique avant le rendu : une erreur JavaScript ne doit plus
+    // laisser le jeu bloqué sur un écran vide lorsque GameState.SHOP est actif.
     ss.classList.remove('hidden');
     ss.classList.add('active');
     ss.scrollTop = 0;
+    try {
+      this.renderShop();
+      const previousError = document.getElementById('shopRenderError');
+      if (previousError) previousError.remove();
+    } catch (error) {
+      console.error('[NEON STRIKE] Échec du rendu de la boutique :', error);
+      let errorBox = document.getElementById('shopRenderError');
+      if (!errorBox) {
+        errorBox = document.createElement('div');
+        errorBox.id = 'shopRenderError';
+        errorBox.style.cssText = 'margin:12px 0;padding:14px;border:1px solid #ff5b6e;border-radius:8px;background:#32151b;color:#ffdce0;white-space:normal';
+        const content = ss.querySelector('.overlay-content') || ss;
+        content.prepend(errorBox);
+      }
+      errorBox.textContent = 'La boutique n’a pas pu charger tous ses éléments. Actualise la page et réessaie. Une erreur détaillée a été enregistrée dans la console.';
+    }
   },
 
   closeShop() {
