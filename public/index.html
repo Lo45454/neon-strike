@@ -502,6 +502,32 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 
 /* Correctif formulaire bug/suggestion : les contrôles restent cliquables */
 #feedbackScreen{z-index:10050} #feedbackScreen .overlay-bg{z-index:0;pointer-events:none} #feedbackScreen .overlay-content{position:relative;z-index:2;pointer-events:auto} #feedbackForm,#feedbackType,#feedbackMessage{position:relative;z-index:3;pointer-events:auto;touch-action:auto} #feedbackType{display:block;width:min(90vw,440px);min-height:44px;margin:10px auto;color:#fff;background:#07111f;border:1px solid #00f0ff;border-radius:8px;padding:10px;cursor:pointer} #feedbackMessage{display:block;width:min(90vw,440px);min-height:130px;margin:12px auto;color:#fff;background:#07111f;border:1px solid #00f0ff;border-radius:8px;padding:10px;font:inherit;line-height:1.45} #feedbackMessage:focus,#feedbackType:focus{outline:2px solid #ffe45e;outline-offset:2px}
+
+/* NEON STRIKE : coffres vectoriels et dossiers pilotes */
+.pilot-art{display:block;width:116px;height:128px;max-width:100%;margin:0 auto;filter:drop-shadow(0 0 8px #00f0ff22)}
+#chestsScreen section{position:relative;overflow:hidden;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);border-radius:0!important;background:linear-gradient(135deg,#11172d,#050912)!important}
+#chestsScreen section h2{font-family:Orbitron,sans-serif;font-size:1rem;margin-bottom:10px}
+#chestsScreen section p,#chestsScreen section small{line-height:1.65}
+.chest-preview{height:125px;display:grid;place-items:center;margin:-5px 0 8px}
+.neon-chest{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 0 9px var(--chest-color))}
+.chest-preview .neon-chest{width:160px;animation:neonHover 4s ease-in-out infinite}
+.chest-beam{opacity:0;transition:opacity .4s}
+.chest-lid{transform-box:fill-box;transform-origin:center bottom;transition:transform .65s cubic-bezier(.2,.8,.2,1)}
+#chestBigButton{width:min(300px,70vw);font-size:inherit!important;filter:none!important;animation:neonHover 3s ease-in-out infinite!important;outline-offset:10px}
+#chestBigButton::after{content:'';display:block;height:3px;margin:8px 25px;background:linear-gradient(90deg,var(--chest-color) var(--charge,0%),#203048 var(--charge,0%));box-shadow:0 0 10px var(--chest-color);transition:background .15s}
+#chestBigButton.chest-open-anim{animation:neonChestImpact .34s ease-out!important}
+#chestBigButton.is-open{animation:none!important}
+.is-open .chest-lid{transform:translateY(-56px) rotate(-8deg)}
+.is-open .chest-beam{opacity:1}
+.is-open .chest-core{fill:var(--chest-color)}
+.neon-shard{position:fixed;width:5px;height:13px;pointer-events:none;z-index:10050;animation:neonShard 1.1s ease-out forwards}
+#chestReveal{background:radial-gradient(ellipse at center,#112344f5,#020510fa 70%)!important}
+#chestRevealHint{min-height:3em;color:#e6faff;text-shadow:0 0 12px #00f0ff55}
+@keyframes neonHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes neonChestImpact{0%{transform:scale(1)}30%{transform:scale(.94) rotate(-2deg)}65%{transform:scale(1.04) rotate(1deg)}100%{transform:scale(1)}}
+@keyframes neonShard{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(200deg)}}
+@media(prefers-reduced-motion:reduce){.chest-preview .neon-chest,#chestBigButton,#chestBigButton.chest-open-anim{animation:none!important}.chest-lid{transition:none}.neon-shard{display:none}}
+
 </style>
 </head>
 <body><div id="devAnnouncement" class="hidden" style="position:relative;z-index:20000;text-align:center;padding:10px 14px;background:linear-gradient(90deg,#10223b,#073144);border-bottom:1px solid #00f0ff;color:#fff;font-weight:700;white-space:pre-wrap"></div>
@@ -825,7 +851,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
         <p id="chestRevealTitle" class="shop-section-title">COFFRE NEON</p>
         <p style="color:rgba(255,255,255,.7)">Clique sur le coffre pour l’ouvrir !</p>
         <button id="chestBigButton" type="button" aria-label="Ouvrir le coffre" style="touch-action:manipulation;position:relative;z-index:10030;pointer-events:auto;display:block;margin:20px auto;background:transparent;border:0;cursor:pointer;font-size:clamp(100px,24vw,180px);filter:drop-shadow(0 0 24px #ffdd00);animation:chestFloat 1.5s ease-in-out infinite">🧰</button>
-        <p id="chestRevealHint" class="final-wave">Touchez le coffre pour révéler votre récompense</p>
+        <p id="chestRevealHint" class="final-wave" aria-live="polite">Touchez le coffre pour révéler votre récompense</p>
         <button id="chestRevealBack" class="btn btn-small">Annuler</button>
       </div>
     </div>
@@ -958,15 +984,58 @@ const SHIPS = [
 
 // ===================== AMÉLIORATIONS =====================
 const UPGRADES = [
- {id:'pilot_spectre',name:'Kael Veyron — Spectre',portrait:'🧑🏻‍🚀',desc:'Profil compact : hitbox réduite et meilleure esquive.',price:1800,apply:s=>{s.speedMul=(s.speedMul||1)*1.12;s.hitboxMul=(s.hitboxMul||1)*.72;s.shipScale=(s.shipScale||1)*.82;}},
- {id:'pilot_bastion',name:'Orin Valek — Bastion',portrait:'🧑🏽‍🚀',desc:'Blindage lourd : +2 vies et résistance accrue, mais plus lent.',price:2600,apply:s=>{s.extraLives=(s.extraLives||0)+2;s.speedMul=(s.speedMul||1)*.78;s.damageReduction=(s.damageReduction||0)+.18;}},
- {id:'pilot_nova',name:'Lio Vant — Nova',portrait:'👨🏻‍🚀',desc:'Bonus équilibré aux dégâts, à la vitesse et à la résistance.',price:3400,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.speedMul=(s.speedMul||1)*1.05;s.extraLives=(s.extraLives||0)+1;s.fireRateMul=(s.fireRateMul||1)*.95;}},
- {id:'pilot_lyra',name:'Lyra Solen — Rafale',portrait:'👩🏼‍🚀',desc:'Cadence de tir élevée, maniabilité légèrement réduite.',price:5200,apply:s=>{s.fireRateMul=(s.fireRateMul||1)*.78;s.speedMul=(s.speedMul||1)*.92;}},
- {id:'pilot_vega',name:'Vega Thorne — Égide',portrait:'👩🏽‍🚀',desc:'Spécialiste défensive : une vie supplémentaire et résistance.',price:6400,apply:s=>{s.extraLives=(s.extraLives||0)+1;s.damageReduction=(s.damageReduction||0)+.12;}},
- {id:'pilot_zen',name:'Zhen Arclight — Percuteur',portrait:'🧑🏾‍🚀',desc:'Tirs plus puissants, mais vaisseau moins maniable.',price:7800,apply:s=>{s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.88;}},
- {id:'pilot_echo',name:'Echo Renn — Phaseur',portrait:'🧑🏼‍🚀',desc:'Esquive renforcée et petite résistance supplémentaire.',price:9200,apply:s=>{s.speedMul=(s.speedMul||1)*1.06;s.damageReduction=(s.damageReduction||0)+.06;s.hitboxMul=(s.hitboxMul||1)*.92;}},
- {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Tirs plus puissants et rapides, avec un léger malus de vitesse.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}}
+ {id:'pilot_spectre',name:'Kael Veyron — Spectre',portrait:'🧑🏻‍🚀',desc:'Miniaturisation : vaisseau −34 %, hitbox −45 %, vitesse +12 %.',price:1800,apply:s=>{s.speedMul=(s.speedMul||1)*1.12;s.hitboxMul=(s.hitboxMul||1)*.72;s.shipScale=(s.shipScale||1)*.82;}},
+ {id:'pilot_bastion',name:'Orin Valek — Bastion',portrait:'🧑🏽‍🚀',desc:'Blindage réactif : absorbe chaque 3e impact reçu. +2 vies, vitesse −22 %.',price:2600,apply:s=>{s.extraLives=(s.extraLives||0)+2;s.speedMul=(s.speedMul||1)*.78;s.damageReduction=(s.damageReduction||0)+.18;}},
+ {id:'pilot_nova',name:'Lio Vant — Nova',portrait:'👨🏻‍🚀',desc:'Surcharge Nova : 2 s de cadence doublée toutes les 8 s. +1 dégât et +1 vie.',price:3400,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.speedMul=(s.speedMul||1)*1.05;s.extraLives=(s.extraLives||0)+1;s.fireRateMul=(s.fireRateMul||1)*.95;}},
+ {id:'pilot_lyra',name:'Lyra Solen — Rafale',portrait:'👩🏼‍🚀',desc:'Rafale : cycles de 3 salves ultrarapides suivies d’une recharge. Vitesse −8 %.',price:5200,apply:s=>{s.fireRateMul=(s.fireRateMul||1)*.78;s.speedMul=(s.speedMul||1)*.92;}},
+ {id:'pilot_vega',name:'Vega Thorne — Égide',portrait:'👩🏽‍🚀',desc:'Égide : un bouclier absorbe un impact et se recharge en 10 s. +1 vie.',price:6400,apply:s=>{s.extraLives=(s.extraLives||0)+1;s.damageReduction=(s.damageReduction||0)+.12;}},
+ {id:'pilot_zen',name:'Zhen Arclight — Percuteur',portrait:'🧑🏾‍🚀',desc:'Percuteur : chaque 4e salve est surchargée (+3 dégâts). +2 dégâts, vitesse −12 %.',price:7800,apply:s=>{s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.88;}},
+ {id:'pilot_echo',name:'Echo Renn — Phaseur',portrait:'🧑🏼‍🚀',desc:'Déphasage : 1,2 s intouchable toutes les 6 s. Hitbox −8 %, vitesse +6 %.',price:9200,apply:s=>{s.speedMul=(s.speedMul||1)*1.06;s.damageReduction=(s.damageReduction||0)+.06;s.hitboxMul=(s.hitboxMul||1)*.92;}},
+ {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Guidage ionique : les projectiles corrigent leur trajectoire vers une cible. +1 dégât.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}}
 ];
+
+
+// Illustrations vectorielles locales : aucun service ou téléchargement externe.
+const PilotArt = {
+  colors: ['#00f0ff','#ffad45','#ff4de1','#ffdd00','#00ff88','#ff634a','#b77cff','#55aaff'],
+  icons: [
+    '<path d="M-12-8L-3-8M3-8L12-8M-12 8L-3 8M3 8L12 8M-3-8L-7-12M3-8L7-12M-3 8L-7 12M3 8L7 12"/>',
+    '<path d="M0-14L12-9V2L0 14L-12 2V-9Z M-7 0H7M0-7V7"/>',
+    '<path d="M0-15L4-5L15 0L4 5L0 15L-4 5L-15 0L-4-5Z"/>',
+    '<path d="M-13-9H4L-2-14M-9 0H13L7-5M-13 9H4L-2 4"/>',
+    '<path d="M0-14L12-8V4L0 14L-12 4V-8Z"/><circle r="6"/>',
+    '<path d="M-11-11L11 11M-11 11L11-11M0-16V-9M0 9V16M-16 0H-9M9 0H16"/><circle r="6"/>',
+    '<path d="M-8-13L3-13L10 0L3 13H-8L-15 0ZM2-13H10L17 0L10 13H2"/>',
+    '<circle r="6"/><ellipse rx="16" ry="7" transform="rotate(-40)"/><ellipse rx="16" ry="7" transform="rotate(40)"/>'
+  ],
+  render(id) {
+    const i = Math.max(0, UPGRADES.findIndex(p => p.id === id)), c = this.colors[i];
+    const hair = ['M48 47L55 29L77 28L89 45L72 38Z','M49 43L56 30H80L88 43Z','M47 44L55 24L66 33L79 22L89 45Z','M45 55L50 29L78 27L91 44L88 78L80 45Z','M46 58L49 36L61 25L81 29L92 46L88 80L80 45Z','M49 42L56 29L80 29L88 42Z','M47 45L56 28L81 27L90 44L76 36L60 48Z','M46 49L51 29L77 25L90 41L86 74L77 40Z'][i];
+    return `<svg class="pilot-art" viewBox="0 0 140 154" role="img" aria-label="Portrait ${UPGRADES[i].name}">
+      <rect x="3" y="3" width="134" height="148" rx="9" fill="#060b1b" stroke="${c}"/>
+      <path d="M10 30H130M10 122H130M25 10V142M115 10V142" stroke="${c}" opacity=".15"/>
+      <circle cx="70" cy="62" r="43" fill="none" stroke="${c}" opacity=".4" stroke-dasharray="4 7"/>
+      <path d="M20 143L26 112L53 96H87L114 112L120 143Z" fill="#142238" stroke="${c}" stroke-width="2"/>
+      <path d="M39 46L48 25L70 18L92 25L101 46L97 82L83 98H57L43 82Z" fill="#101b30" stroke="${c}" stroke-width="2"/>
+      <path d="M49 47Q70 31 91 47L86 76L77 85H62L53 75Z" fill="${['#c18c72','#8b5b45','#e3af91','#d5a580','#a76f52','#87543e','#c89a81','#dfad96'][i]}"/>
+      <path d="${hair}" fill="#111427"/>
+      <path d="M44 48L96 48L91 65L49 65Z" fill="#031726" stroke="${c}"/><path d="M53 56H66M75 56H87" stroke="${c}" stroke-width="3"/>
+      <path d="M58 84L70 90L82 84M33 115L47 122V142M107 115L93 122V142" fill="none" stroke="${c}"/>
+      <g transform="translate(70 122)" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round">${this.icons[i]}</g>
+      <path d="M11 18V11H27M113 11H129V27M11 133V143H27" fill="none" stroke="${c}" stroke-width="2"/>
+      <text x="10" y="148" fill="${c}" font-size="6" font-family="monospace">NS // ${String(i+1).padStart(2,'0')} // ${UPGRADES[i].name.split(' — ')[1].toUpperCase()}</text></svg>`;
+  }
+};
+const PILOT_SIGNATURES = {
+  pilot_spectre: {shipScale:.66, hitboxMul:.55},
+  pilot_bastion: {armorEvery:3},
+  pilot_nova: {novaCycle:8},
+  pilot_lyra: {burstPilot:true},
+  pilot_vega: {shieldCycle:10},
+  pilot_zen: {chargedPilot:true},
+  pilot_echo: {phaseCycle:6},
+  pilot_ion: {guidedPilot:true}
+};
 
 // ===================== CONFIGURATION =====================
 const CONFIG = {
@@ -1401,7 +1470,11 @@ class Player {
     this.x = x; this.y = y;
     this.w = CONFIG.player.width; this.h = CONFIG.player.height;
     this.shipData = shipData;
-    this.upgradeState = upgradeState || {};
+    this.upgradeState = {...(upgradeState || {})};
+    this.pilotId = upgradeState === Game.upgradeState ? Game.equippedPilotId : null;
+    if (this.pilotId) Object.assign(this.upgradeState, PILOT_SIGNATURES[this.pilotId] || {});
+    this.abilityTime = 0; this.impactCount = 0; this.shieldReady = true;
+    this.shieldCooldown = 0; this.salvo = 0;
     this.applyStats();
     this.fireTimer = 0;
     this.invincibleTimer = 0;
@@ -1425,9 +1498,17 @@ class Player {
     this.multishot = s.multishot;
     this.bulletDamage = s.bulletDamage + extraDamage;
     this.color = s.color;
+    this.shipScale = us.shipScale || 1;
+    this.hitboxMul = us.hitboxMul || 1;
   }
 
   update(dt, canvasW, canvasH) {
+    this.abilityTime += dt;
+    this.invincibleTimer = Math.max(0, this.invincibleTimer - dt);
+    if (this.upgradeState.shieldCycle && !this.shieldReady) {
+      this.shieldCooldown = Math.max(0, this.shieldCooldown - dt);
+      if (!this.shieldCooldown) this.shieldReady = true;
+    }
     let moveX = 0, moveY = 0;
     if (Input.isLeft()) moveX = -1;
     if (Input.isRight()) moveX = 1;
@@ -1457,7 +1538,6 @@ class Player {
       this.fireTimer = this.fireRate;
       return true;
     }
-    if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
     this.engineFlicker += dt * 20;
     return false;
   }
@@ -1468,19 +1548,38 @@ class Player {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.tiltAngle + this.pitchAngle);
+    const us = this.upgradeState;
+    if ((us.shieldCycle && this.shieldReady) || this.isPhased() || (us.novaCycle && this.abilityTime % us.novaCycle >= 6)) {
+      ctx.save(); ctx.strokeStyle = this.isPhased() ? '#b77cff' : us.shieldCycle ? '#00ff88' : '#ff4de1';
+      ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 14; ctx.lineWidth = 2;
+      ctx.setLineDash(this.isPhased() ? [3,5] : []);
+      ctx.beginPath(); ctx.ellipse(0,0,26*this.shipScale,29*this.shipScale,0,0,Math.PI*2); ctx.stroke();ctx.restore();
+    }
+    if (this.isPhased()) ctx.globalAlpha = .45;
+    ctx.scale(this.shipScale, this.shipScale);
     drawShipModel(ctx, this.shipData.id, this.color, this.engineFlicker);
     ctx.restore();
   }
 
+  isPhased() { return !!this.upgradeState.phaseCycle && this.abilityTime % this.upgradeState.phaseCycle >= 4.8; }
+
   hit() {
-    if (this.invincibleTimer > 0) return false;
+    if (this.invincibleTimer > 0 || this.isPhased()) return false;
+    this.impactCount++;
+    const us = this.upgradeState;
+    if ((us.armorEvery && this.impactCount % us.armorEvery === 0) || (us.shieldCycle && this.shieldReady)) {
+      if (us.shieldCycle) { this.shieldReady = false; this.shieldCooldown = us.shieldCycle; }
+      this.invincibleTimer = .65;
+      return false;
+    }
     this.lives--;
     this.invincibleTimer = CONFIG.player.invincibleTime;
     return true;
   }
 
   getBounds() {
-    return { x: this.x - this.w / 3, y: this.y - this.h / 3, w: this.w * 2 / 3, h: this.h * 2 / 3 };
+    const k = this.hitboxMul || 1;
+    return { x: this.x - this.w*k/3, y: this.y - this.h*k/3, w: this.w*2*k/3, h: this.h*2*k/3 };
   }
 }
 
@@ -2534,7 +2633,7 @@ const Game = {
 
   openShop(returnTo = 'level') {
     this.shopReturn = returnTo;
-    this.shopSnapshot = { ship: this.equippedShip, upgrades: this.ownedUpgrades.length };
+    this.shopSnapshot = { ship: this.equippedShip, upgrades: this.ownedUpgrades.length, pilot: this.equippedPilotId };
     if (returnTo === 'pause') {
       const ps = document.getElementById('pauseScreen');
       ps.classList.add('hidden'); ps.classList.remove('active');
@@ -2564,7 +2663,7 @@ const Game = {
     if (this.shopReturn === 'pause') {
       // Applique immédiatement le nouveau vaisseau / les améliorations achetées
       const snap = this.shopSnapshot;
-      if (this.player && snap && (snap.ship !== this.equippedShip || snap.upgrades !== this.ownedUpgrades.length)) {
+      if (this.player && snap && (snap.ship !== this.equippedShip || snap.upgrades !== this.ownedUpgrades.length || snap.pilot !== this.equippedPilotId)) {
         const old = this.player;
         const p = new Player(old.x, old.y, this.getShipData(this.equippedShip), this.upgradeState);
         p.lives = Utils.clamp(old.lives + (p.maxLives - old.maxLives), 1, p.maxLives);
@@ -2650,7 +2749,7 @@ const Game = {
       const canAfford = this.credits >= this.priceOf(upg);
       if (equipped) item.classList.add('equipped'); else if (owned) item.classList.add('owned'); else if (!canAfford) item.classList.add('cant-afford');
       let status = equipped ? '<span class="shop-item-status equipped">Équipé</span>' : owned ? '<span class="shop-item-status owned">Cliquer pour équiper</span>' : `<span class="shop-item-price">${this.formatCredits(this.priceOf(upg))} crédits</span>` + (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(this.priceOf(upg)-this.credits)} crédits</span>`);
-      item.innerHTML = `<div style="font-size:2.7rem;line-height:1.15;margin:4px 0 10px" aria-hidden="true">${upg.portrait||'🧑‍🚀'}</div><div class="shop-item-name">${upg.name}</div><div class="shop-item-desc">${upg.desc}</div>${status}`;
+      item.innerHTML = `<div style="font-size:2.7rem;line-height:1.15;margin:4px 0 10px" aria-hidden="true">${PilotArt.render(upg.id)}</div><div class="shop-item-name">${upg.name}</div><div class="shop-item-desc">${upg.desc}</div>${status}`;
       if (owned && !equipped) item.addEventListener('click',()=>this.equipPilot(upg.id)); else if (!owned && canAfford) item.addEventListener('click',()=>this.buyUpgrade(upg.id));
       upgradeGrid.appendChild(item);
     }
@@ -2709,7 +2808,7 @@ const Game = {
   },
 
   hideAllOverlays() {
-    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'coopCampaignScreen', 'feedbackScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
+    ['chestsScreen', 'startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'coopCampaignScreen', 'feedbackScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
       const el = document.getElementById(id);
       el.classList.add('hidden');
       el.classList.remove('active');
@@ -2904,6 +3003,7 @@ const Game = {
   },
 
   firePlayerBullets() {
+    const firstBullet = this.bullets.length;
     const damage = this.player.bulletDamage;
     const accent = this.currentLevelData.accentColor;
     const bs = this.player.bulletSpeed;
@@ -2930,6 +3030,16 @@ const Game = {
       this.bullets.push(new Bullet(this.player.x + 8, this.player.y - 10, 0, -bs, true, accent));
     } else {
       this.bullets.push(new Bullet(this.player.x, this.player.y - 15, 0, -bs, true, accent));
+    }
+    const p = this.player, us = p.upgradeState;
+    p.salvo++;
+    if (us.novaCycle && p.abilityTime % us.novaCycle >= 6) p.fireTimer *= .5;
+    if (us.burstPilot) p.fireTimer *= p.salvo % 3 ? .30 : 1.8;
+    const charged = us.chargedPilot && p.salvo % 4 === 0;
+    for (const b of this.bullets.slice(firstBullet)) {
+      b.damage = damage + (charged ? 3 : 0);
+      b.guided = !!us.guidedPilot;
+      if (charged) { b.radius = 7; b.color = '#ff634a'; }
     }
   },
 
@@ -3040,7 +3150,7 @@ const Game = {
       }
 
       // Boss collision with player
-      if ((!Coop.active || Versus.isHost) && this.updateEnemies(dt)) return;
+      if (Coop.active && !Versus.isHost ? Coop.checkGuestCollisions() : this.updateEnemies(dt)) return;
       if (this.infiniteMode) { this.infiniteHazardTimer=(this.infiniteHazardTimer||0)+dt; if(this.infiniteHazardTimer>=24){this.infiniteHazardTimer=0;this.resetHazards();} }
     if (this.updateHazards(dt)) return;
       if (this.boss.touches(this.player.getBounds())) {
@@ -3091,7 +3201,7 @@ const Game = {
     }
 
     // Update enemies + événements du niveau
-    if ((!Coop.active || Versus.isHost) && this.updateEnemies(dt)) return;
+    if (Coop.active && !Versus.isHost ? Coop.checkGuestCollisions() : this.updateEnemies(dt)) return;
     if (this.infiniteMode) { this.infiniteHazardTimer=(this.infiniteHazardTimer||0)+dt; if(this.infiniteHazardTimer>=24){this.infiniteHazardTimer=0;this.resetHazards();} }
     if (this.updateHazards(dt)) return;
 
@@ -3156,18 +3266,32 @@ const Game = {
   updatePlayerBullets(dt) {
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const bullet = this.bullets[i];
+      if (bullet.guided) {
+        let target = this.boss && this.boss.phase === 1 ? this.boss : null, best = Infinity;
+        for (const e of this.enemies) {
+          const d = (e.x-bullet.x)**2 + (e.y-bullet.y)**2;
+          if (e.y < bullet.y && d < best) { target = e; best = d; }
+        }
+        if (target) {
+          const speed = Math.hypot(bullet.vx, bullet.vy), angle = Math.atan2(target.y-bullet.y,target.x-bullet.x);
+          const k = 1-Math.exp(-3.5*dt);
+          bullet.vx += (Math.cos(angle)*speed-bullet.vx)*k;
+          bullet.vy += (Math.sin(angle)*speed-bullet.vy)*k;
+          const n = Math.hypot(bullet.vx,bullet.vy) || 1; bullet.vx *= speed/n; bullet.vy *= speed/n;
+        }
+      }
       bullet.update(dt);
       if (bullet.isOffScreen(this.height)) { this.bullets.splice(i, 1); continue; }
       if (this.applyGravity(bullet, dt) || this.hazardBulletHit(bullet)) { this.bullets.splice(i, 1); continue; }
 
       // Boss partagé : le client invité transmet les dégâts au navigateur hôte, seul arbitre.
       if (Coop.active && !Versus.isHost && this.boss && this.boss.phase === 1) {
-        Versus.send({ t: 'coop-boss-hit', x: bullet.x, y: bullet.y, radius: bullet.radius || CONFIG.bullet.radius, damage: this.player.bulletDamage });
+        Versus.send({ t: 'coop-boss-hit', x: bullet.x, y: bullet.y, radius: bullet.radius || CONFIG.bullet.radius, damage: (bullet.damage || this.player.bulletDamage) });
         this.bullets.splice(i, 1); continue;
       }
       // Boss : chaque type a sa faiblesse
       if (this.boss && this.boss.phase === 1) {
-        const res = this.boss.takeBullet(bullet, this.player.bulletDamage, this);
+        const res = this.boss.takeBullet(bullet, (bullet.damage || this.player.bulletDamage), this);
         if (res) {
           const crit = res.mult >= 2;
           this.particles.emit(bullet.x, bullet.y, crit ? 9 : 5, { speedMin: 50, speedMax: crit ? 220 : 150, lifeMin: 0.2, lifeMax: 0.4, color: res.blocked ? '#8899aa' : crit ? '#ffffff' : this.boss.color, sizeMin: 1, sizeMax: 3 });
@@ -3186,11 +3310,11 @@ const Game = {
         const dy = bullet.y - (eb.y + eb.h / 2);
         if (Math.abs(dx) < eb.w / 2 && Math.abs(dy) < eb.h / 2) {
           if (Coop.active && !Versus.isHost) {
-            Coop.requestEnemyHit(enemy.netId, this.player.bulletDamage);
+            Coop.requestEnemyHit(enemy.netId, (bullet.damage || this.player.bulletDamage));
             this.bullets.splice(i, 1);
             break;
           }
-          const killed = enemy.hit(this.player.bulletDamage);
+          const killed = enemy.hit((bullet.damage || this.player.bulletDamage));
           this.particles.emit(bullet.x, bullet.y, 5, { speedMin: 50, speedMax: 150, lifeMin: 0.2, lifeMax: 0.4, color: enemy.color, sizeMin: 1, sizeMax: 3 });
           if (killed) {
             const points = (enemy.type === 'tank' ? 30 : enemy.type === 'fast' ? 20 : enemy.type === 'splitter' ? 25 : enemy.type === 'shooter' ? 35 : 10) * (enemy.elite ? 2 : 1);
@@ -3231,10 +3355,11 @@ const Game = {
   updateEnemyBullets(dt) {
     for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
       const bullet = this.enemyBullets[i];
-      bullet.update(dt);
+      const remote = Coop.active && !Versus.isHost;
+      if (!remote) bullet.update(dt);
       if (bullet.isOffScreen(this.height)) { this.enemyBullets.splice(i, 1); continue; }
-      if (this.applyGravity(bullet, dt)) { this.enemyBullets.splice(i, 1); continue; }
-      if (bullet.split && bullet.age >= bullet.split) { // orbe qui éclate en anneau
+      if (!remote && this.applyGravity(bullet, dt)) { this.enemyBullets.splice(i, 1); continue; }
+      if (!remote && bullet.split && bullet.age >= bullet.split) { // orbe qui éclate en anneau
         const n = 10;
         for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2; this.enemyBullets.push(new Bullet(bullet.x, bullet.y, Math.cos(a) * 170, Math.sin(a) * 170, false, bullet.color)); }
         this.particles.emit(bullet.x, bullet.y, 10, { speedMin: 60, speedMax: 160, lifeMin: 0.2, lifeMax: 0.4, color: bullet.color, sizeMin: 2, sizeMax: 3 });
@@ -3270,10 +3395,10 @@ const Game = {
   updatePowerUps(dt) {
     for (let i = this.powerUps.length - 1; i >= 0; i--) {
       const pu = this.powerUps[i];
-      pu.update(dt);
+      if (!Coop.active || Versus.isHost) pu.update(dt);
       if (pu.y > this.height + 30) { this.powerUps.splice(i, 1); continue; }
       if (this.checkCollision(pu.getBounds(), this.player.getBounds())) {
-        if (Coop.active && !Versus.isHost && pu.netId != null) Versus.send({ t: 'coop-pickup', id: pu.netId });
+        if (Coop.active && !Versus.isHost && pu.netId != null) { Coop.pickedIds.add(pu.netId); Versus.send({ t: 'coop-pickup', id: pu.netId }); }
         const duration = 8;
         if (pu.type === 'rapid') this.powerUp.rapid = duration;
         else if (pu.type === 'shield') this.powerUp.shield = duration;
@@ -3532,6 +3657,7 @@ const Game = {
   loop(timestamp) {
     const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
     this.lastTime = timestamp;
+    if (Coop.active) Coop.smoothWorld();
     const duel = this.state === GameState.MULTI;
     if (duel !== this._duelUI) { this._duelUI = duel; document.body.classList.toggle('in-duel', duel); }
 
@@ -3840,6 +3966,43 @@ const HazardMethods = {
 Object.assign(Game, HazardMethods);
 
 // ===================== COFFRES GRATUITS =====================
+
+const NeonChest = {
+  art(color='#00f0ff') {
+    return `<svg class="neon-chest" viewBox="0 0 260 210" aria-hidden="true" style="--chest-color:${color}">
+      <ellipse cx="130" cy="179" rx="101" ry="13" fill="none" stroke="${color}" opacity=".4" stroke-dasharray="8 6"/>
+      <g class="chest-beam"><path d="M88 114L30 6H230L172 114Z" fill="${color}" opacity=".13"/><path d="M117 113L101 1H159L143 113Z" fill="${color}" opacity=".3"/></g>
+      <path d="M33 108L57 89H203L227 108V157L207 176H53L33 157Z" fill="#090f24" stroke="${color}" stroke-width="3"/>
+      <path d="M45 119H215M61 129V157H101M199 129V157H159M44 151L60 166M216 151L200 166" fill="none" stroke="${color}" stroke-width="2"/>
+      <path d="M74 119V166M186 119V166" stroke="${color}" opacity=".3" stroke-width="9"/>
+      <g class="chest-lid"><path d="M33 105L54 60H206L227 105L210 118H50Z" fill="#121e36" stroke="${color}" stroke-width="3"/>
+      <path d="M54 94L67 73H193L206 94ZM78 74L70 105M182 74L190 105" fill="#071121" stroke="${color}" stroke-width="2"/>
+      <path d="M106 88H154" stroke="${color}" stroke-width="4"/></g>
+      <path class="chest-core" d="M130 103L145 119L130 137L115 119Z" fill="#060b19" stroke="${color}" stroke-width="3"/>
+      <path d="M130 113L136 119L130 126L124 119Z" fill="${color}"/>
+      <path d="M18 90V52H57M203 52H242V90M18 153V187H57M203 187H242V153" stroke="${color}" fill="none" opacity=".55"/>
+      <text x="130" y="155" text-anchor="middle" font-family="monospace" font-size="9" fill="${color}" letter-spacing="3">NEON // STRIKE</text></svg>`;
+  },
+  setup(color) {
+    const b=document.getElementById('chestBigButton');
+    b.innerHTML=this.art(color); b.classList.remove('is-open','chest-open-anim');
+    b.style.transform=''; b.style.animation=''; b.style.setProperty('--chest-color',color);
+    b.style.setProperty('--charge','0%'); b.setAttribute('aria-label','Charger puis ouvrir le coffre');
+    const back=document.getElementById('chestRevealBack');back.disabled=false;back.textContent='Annuler';
+  },
+  burst(element,color='#00f0ff') {
+    const r=element.getBoundingClientRect();
+    for(let i=0;i<28;i++){
+      const p=document.createElement('i');p.className='neon-shard';
+      p.style.cssText=`left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;background:${color};box-shadow:0 0 10px ${color}`;
+      const angle=Math.PI*2*i/28;
+      p.style.setProperty('--dx',`${Math.cos(angle)*(70+Math.random()*180)}px`);
+      p.style.setProperty('--dy',`${Math.sin(angle)*(70+Math.random()*150)}px`);
+      document.body.appendChild(p);setTimeout(()=>p.remove(),1200);
+    }
+  }
+};
+
 const Chests = {
   last6h: 0, last24h: 0, timer: null, pendingHours: 0, opening: false, taps: 0, requiredTaps: 1, pendingReward: 0,
   init() {
@@ -3851,11 +4014,15 @@ const Chests = {
     add('buyChest300', () => this.buyCreditsChest(300, [{amount:120, chance:40},{amount:300, chance:35},{amount:450, chance:20},{amount:900, chance:5}], 'COFFRE VIOLET'));
     add('buyChest750', () => this.buyCreditsChest(750, [{amount:300, chance:40},{amount:750, chance:35},{amount:1125, chance:20},{amount:2250, chance:5}], 'COFFRE SOLAIRE'));
     add('buyChest1500', () => this.buyCreditsChest(1500, [{amount:600, chance:40},{amount:1500, chance:35},{amount:2250, chance:20},{amount:4500, chance:5}], 'COFFRE GALACTIQUE'));
+    document.querySelectorAll('#chestsScreen section').forEach((card,i)=>{
+      const preview=document.createElement('div');preview.className='chest-preview';
+      preview.innerHTML=NeonChest.art(['#00f0ff','#ffdd00','#b36bff','#ff8b45','#ff4de1'][i]);
+      card.prepend(preview);
+    });
     const bigChest = document.getElementById('chestBigButton');
     const openChest = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } this.reveal(); };
     bigChest.addEventListener('click', openChest, {capture:true});
-    bigChest.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') openChest(e); }, {capture:true});
-    bigChest.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openChest(e); }, {capture:true});
+    // Le clic natif gère souris, tactile, Entrée et Espace sans compter deux fois.
     add('chestRevealBack', () => this.cancelReveal());
     const payBtn = document.getElementById('chatPayBtn');
     if (payBtn) payBtn.addEventListener('click', () => { const amount = Number(prompt('Combien de crédits veux-tu envoyer à cet ami ?')); if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) return; const input=document.getElementById('chatInput'); if (!input) return; input.value='/pay '+amount; const form=document.getElementById('chatForm'); if(form) form.requestSubmit(); });
@@ -3875,7 +4042,7 @@ const Chests = {
     }
   },
   buyCreditsChest(cost, rewardTable, label) {
-    if (this.opening) return;
+    if (this.opening || this.revealing) return;
     if (!Game.devAccount && Game.credits < cost) {
       const msg = document.getElementById('chestMessage');
       msg.textContent = `Crédits insuffisants : il faut ${Game.formatCredits(cost)} crédits.`;
@@ -3897,28 +4064,28 @@ const Chests = {
     reveal.classList.remove('hidden'); reveal.style.display = 'flex';
     document.getElementById('chestRevealTitle').textContent = label;
     document.getElementById('chestRevealHint').textContent = `Tape 3 fois sur le coffre pour révéler la récompense (0/3)`;
-    document.getElementById('chestBigButton').textContent = '🎁';
+    NeonChest.setup(cost===300?'#b36bff':cost===750?'#ff8b45':'#ff4de1');
     document.getElementById('chestBigButton').disabled = false;
     document.getElementById('chestMessage').textContent = '';
     this.paidChest = {cost, reward, label};
     Save.save(); Game.renderShop?.();
   },
   beginOpen(hours) {
-    if (!this.ready(hours) || this.opening) return;
+    if (!this.ready(hours) || this.opening || this.revealing) return;
     this.paidChest = null;
     this.pendingHours = hours; this.opening = true; this.taps = 0;
     const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
     this.pendingReward = Math.floor(Math.random() * (max - min + 1)) + min;
-    this.requiredTaps = Math.max(3, Math.min(12, 3 + Math.floor((this.pendingReward - min) / Math.max(1, (max-min)/9)))); 
+    this.requiredTaps = 3; 
     const reveal = document.getElementById('chestReveal');
     reveal.classList.remove('hidden'); reveal.style.display = 'flex';
     document.getElementById('chestRevealTitle').textContent = hours === 6 ? 'COFFRE RAPIDE' : 'COFFRE QUOTIDIEN';
     document.getElementById('chestRevealHint').textContent = `Tape ${this.requiredTaps} fois sur le coffre pour l’ouvrir (0/${this.requiredTaps})`;
-    document.getElementById('chestBigButton').textContent = '🧰';
+    NeonChest.setup(hours===6?'#00f0ff':'#ffdd00');
     document.getElementById('chestBigButton').disabled = false;
     document.getElementById('chestMessage').textContent = '';
   },
-  cancelReveal() { if (this.opening && this.paidChest && !Game.devAccount) { Game.credits += this.paidChest.cost; Save.save(); Game.renderShop?.(); } document.getElementById('chestReveal').classList.add('hidden'); document.getElementById('chestReveal').style.display = 'none'; this.pendingHours = 0; this.opening = false; this.paidChest = null; },
+  cancelReveal() { if (this.revealing) return; if (this.opening && this.paidChest && !Game.devAccount) { Game.credits += this.paidChest.cost; Save.save(); Game.renderShop?.(); } document.getElementById('chestReveal').classList.add('hidden'); document.getElementById('chestReveal').style.display = 'none'; this.pendingHours = 0; this.opening = false; this.paidChest = null; },
   reveal() {
     if (!this.opening || (!this.pendingHours && !this.paidChest)) return;
     const hours = this.pendingHours;
@@ -3926,27 +4093,24 @@ const Chests = {
     this.taps++;
     const chestBtn = document.getElementById('chestBigButton');
     chestBtn.classList.remove('chest-open-anim'); void chestBtn.offsetWidth; chestBtn.classList.add('chest-open-anim');
-    chestBtn.style.transform = `scale(${this.taps >= this.requiredTaps ? 1.12 : 0.94 + Math.random()*0.12})`;
+    chestBtn.style.setProperty('--charge',`${Math.min(100,this.taps/this.requiredTaps*100)}%`);
+    playSFX(380+this.taps*160,.08,'sine',.06);
     document.getElementById('chestRevealHint').textContent = this.taps >= this.requiredTaps ? 'Le coffre s’ouvre…' : `Encore ${this.requiredTaps-this.taps} tape(s) ! (${this.taps}/${this.requiredTaps})`;
     if (this.taps < this.requiredTaps) return;
     this.opening = false;
     const amount = this.pendingReward;
     if (!this.paidChest && !Game.devAccount) { if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now(); }
     const chest = document.getElementById('chestBigButton');
-    chest.disabled = true; chest.style.animation = 'none'; chest.textContent = '💥';
+    chest.disabled = true; chest.classList.add('is-open');
+    chest.setAttribute('aria-label','Coffre ouvert');
+    this.revealing=true;document.getElementById('chestRevealBack').disabled=true;
     chest.classList.remove('chest-open-anim'); void chest.offsetWidth; chest.classList.add('chest-open-anim');
-    const icons=['🟡','🪙','💰','✨','🪙','⚡','◆'];
-    for(let i=0;i<32;i++){
-      const el=document.createElement('span');el.className='chest-particle';el.textContent=icons[i%icons.length];
-      el.style.left=(window.innerWidth/2)+'px';el.style.top=(window.innerHeight/2)+'px';
-      el.style.setProperty('--dx',(Math.random()*520-260)+'px');el.style.setProperty('--dy',(Math.random()*420-210)+'px');
-      document.body.appendChild(el);setTimeout(()=>el.remove(),1250);
-    }
+    NeonChest.burst(chest,chest.style.getPropertyValue('--chest-color'));
     Game.credits = Game.devAccount ? 2147483647 : Game.credits + amount; Save.save(); Game.renderShop?.(); this.render(); playPurchase();
     document.getElementById('chestRevealHint').textContent = `RÉCOMPENSE : +${amount} CRÉDITS`;
     document.getElementById('chestMessage').textContent = `Coffre ouvert : +${amount} crédits !`;
     document.getElementById('chestMessage').className = 'mp-status ok';
-    setTimeout(() => { this.cancelReveal(); this.paidChest = null; document.getElementById('chestMessage').textContent = `Récompense ajoutée : +${amount} crédits !`; }, 2100);
+    setTimeout(() => { this.revealing=false; this.cancelReveal(); this.paidChest = null; document.getElementById('chestMessage').textContent = `Récompense ajoutée : +${amount} crédits !`; }, 2100);
   }
 };
 
@@ -5247,6 +5411,44 @@ const Versus = {
 // ===================== NIVEAUX EN ÉQUIPE (COOP EN LIGNE) =====================
 // Les deux joueurs jouent une mission de vagues en parallèle et voient la position du coéquipier.
 // Les vagues/ennemis sont simulés localement sur chaque navigateur; seules les positions sont synchronisées.
+
+// Tampon indépendant par flux. Le temps distant n'est jamais comparé directement à l'horloge locale.
+class CoopTimeline {
+  constructor() { this.frames=[]; this.offset=null; this.delay=120; this.lastArrival=0; this.lastRender=-Infinity; }
+  push(data) {
+    const now=performance.now(), remote=Number.isFinite(data.ts)?data.ts:now;
+    if (this.lastArrival && now-this.lastArrival>1500) {
+      this.frames=[]; this.offset=null; this.lastRender=-Infinity;
+    }
+    if (this.frames.length && remote <= this.frames[this.frames.length-1].t) return false;
+    const gap=this.lastArrival ? now-this.lastArrival : 50;
+    this.delay += (Math.max(90,Math.min(180,85+Math.abs(gap-50)*1.4))-this.delay)*.08;
+    this.lastArrival=now;
+    this.offset=this.offset===null?now-remote:Math.min(this.offset,now-remote);
+    this.frames.push({t:remote,data});
+    if(this.frames.length>40)this.frames.shift();
+    return true;
+  }
+  sample() {
+    const f=this.frames;if(!f.length)return null;
+    const target=Math.max(this.lastRender,performance.now()-this.offset-this.delay);
+    this.lastRender=target;
+    while(f.length>2 && f[1].t<=target) f.shift();
+    let a=f[0],b=f[1]||a;
+    if(target<a.t)return {a:a.data,b:a.data,k:0};
+    const span=Math.max(1,b.t-a.t);
+    const k=a===b?0:Math.max(0,Math.min(1+100/span,(target-a.t)/span));
+    return {a:a.data,b:b.data,k};
+  }
+}
+function coopBlend(a,b,k) {
+  const out={...a};
+  for(const key of ['x','y','rotation','tilt','age','bobPhase']) {
+    if(Number.isFinite(a[key])&&Number.isFinite(b[key]))out[key]=a[key]+(b[key]-a[key])*k;
+  }
+  return out;
+}
+
 const Coop = {
   active: false, peer: null, sendClock: 0, lastPeerAt: 0, peerName: 'COÉQUIPIER',
   nextEnemyId: 1, worldClock: 0, selectedLevel: 0, lastWorld: 0,
@@ -5254,6 +5456,8 @@ const Coop = {
     level = Math.max(0, Math.min(LEVELS.length - 1, Number(level) || 0));
     if (this.active && Game.level === level) return;
     this.active = true; this.peer = null; this.sendClock = 0; this.worldClock = 0;
+    this.worldStream = new CoopTimeline(); this.peerStream = new CoopTimeline();
+    this.appliedFrame = null; this.pickedIds = new Set(); this.collisionCooldown = 0;
     this.nextEnemyId = 1; this.selectedLevel = level; this.lastPeerAt = performance.now();
     Game.hideAllOverlays();
     Game.start(level);
@@ -5261,6 +5465,9 @@ const Coop = {
   },
   toast(message) {},
   onMsg(d) {
+    if (!d || !Number.isFinite(d.x) || !Number.isFinite(d.y)) return;
+    if (!this.peerStream) this.peerStream = new CoopTimeline();
+    if (!this.peerStream.push(d)) return;
     this.peer = d;
     this.peerName = String(d.name || 'COÉQUIPIER').slice(0, 16);
     this.lastPeerAt = performance.now();
@@ -5286,6 +5493,46 @@ const Coop = {
   },
   applyWorld(d) {
     if (!this.active || Versus.isHost || !d) return;
+    if (!this.worldStream) this.worldStream = new CoopTimeline();
+    this.worldStream.push(d);
+    this.lastWorld = performance.now();
+  },
+  smoothWorld() {
+    if (!this.active || Versus.isHost || !this.worldStream) return;
+    if ([GameState.PAUSED,GameState.SHOP,GameState.MENU,GameState.GAME_OVER].includes(Game.state)) return;
+    const sample=this.worldStream.sample(); if(!sample)return;
+    const {a,b}=sample;
+    const k=a.level===b.level && a.wave===b.wave && a.state===b.state ? sample.k : 0;
+    if(this.appliedFrame!==a) { this.commitWorld(a); this.appliedFrame=a; }
+    const blendList=(live,oldList,newList)=>{
+      const oldMap=new Map((oldList||[]).map(o=>[o.id,o]));
+      const newMap=new Map((newList||[]).map(o=>[o.id,o]));
+      for(const e of live) {
+        const old=oldMap.get(e.netId), next=newMap.get(e.netId);
+        if(old && next) {
+          const p=coopBlend(old,next,k);
+          for(const key of ['x','y','rotation','age','bobPhase']) if(Number.isFinite(p[key]))e[key]=p[key];
+        }
+      }
+    };
+    blendList(Game.enemies,a.enemies,b.enemies);
+    blendList(Game.enemyBullets,a.enemyBullets,b.enemyBullets);
+    blendList(Game.powerUps,a.powerUps,b.powerUps);
+    if(Game.boss && a.boss && b.boss) {
+      const p=coopBlend(a.boss,b.boss,k);
+      Game.boss.x=p.x;Game.boss.y=p.y;Game.boss.rotation=p.rotation;
+    }
+  },
+  checkGuestCollisions() {
+    if (!Game.player) return false;
+    for(const e of Game.enemies) if(Game.checkCollision(e.getBounds(),Game.player.getBounds()) && Game.player.hit()) {
+      Game.screenShake=.3;playHit();
+      if(Game.player.lives<=0){Game.gameOver();return true;}
+    }
+    return false;
+  },
+  commitWorld(d) {
+    if (!this.active || Versus.isHost || !d) return;
     this.lastWorld = performance.now();
     Game.level = Math.max(0, Math.min(LEVELS.length - 1, Number(d.level) || 0));
     Game.currentLevelData = LEVELS[Game.level];
@@ -5304,10 +5551,12 @@ const Coop = {
     });
     Game.enemyBullets = (Array.isArray(d.enemyBullets) ? d.enemyBullets : []).slice(0, 150).map(o => {
       const b = new Bullet(o.x, o.y, o.vx, o.vy, false, o.color || '#ff3d7f');
-      Object.assign(b, o); return b;
+      Object.assign(b, o, {netId:o.id}); return b;
     });
     const oldPowerUps = new Map(Game.powerUps.map(p => [p.netId, p]));
-    Game.powerUps = (Array.isArray(d.powerUps) ? d.powerUps : []).slice(0, 30).map(o => {
+    const presentIds=new Set((d.powerUps||[]).map(o=>o.id));
+    for(const id of this.pickedIds) if(!presentIds.has(id))this.pickedIds.delete(id);
+    Game.powerUps = (Array.isArray(d.powerUps) ? d.powerUps : []).slice(0, 30).filter(o=>!this.pickedIds.has(o.id)).map(o => {
       const p = oldPowerUps.get(o.id) || new PowerUp(o.x, o.y, o.type);
       Object.assign(p, o, { netId: o.id }); return p;
     });
@@ -5326,11 +5575,11 @@ const Coop = {
   },
   makeWorld() {
     return {
-      t: 'coop-world', level: Game.level, wave: Game.wave, state: Game.state,
+      t: 'coop-world', ts: performance.now(), level: Game.level, wave: Game.wave, state: Game.state,
       enemiesSpawned: Game.enemiesSpawned, enemiesKilled: Game.enemiesKilled,
       spawnTimer: Game.spawnTimer, waveBreakTimer: Game.waveBreakTimer, levelCompleting: Game.levelCompleting,
       enemies: Game.enemies.map(e => ({ id: e.netId || (e.netId = this.nextEnemyId++), x:e.x,y:e.y,baseX:e.baseX,w:e.w,h:e.h,health:e.health,maxHealth:e.maxHealth,speed:e.speed,fireTimer:e.fireTimer,fireRate:e.fireRate,zigzagPhase:e.zigzagPhase,zigzagSpeed:e.zigzagSpeed,zigzagAmp:e.zigzagAmp,rotation:e.rotation,type:e.type,color:e.color,size:e.size,elite:!!e.elite,level:e.level,wave:e.wave })),
-      enemyBullets: Game.enemyBullets.map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,radius:b.radius,age:b.age,homing:b.homing,split:b.split})),
+      enemyBullets: Game.enemyBullets.map(b => ({id:b.netId || (b.netId=this.nextEnemyId++),x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,radius:b.radius,age:b.age,homing:b.homing,split:b.split})),
       powerUps: Game.powerUps.map(p => ({id:p.netId || (p.netId = this.nextEnemyId++),x:p.x,y:p.y,type:p.type,vy:p.vy,size:p.size,rotation:p.rotation,bobPhase:p.bobPhase,color:p.color})),
       boss: Game.boss ? { x:Game.boss.x,y:Game.boss.y,hp:Game.boss.hp,health:Game.boss.health,maxHealth:Game.boss.maxHealth,phase:Game.boss.phase,rotation:Game.boss.rotation,fire:Game.boss.fire,cycle:Game.boss.cycle, color:Game.boss.color } : null
     };
@@ -5339,14 +5588,14 @@ const Coop = {
     if (!this.active || !Versus.socket || !Versus.socket.connected || !Versus.connected) return;
     this.sendClock += dt;
     this.collisionCooldown = Math.max(0, (this.collisionCooldown||0) - dt);
-    if (this.sendClock >= 0.08) {
-      this.sendClock = 0;
+    if (this.sendClock >= 0.05) {
+      this.sendClock %= 0.05;
       const p = Game.player;
-      Versus.send({ t:'coop-state', x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', ship:Game.equippedShip, bullets:(Game.bullets||[]).slice(-24).map(b=>[b.x/Game.width,b.y/Game.height]), hp:p?p.lives:0 });
+      Versus.send({ t:'coop-state', ts:performance.now(), scale:p?p.shipScale:1, tilt:p?p.tiltAngle:0, x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', ship:Game.equippedShip, bullets:(Game.bullets||[]).slice(-36).map(b=>[b.x/Game.width,b.y/Game.height,b.netId || (b.netId=this.nextEnemyId++)]), hp:p?p.lives:0 });
     }
     if (Versus.isHost) {
       this.worldClock += dt;
-      if (this.worldClock >= 0.08) { this.worldClock = 0; Versus.send(this.makeWorld()); }
+      if (this.worldClock >= 0.05) { this.worldClock %= 0.05; Versus.send(this.makeWorld()); }
     }
     if (this.peer && performance.now() - this.lastPeerAt > 6000) this.peer = null;
     if (this.peer && this.peer.alive && Game.player && Game.state !== GameState.GAME_OVER && this.collisionCooldown <= 0) {
@@ -5357,11 +5606,19 @@ const Coop = {
   drawPartner(ctx) {
     if (!this.active) return;
     const W=Game.width,H=Game.height; ctx.save(); ctx.textAlign='center'; ctx.font='bold 10px "JetBrains Mono", monospace'; ctx.fillStyle='#00ff88'; ctx.shadowBlur=8; ctx.shadowColor='#00ff88'; ctx.fillText(`CAMPAGNE COOP • NIVEAU ${Game.level+1} • VAGUE ${Game.wave}`,W/2,18); ctx.shadowBlur=0;
-    const q=this.peer;
+    const ps=this.peerStream && this.peerStream.sample();
+    const q=ps?coopBlend(ps.a,ps.b,ps.k):this.peer;
+    if(q && ps) {
+      const next=new Map((ps.b.bullets||[]).map(b=>[b[2],b]));
+      q.bullets=(ps.a.bullets||[]).map(b=>{
+        const n=b[2]!=null?next.get(b[2]):null;
+        return n?[b[0]+(n[0]-b[0])*ps.k,b[1]+(n[1]-b[1])*ps.k,b[2]]:b;
+      });
+    }
     if (!q || performance.now()-this.lastPeerAt>6000) { ctx.fillStyle='#ffdd00';ctx.font='9px "JetBrains Mono", monospace';ctx.fillText('RECONNEXION DU COÉQUIPIER…',W/2,34);ctx.restore();return; }
     const x=Utils.clamp((Number(q.x)||.5)*W,18,W-18), y=Utils.clamp((Number(q.y)||.25)*H,55,H-45), color=/^#[0-9a-f]{6}$/i.test(q.color||'')?q.color:'#00ff88';
     // Le coéquipier est rendu comme un vrai vaisseau, avec sa couleur et ses tirs visibles.
-    ctx.save(); ctx.globalAlpha=q.alive?.98:.35; ctx.translate(x,y); ctx.shadowBlur=18; ctx.shadowColor=color; drawShipModel(ctx, q.ship || 'default', color, performance.now()/50); ctx.restore();
+    ctx.save(); ctx.globalAlpha=q.alive?.98:.35; ctx.translate(x,y); ctx.rotate(Number(q.tilt)||0); const scale=Utils.clamp(Number(q.scale)||1,.4,1.5);ctx.scale(scale,scale); ctx.shadowBlur=18; ctx.shadowColor=color; drawShipModel(ctx, q.ship || 'default', color, performance.now()/50); ctx.restore();
     ctx.save(); ctx.fillStyle=color; ctx.shadowBlur=9; ctx.shadowColor=color;
     (Array.isArray(q.bullets)?q.bullets:[]).forEach(b=>{if(!Array.isArray(b))return;const bx=Utils.clamp(Number(b[0])*W,2,W-2),by=Utils.clamp(Number(b[1])*H,2,H-2);ctx.beginPath();ctx.ellipse(bx,by,3,7,0,0,Math.PI*2);ctx.fill();});
     ctx.shadowBlur=0;ctx.textAlign='center';ctx.fillStyle=color;ctx.font='bold 9px "JetBrains Mono", monospace';ctx.fillText((q.name||this.peerName||'COÉQUIPIER').toUpperCase(),x,y+27);ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='8px "JetBrains Mono", monospace';ctx.fillText(`♥ ${q.hp||0}`,x,y+39);ctx.restore();ctx.restore();
@@ -5652,351 +5909,7 @@ const Social = {
 
 Game.init();
 </script>
-<script data-pplx-inline-edit>
-(function () {
-  if (window === window.top) return;
-
-  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
-  const MAX_FONT_BYTES = 500 * 1024;
-  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
-  const DEFAULT_LINE_HEIGHT = 16;
-  let scrollForwarding = false;
-  let scrollRaf = 0;
-  let trustedTopOrigin = null;
-
-  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
-  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
-  // across multiple labels.
-  function matchesAllowedOrigin(origin) {
-    if (!origin) return false;
-    for (const entry of allowedParentOrigins) {
-      if (!entry.includes("*")) {
-        if (entry === origin) return true;
-        continue;
-      }
-      const pattern = new RegExp(
-        "^" +
-          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
-          "$",
-      );
-      if (pattern.test(origin)) return true;
-    }
-    return false;
-  }
-
-  // Trust decision: when the sender is same-origin-visible (event.origin is a
-  // real origin like https://www.perplexity.ai) we trust event.origin directly.
-  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
-  // broker's stamped `parentOrigin` to identify the top window. The fallback
-  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
-  // on the response path (see postToTrustedTop) to ensure replies can't be
-  // delivered to anyone but the actual top window of that claimed origin.
-  function getTrustedParentOrigin(event) {
-    const forwardedParentOrigin =
-      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
-    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
-    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
-  }
-
-  // All responses go to window.top with targetOrigin = the allowlisted origin.
-  // An attacker that iframes us inside their own null-origin broker can claim
-  // any parentOrigin they like, but the browser will drop the reply whenever
-  // the real top's origin doesn't match — so the screenshot never leaves.
-  function postToTrustedTop(message) {
-    if (!trustedTopOrigin) return;
-    try {
-      window.top.postMessage(message, trustedTopOrigin);
-    } catch (_error) {}
-  }
-
-  function inlineAll(original, clone) {
-    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
-
-    try {
-      const computedStyle = getComputedStyle(original);
-      // cssText on a computed style is the serialized declaration in modern
-      // Chromium/Safari — a single read beats enumerating ~400 longhand
-      // properties. Firefox returns "" here, so we fall back on empty.
-      const serialized = computedStyle.cssText;
-      if (serialized) {
-        clone.style.cssText = serialized;
-      } else {
-        const parts = new Array(computedStyle.length);
-        for (let index = 0; index < computedStyle.length; index += 1) {
-          const property = computedStyle[index];
-          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
-        }
-        clone.style.cssText = parts.join("");
-      }
-    } catch (_error) {}
-
-    const originalChildren = original.children;
-    const clonedChildren = clone.children;
-    for (
-      let index = 0;
-      index < originalChildren.length && index < clonedChildren.length;
-      index += 1
-    ) {
-      inlineAll(originalChildren[index], clonedChildren[index]);
-    }
-  }
-
-  function extractFontUrl(srcValue) {
-    const matches = [
-      ...srcValue.matchAll(
-        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
-      ),
-    ];
-    if (matches.length === 0) return null;
-    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
-    if (woff2) return woff2[1];
-    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
-    if (woff) return woff[1];
-    return matches[0][1];
-  }
-
-  // Cache resolved font URL -> data URI across captures. Fonts on a page
-  // essentially never change, and a batch run emits multiple captures back to
-  // back — without this we'd refetch + re-base64 every time.
-  const fontDataUriCache = new Map();
-  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
-
-  async function fetchAsDataUri(url) {
-    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
-    let dataUri = null;
-    try {
-      const response = await fetch(url, { mode: "cors", credentials: "omit" });
-      if (response.ok) {
-        const blob = await response.blob();
-        if (blob.size <= MAX_FONT_BYTES) {
-          dataUri = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () =>
-              resolve(typeof reader.result === "string" ? reader.result : null);
-            reader.onerror = () => resolve(null);
-            reader.readAsDataURL(blob);
-          });
-        }
-      }
-    } catch (_error) {
-      dataUri = null;
-    }
-    fontDataUriCache.set(url, dataUri);
-    return dataUri;
-  }
-
-  function collectFontFaceRuleTexts() {
-    const rules = [];
-    for (const sheet of document.styleSheets) {
-      let cssRules;
-      try {
-        cssRules = sheet.cssRules;
-      } catch (_error) {
-        continue;
-      }
-      if (!cssRules) continue;
-      for (const rule of cssRules) {
-        const cssText = rule.cssText || "";
-        if (cssText.startsWith("@font-face")) rules.push(cssText);
-      }
-    }
-    return rules;
-  }
-
-  async function buildInlinedFontCss() {
-    const ruleTexts = collectFontFaceRuleTexts();
-    if (ruleTexts.length === 0) return null;
-
-    const resolved = ruleTexts.map((cssText) => {
-      if (!SRC_DECLARATION_RE.test(cssText)) return null;
-      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
-      if (!srcMatch) return null;
-      const url = extractFontUrl(srcMatch[1]);
-      if (!url) return null;
-      try {
-        return { cssText, url: new URL(url, document.baseURI).href };
-      } catch (_error) {
-        return null;
-      }
-    });
-
-    const dataUris = await Promise.all(
-      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
-    );
-
-    const inlined = [];
-    let totalBytes = 0;
-    for (let index = 0; index < resolved.length; index += 1) {
-      const entry = resolved[index];
-      const dataUri = dataUris[index];
-      if (!entry || !dataUri) continue;
-      const approxBytes = dataUri.length * 0.75;
-      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
-      totalBytes += approxBytes;
-      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
-    }
-    return inlined.length > 0 ? inlined.join("\n") : null;
-  }
-
-  function stripExternal(clone) {
-    const images = clone.querySelectorAll("img");
-    for (let index = 0; index < images.length; index += 1) {
-      const src = images[index].getAttribute("src");
-      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
-    }
-
-    const elements = clone.querySelectorAll("*");
-    for (let index = 0; index < elements.length; index += 1) {
-      const style = elements[index].style.cssText;
-      if (style && style.includes("url(")) {
-        elements[index].style.cssText = style.replace(
-          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
-          "none",
-        );
-      }
-    }
-  }
-
-  function emitScroll() {
-    scrollRaf = 0;
-    if (!scrollForwarding) return;
-    postToTrustedTop({
-      type: "INLINE_EDIT_SCROLL",
-      scrollX: window.scrollX,
-      scrollY: window.scrollY,
-    });
-  }
-
-  window.addEventListener(
-    "scroll",
-    function () {
-      if (!scrollForwarding || scrollRaf) return;
-      scrollRaf = requestAnimationFrame(emitScroll);
-    },
-    { passive: true, capture: true },
-  );
-
-  async function handleCaptureRequest(event) {
-    const requestId = event.data.requestId;
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    function postResult(dataUrl) {
-      postToTrustedTop({
-        type: "INLINE_EDIT_SCREENSHOT_RESULT",
-        requestId,
-        dataUrl,
-        scrollX,
-        scrollY,
-      });
-    }
-
-    try {
-      // Wait for any pending web fonts to resolve so both inline metrics and
-      // the @font-face inlining below see the same loaded faces.
-      if (document.fonts && document.fonts.ready) {
-        try {
-          await document.fonts.ready;
-        } catch (_error) {}
-      }
-
-      const clone = document.documentElement.cloneNode(true);
-      inlineAll(document.documentElement, clone);
-
-      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
-      for (let index = 0; index < removedNodes.length; index += 1) {
-        removedNodes[index].remove();
-      }
-
-      stripExternal(clone);
-
-      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
-      // can resolve them — external font URLs aren't fetched during
-      // foreignObject rendering, which would otherwise force a fallback face
-      // and change text metrics.
-      const inlinedFontCss = await buildInlinedFontCss();
-      if (inlinedFontCss) {
-        const styleEl = document.createElement("style");
-        styleEl.textContent = inlinedFontCss;
-        const head = clone.querySelector("head");
-        if (head) head.appendChild(styleEl);
-        else clone.insertBefore(styleEl, clone.firstChild);
-      }
-
-      const html = new XMLSerializer().serializeToString(clone);
-      const svg =
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
-        '<foreignObject width="100%" height="100%">' +
-        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
-        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
-        html +
-        "</div></div></foreignObject></svg>";
-      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-      const image = new Image();
-      image.onload = function () {
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext("2d").drawImage(image, 0, 0);
-        postResult(canvas.toDataURL("image/png"));
-      };
-      image.onerror = function () {
-        postResult(null);
-      };
-      image.src = svgUrl;
-    } catch (_error) {
-      postResult(null);
-    }
-  }
-
-  window.addEventListener("message", function (event) {
-    if (!event.data) return;
-    // Only accept messages from the direct parent frame. Blocks sibling /
-    // unrelated-window postMessage senders that could otherwise reach us.
-    if (event.source !== window.parent) return;
-
-    const trustedParentOrigin = getTrustedParentOrigin(event);
-    if (!trustedParentOrigin) return;
-    trustedTopOrigin = trustedParentOrigin;
-
-    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
-      scrollForwarding = true;
-      emitScroll();
-      return;
-    }
-
-    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
-      scrollForwarding = false;
-      if (scrollRaf) cancelAnimationFrame(scrollRaf);
-      scrollRaf = 0;
-      return;
-    }
-
-    if (event.data.type === "INLINE_EDIT_SCROLL_BY") {
-      const { deltaX, deltaY, deltaMode } = event.data;
-      if (!scrollForwarding || !Number.isFinite(deltaX) || !Number.isFinite(deltaY)) return;
-      if (deltaMode !== 0 && deltaMode !== 1 && deltaMode !== 2) return;
-      const lineHeight =
-        parseFloat(getComputedStyle(document.documentElement).lineHeight) || DEFAULT_LINE_HEIGHT;
-      const scaleX = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerWidth : 1;
-      const scaleY = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerHeight : 1;
-      // The selection overlay receives the wheel event instead of this iframe.
-      // Instant scrolling preserves trackpad deltas even on smooth-scroll sites.
-      window.scrollBy({ left: deltaX * scaleX, top: deltaY * scaleY, behavior: "instant" });
-      emitScroll();
-      return;
-    }
-
-    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
-
-    handleCaptureRequest(event);
-  });
-})();
-
-
-</script><script>
+<script>
 (async()=>{try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement');const j=await r.json();const el=document.getElementById('devAnnouncement');if(j.ok&&j.announcement&&j.announcement.text){el.textContent='📢 '+j.announcement.text;el.classList.remove('hidden')}}catch(e){}})();
 </script></body>
 </html>
