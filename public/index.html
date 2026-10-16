@@ -502,6 +502,14 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   touch-action: manipulation;
 }
 .touch-hint { display: none; }
+@media (max-width: 700px) {
+  #gameCanvas { width:100vw; height:100dvh; }
+  .overlay-content { box-sizing:border-box; }
+  .level-grid { gap:.55rem; }
+  .shop-item { min-width:0; }
+  .shop-item-name, .shop-item-desc { overflow-wrap:anywhere; }
+  .touch-pause { bottom:calc(64px + env(safe-area-inset-bottom)); }
+}
 @media (pointer: coarse) {
   .touch-pause { display: block; }
   .touch-hint { display: block; }
@@ -939,8 +947,8 @@ const LEVELS = [
     LEVELS.push({
       name, bgColors: th.bg, starColors: th.stars, accentColor: th.accent, enemyColor: th.enemy,
       enemyMix: { normal: Math.max(0.05, 1 - fast - tank - splitter - shooter), fast, tank, splitter, shooter },
-      wavesCount: 4 + Math.floor(t * 3), enemiesPerWave: 10 + Math.floor(t * 8), waveIncrement: 3 + Math.floor(t * 2),
-      spawnInterval: Math.max(0.42, 0.7 - t * 0.28), enemySpeed: 125 + Math.round(t * 55),
+      wavesCount: 4 + Math.floor(t * 3), enemiesPerWave: 11 + Math.floor(t * 9), waveIncrement: 3 + Math.floor(t * 2),
+      spawnInterval: Math.max(0.36, 0.66 - t * 0.30), enemySpeed: 138 + Math.round(t * 72),
       bossColor: th.accent, bossName: BOSSES[k], mods: MODS[k], bossType: BTYPES[k],
     });
   });
@@ -962,6 +970,10 @@ const SHIPS = [
   { id: 'bulwark', name: 'Bastion', desc: 'Coque massive et solide', price: 28000, color: '#52ffa8', speed: 255, fireRate: 0.29, bulletSpeed: 720, maxLives: 8, multishot: 1, bulletDamage: 3, unlockLevel: 14 },
   { id: 'arc', name: 'Arc', desc: 'Éventail de tirs multiples', price: 32000, color: '#ff4fd8', speed: 350, fireRate: 0.26, bulletSpeed: 800, maxLives: 4, multishot: 3, bulletDamage: 2, unlockLevel: 16 },
   { id: 'wraith', name: 'Spectre-X', desc: 'Tirs précis et cadence élevée', price: 36500, color: '#7c83ff', speed: 385, fireRate: 0.145, bulletSpeed: 930, maxLives: 3, multishot: 1, bulletDamage: 4, unlockLevel: 18 },
+  { id: 'manta', name: 'Manta', desc: 'Ailes larges, esquive rapide et tirs doubles', price: 41000, color: '#22d3ee', speed: 425, fireRate: 0.22, bulletSpeed: 820, maxLives: 3, multishot: 1, bulletDamage: 3, unlockLevel: 20 },
+  { id: 'lance', name: 'Lance-Photon', desc: 'Canon central précis, dégâts élevés', price: 44500, color: '#fbbf24', speed: 315, fireRate: 0.31, bulletSpeed: 1120, maxLives: 4, multishot: 0, bulletDamage: 7, unlockLevel: 22 },
+  { id: 'trident', name: 'Trident', desc: 'Trois canons, couverture large', price: 48500, color: '#fb7185', speed: 355, fireRate: 0.24, bulletSpeed: 850, maxLives: 4, multishot: 3, bulletDamage: 3, unlockLevel: 24 },
+  { id: 'prism', name: 'Prisme Royal', desc: 'Coque renforcée, bon équilibre', price: 53000, color: '#c4b5fd', speed: 325, fireRate: 0.19, bulletSpeed: 900, maxLives: 6, multishot: 1, bulletDamage: 4, unlockLevel: 26 },
 ];
 
 // ===================== AMÉLIORATIONS =====================
@@ -1346,6 +1358,22 @@ const SHIP_MODELS = {
   bulwark: { hull:[[-15,-17],[15,-17],[24,-7],[24,13],[15,22],[-15,22],[-24,13],[-24,-7]], inner:[[-11,-10],[11,-10],[15,6],[0,15],[-15,6]], engines:[[-12,20,7],[12,20,7]], guns:[[-13,-20,6,12],[13,-20,6,12]], plates:[[-22,-2,5,15],[17,-2,5,15]] },
   arc: { hull:[[0,-23],[7,-8],[24,-15],[20,8],[11,15],[0,10],[-11,15],[-20,8],[-24,-15],[-7,-8]], inner:[[0,-14],[7,5],[0,9],[-7,5]], engines:[[-10,14,5],[0,17,5],[10,14,5]], guns:[[-20,-14],[0,-22,4,10],[20,-14]], cockpit:[0,-1,4], spikes:true },
   wraith: { hull:[[0,-26],[4,-10],[15,-1],[10,17],[0,12],[-10,17],[-15,-1],[-4,-10]], inner:[[0,-18],[3,1],[0,8],[-3,1]], engines:[[-6,16,4],[6,16,4]], guns:[[-8,-19,3,12],[8,-19,3,12]], cockpit:[0,-4,3], scope:true },
+  manta: { // Aile large en croissant, mobile et agile
+    hull:[[0,-22],[10,-10],[28,-19],[20,-2],[24,15],[8,10],[0,17],[-8,10],[-24,15],[-20,-2],[-28,-19],[-10,-10]],
+    inner:[[0,-14],[8,1],[0,10],[-8,1]], engines:[[-13,13,5],[13,13,5]], guns:[[-22,-13,4,10],[22,-13,4,10]], cockpit:[0,-2,4], spikes:true,
+  },
+  lance: { // Vaisseau très étroit, canon central puissant
+    hull:[[0,-32],[4,-12],[8,6],[5,20],[0,15],[-5,20],[-8,6],[-4,-12]],
+    inner:[[0,-24],[2,0],[0,10],[-2,0]], engines:[[0,19,4]], guns:[[0,-28,4,18]], cockpit:[0,-5,3], longFlame:true, scope:true,
+  },
+  trident: { // Trois pointes avant et tirs latéraux
+    hull:[[0,-27],[5,-10],[15,-22],[14,-5],[25,12],[10,10],[0,18],[-10,10],[-25,12],[-14,-5],[-15,-22],[-5,-10]],
+    inner:[[0,-16],[7,5],[0,11],[-7,5]], engines:[[-10,14,5],[0,17,5],[10,14,5]], guns:[[-15,-18,4,11],[0,-25,4,12],[15,-18,4,11]], cockpit:[0,-2,4],
+  },
+  prism: { // Coque géométrique et quatre propulseurs
+    hull:[[0,-24],[13,-13],[22,0],[13,15],[0,23],[-13,15],[-22,0],[-13,-13]],
+    inner:[[0,-15],[8,0],[0,14],[-8,0]], engines:[[-13,14,5],[13,14,5]], guns:[[-12,-17,4,10],[12,-17,4,10]], cockpit:[0,-2,5], plates:[[-19,-2,4,10],[15,-2,4,10]],
+  },
 };
 
 function drawShipModel(ctx, id, color, flickerPhase = 0) {
@@ -1669,7 +1697,7 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = Math.round(level < 5 ? (46 + level * 17) : (114 + (level - 4) * 29 + Math.pow(level - 4, 1.25) * 3));
+    this.maxHealth = Math.round(level < 5 ? (42 + level * 15) : (108 + (level - 4) * 35 + Math.pow(level - 4, 1.22) * 4));
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
     this.t = 0; this.rotation = 0;
@@ -1678,7 +1706,7 @@ class Boss {
     this.flash = 0;       // flash quand touché
     this.rage = false;
     this.rageText = 0;
-    this.diff = level < 5 ? (1.08 + level * 0.055) : (1.30 + Math.min(level - 4, 20) * 0.035); // premiers boss légèrement plus accessibles, progression renforcée dès le niveau 6
+    this.diff = level < 5 ? (1.04 + level * 0.05) : (1.28 + Math.min(level - 4, 20) * 0.045); // difficulté plus douce au début, puis progression régulière dès le niveau 6
     this.st = {};         // état propre au type
     this.setup();
   }
@@ -2559,28 +2587,11 @@ const Game = {
       : returnTo === 'lobby' ? 'Retour au multijoueur'
       : returnTo === 'menu' ? 'Retour au menu'
       : 'Lancer le prochain niveau';
+    this.renderShop();
     const ss = document.getElementById('shopScreen');
-    // Afficher la boutique avant le rendu : une erreur JavaScript ne doit plus
-    // laisser le jeu bloqué sur un écran vide lorsque GameState.SHOP est actif.
     ss.classList.remove('hidden');
     ss.classList.add('active');
     ss.scrollTop = 0;
-    try {
-      this.renderShop();
-      const previousError = document.getElementById('shopRenderError');
-      if (previousError) previousError.remove();
-    } catch (error) {
-      console.error('[NEON STRIKE] Échec du rendu de la boutique :', error);
-      let errorBox = document.getElementById('shopRenderError');
-      if (!errorBox) {
-        errorBox = document.createElement('div');
-        errorBox.id = 'shopRenderError';
-        errorBox.style.cssText = 'margin:12px 0;padding:14px;border:1px solid #ff5b6e;border-radius:8px;background:#32151b;color:#ffdce0;white-space:normal';
-        const content = ss.querySelector('.overlay-content') || ss;
-        content.prepend(errorBox);
-      }
-      errorBox.textContent = 'La boutique n’a pas pu charger tous ses éléments. Actualise la page et réessaie. Une erreur détaillée a été enregistrée dans la console.';
-    }
   },
 
   closeShop() {
@@ -2759,7 +2770,7 @@ const Game = {
   },
 
   hideAllOverlays() {
-    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
+    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'coopLevelsScreen', 'feedbackScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
       const el = document.getElementById(id);
       el.classList.add('hidden');
       el.classList.remove('active');
