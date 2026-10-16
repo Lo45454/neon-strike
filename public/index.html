@@ -499,6 +499,9 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   .btn { padding: 14px 28px; }
   .overlay-content { padding: 1.2rem 0.8rem; }
 }
+
+/* Correctif formulaire bug/suggestion : les contrôles restent cliquables */
+#feedbackScreen{z-index:10050} #feedbackScreen .overlay-bg{z-index:0;pointer-events:none} #feedbackScreen .overlay-content{position:relative;z-index:2;pointer-events:auto} #feedbackForm,#feedbackType,#feedbackMessage{position:relative;z-index:3;pointer-events:auto;touch-action:auto} #feedbackType{display:block;width:min(90vw,440px);min-height:44px;margin:10px auto;color:#fff;background:#07111f;border:1px solid #00f0ff;border-radius:8px;padding:10px;cursor:pointer} #feedbackMessage{display:block;width:min(90vw,440px);min-height:130px;margin:12px auto;color:#fff;background:#07111f;border:1px solid #00f0ff;border-radius:8px;padding:10px;font:inherit;line-height:1.45} #feedbackMessage:focus,#feedbackType:focus{outline:2px solid #ffe45e;outline-offset:2px}
 </style>
 </head>
 <body><div id="devAnnouncement" class="hidden" style="position:relative;z-index:20000;text-align:center;padding:10px 14px;background:linear-gradient(90deg,#10223b,#073144);border-bottom:1px solid #00f0ff;color:#fff;font-weight:700;white-space:pre-wrap"></div>
@@ -950,17 +953,19 @@ const SHIPS = [
   { id: 'manta', name: 'Manta', desc: 'Ailes larges, rapide et agile', price: 41000, color: '#22d3ee', speed: 425, fireRate: 0.22, bulletSpeed: 820, maxLives: 3, multishot: 1, bulletDamage: 3, unlockLevel: 20 },
   { id: 'lance', name: 'Lance-Photon', desc: 'Canon central précis, dégâts élevés', price: 44500, color: '#fbbf24', speed: 315, fireRate: 0.31, bulletSpeed: 1120, maxLives: 4, multishot: 0, bulletDamage: 7, unlockLevel: 22 },
   { id: 'trident', name: 'Trident', desc: 'Trois canons, couverture large', price: 48500, color: '#fb7185', speed: 355, fireRate: 0.24, bulletSpeed: 850, maxLives: 4, multishot: 3, bulletDamage: 3, unlockLevel: 24 },
-  { id: 'prism', name: 'Prisme Royal', desc: 'Coque renforcée et équilibrée', price: 53000, color: '#c4b5fd', speed: 325, fireRate: 0.19, bulletSpeed: 900, maxLives: 6, multishot: 1, bulletDamage: 4, unlockLevel: 26 },
+  { id: 'prism', name: 'Prisme Royal', desc: 'Vaisseau premium : salves prismatiques, cadence élevée et coque renforcée', price: 53000, color: '#c4b5fd', speed: 350, fireRate: 0.155, bulletSpeed: 980, maxLives: 7, multishot: 2, bulletDamage: 5, unlockLevel: 26 },
 ];
 
 // ===================== AMÉLIORATIONS =====================
 const UPGRADES = [
-  { id: 'pilot_william', name: 'Pilote William — Spectre', desc: 'Profil réduit : hitbox et taille du vaisseau réduites, esquive plus facile.', price: 1800, apply: (s) => { s.speedMul=(s.speedMul||1)*1.12; s.hitboxMul=(s.hitboxMul||1)*0.72; s.shipScale=(s.shipScale||1)*0.82; } },
-  { id: 'pilot_olivier', name: 'Pilote Olivier — Bastion', desc: 'Blindage renforcé : +2 vies, mais le vaisseau est plus lent.', price: 2600, apply: (s) => { s.extraLives=(s.extraLives||0)+2; s.speedMul=(s.speedMul||1)*0.78; s.damageReduction=(s.damageReduction||0)+0.18; } },
-  { id: 'pilot_loan', name: 'Pilote Loan — Polyvalent', desc: 'Bonus équilibré : un peu plus de dégâts, de vitesse et de résistance.', price: 3400, apply: (s) => { s.extraDamage=(s.extraDamage||0)+1; s.speedMul=(s.speedMul||1)*1.05; s.extraLives=(s.extraLives||0)+1; s.fireRateMul=(s.fireRateMul||1)*0.95; } },
-  { id: 'pilot_lyra', name: 'Pilote Lyra — Rafale', desc: 'Cadence améliorée, mais vitesse de déplacement légèrement réduite.', price: 5200, apply: (s) => { s.fireRateMul=(s.fireRateMul||1)*0.78; s.speedMul=(s.speedMul||1)*0.92; } },
-  { id: 'pilot_vega', name: 'Pilote Vega — Gardien', desc: 'Une vie supplémentaire et une meilleure résistance aux dégâts.', price: 6400, apply: (s) => { s.extraLives=(s.extraLives||0)+1; s.damageReduction=(s.damageReduction||0)+0.12; } },
-  { id: 'pilot_zen', name: 'Pilote Zen — Percuteur', desc: 'Tirs plus puissants et rapides, au prix d’une maniabilité réduite.', price: 7800, apply: (s) => { s.extraDamage=(s.extraDamage||0)+2; s.fireRateMul=(s.fireRateMul||1)*0.9; s.speedMul=(s.speedMul||1)*0.88; } },
+ {id:'pilot_spectre',name:'Kael Veyron — Spectre',portrait:'🧑🏻‍🚀',desc:'Profil compact : hitbox réduite et meilleure esquive.',price:1800,apply:s=>{s.speedMul=(s.speedMul||1)*1.12;s.hitboxMul=(s.hitboxMul||1)*.72;s.shipScale=(s.shipScale||1)*.82;}},
+ {id:'pilot_bastion',name:'Orin Valek — Bastion',portrait:'🧑🏽‍🚀',desc:'Blindage lourd : +2 vies et résistance accrue, mais plus lent.',price:2600,apply:s=>{s.extraLives=(s.extraLives||0)+2;s.speedMul=(s.speedMul||1)*.78;s.damageReduction=(s.damageReduction||0)+.18;}},
+ {id:'pilot_nova',name:'Lio Vant — Nova',portrait:'👨🏻‍🚀',desc:'Bonus équilibré aux dégâts, à la vitesse et à la résistance.',price:3400,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.speedMul=(s.speedMul||1)*1.05;s.extraLives=(s.extraLives||0)+1;s.fireRateMul=(s.fireRateMul||1)*.95;}},
+ {id:'pilot_lyra',name:'Lyra Solen — Rafale',portrait:'👩🏼‍🚀',desc:'Cadence de tir élevée, maniabilité légèrement réduite.',price:5200,apply:s=>{s.fireRateMul=(s.fireRateMul||1)*.78;s.speedMul=(s.speedMul||1)*.92;}},
+ {id:'pilot_vega',name:'Vega Thorne — Égide',portrait:'👩🏽‍🚀',desc:'Spécialiste défensive : une vie supplémentaire et résistance.',price:6400,apply:s=>{s.extraLives=(s.extraLives||0)+1;s.damageReduction=(s.damageReduction||0)+.12;}},
+ {id:'pilot_zen',name:'Zhen Arclight — Percuteur',portrait:'🧑🏾‍🚀',desc:'Tirs plus puissants, mais vaisseau moins maniable.',price:7800,apply:s=>{s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.88;}},
+ {id:'pilot_echo',name:'Echo Renn — Phaseur',portrait:'🧑🏼‍🚀',desc:'Esquive renforcée et petite résistance supplémentaire.',price:9200,apply:s=>{s.speedMul=(s.speedMul||1)*1.06;s.damageReduction=(s.damageReduction||0)+.06;s.hitboxMul=(s.hitboxMul||1)*.92;}},
+ {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Tirs plus puissants et rapides, avec un léger malus de vitesse.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}}
 ];
 
 // ===================== CONFIGURATION =====================
@@ -2357,6 +2362,7 @@ const Game = {
   ownedShips: ['default'],
   equippedShip: 'default',
   ownedUpgrades: [],
+  equippedPilotId: null,
   upgradeState: {},
   shipUpgradeStates: {},
   shipColors: {},
@@ -2383,7 +2389,7 @@ const Game = {
     document.getElementById('startBtn').addEventListener('click', () => this.start(0));
     document.getElementById('restartBtn').addEventListener('click', () => this.start(this.lastStartLevel || 0));
     document.getElementById('levelsBtn').addEventListener('click', () => this.openLevels());
-    document.getElementById('feedbackBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('feedbackScreen').classList.remove('hidden'); });
+    document.getElementById('feedbackBtn').addEventListener('click', () => { this.hideAllOverlays(); const fs=document.getElementById('feedbackScreen'); fs.classList.remove('hidden'); fs.classList.add('active'); setTimeout(()=>document.getElementById('feedbackType').focus({preventScroll:true}),80); });
     document.getElementById('feedbackBackBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('startScreen').classList.remove('hidden'); document.getElementById('startScreen').classList.add('active'); });
     document.getElementById('feedbackForm').addEventListener('submit', async (e) => { e.preventDefault(); const status=document.getElementById('feedbackStatus'); status.textContent='Envoi…'; try { const r=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:document.getElementById('feedbackType').value,message:document.getElementById('feedbackMessage').value})}); const d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.error||'Erreur'); status.textContent='Merci ! Ton message a été envoyé.'; document.getElementById('feedbackMessage').value=''; } catch(err) { status.textContent='Impossible d’envoyer le message. Réessaie plus tard.'; } });
     document.getElementById('coopCampaignBtn').addEventListener('click', () => { this.hideAllOverlays(); document.getElementById('coopCampaignScreen').classList.remove('hidden'); });
@@ -2635,37 +2641,17 @@ const Game = {
       const current = this.shipColors[this.equippedShip] || this.getShipData(this.equippedShip).color;
       colors.forEach(([name,color]) => { const b=document.createElement('button'); b.className='ship-color-swatch'+(current.toLowerCase()===color.toLowerCase()?' selected':''); b.style.background=color; b.style.color=color; b.title=name; b.setAttribute('aria-label',name); b.addEventListener('click',()=>{this.shipColors[this.equippedShip]=color; Save.save(); this.renderShop(); if(this.player){this.player.color=color;} }); colorGrid.appendChild(b); });
     }
-    // Render upgrades for the currently equipped ship only
+    // Render pilots: buy once, then equip one at a time.
     const upgradeGrid = document.getElementById('upgradeGrid');
     upgradeGrid.innerHTML = '';
     for (const upg of UPGRADES) {
-      const item = document.createElement('div');
-      item.className = 'shop-item';
-      const owned = this.ownedUpgrades.includes(upg.id);
-      const reqMet = !upg.req || this.ownedUpgrades.includes(upg.req);
+      const item = document.createElement('div'); item.className = 'shop-item';
+      const owned = this.ownedUpgrades.includes(upg.id); const equipped = this.equippedPilotId === upg.id;
       const canAfford = this.credits >= this.priceOf(upg);
-
-      if (owned) item.classList.add('owned');
-      else if (!reqMet) item.classList.add('locked');
-      else if (!canAfford) item.classList.add('cant-afford');
-
-      let status = '';
-      if (owned) status = '<span class="shop-item-status owned">Acheté</span>';
-      else if (!reqMet) status = '<span class="shop-item-status" style="color:rgba(255,255,255,0.3)">Verrouillé</span>';
-      else if (this.creator) status = '<span class="shop-item-price" style="color:var(--neon-green)">Gratuit</span>';
-      else status = `<span class="shop-item-price">${upg.price} crédits</span>` +
-        (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(upg.price - this.credits)} crédits</span>`);
-
-      item.innerHTML = `
-        <div class="shop-item-name">${upg.name}</div>
-        <div class="shop-item-desc">${upg.desc}</div>
-        ${status}
-      `;
-
-      if (!owned && reqMet && canAfford) {
-        item.addEventListener('click', () => this.buyUpgrade(upg.id));
-      }
-
+      if (equipped) item.classList.add('equipped'); else if (owned) item.classList.add('owned'); else if (!canAfford) item.classList.add('cant-afford');
+      let status = equipped ? '<span class="shop-item-status equipped">Équipé</span>' : owned ? '<span class="shop-item-status owned">Cliquer pour équiper</span>' : `<span class="shop-item-price">${this.formatCredits(this.priceOf(upg))} crédits</span>` + (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(this.priceOf(upg)-this.credits)} crédits</span>`);
+      item.innerHTML = `<div style="font-size:2.7rem;line-height:1.15;margin:4px 0 10px" aria-hidden="true">${upg.portrait||'🧑‍🚀'}</div><div class="shop-item-name">${upg.name}</div><div class="shop-item-desc">${upg.desc}</div>${status}`;
+      if (owned && !equipped) item.addEventListener('click',()=>this.equipPilot(upg.id)); else if (!owned && canAfford) item.addEventListener('click',()=>this.buyUpgrade(upg.id));
       upgradeGrid.appendChild(item);
     }
   },
@@ -2688,8 +2674,8 @@ const Game = {
       // Chaque vaisseau conserve ses propres améliorations.
       this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
       this.equippedShip = shipId;
-      const saved = this.shipUpgradeStates[shipId] || {state:{}, owned:[]};
-      this.upgradeState = {...saved.state}; this.ownedUpgrades = [...saved.owned];
+      const saved = this.shipUpgradeStates[shipId] || {state:{}, owned:[], pilot:null};
+      this.upgradeState = {...saved.state}; this.ownedUpgrades = [...saved.owned]; this.equippedPilotId = saved.pilot || null;
       playPurchase();
     } else {
       const price = this.priceOf(ship);
@@ -2698,7 +2684,7 @@ const Game = {
       if (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount) { this.credits += price; return; }
       this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
       this.ownedShips.push(shipId);
-      this.equippedShip = shipId; this.upgradeState = {}; this.ownedUpgrades = []; this.shipUpgradeStates[shipId] = {state:{},owned:[]};
+      this.equippedShip = shipId; this.upgradeState = {}; this.ownedUpgrades = []; this.shipUpgradeStates[shipId] = {state:{},owned:[],pilot:null};
       playPurchase();
       Save.save();
       this.renderShop();
@@ -2710,20 +2696,16 @@ const Game = {
   },
 
   buyUpgrade(upgradeId) {
-    const upg = UPGRADES.find(u => u.id === upgradeId);
-    if (!upg) return;
-    if (this.ownedUpgrades.includes(upgradeId)) return;
-    if (upg.req && !this.ownedUpgrades.includes(upg.req)) return;
-    const price = this.priceOf(upg);
-    if (this.credits < price) return;
-    this.credits -= price;
-    this.ownedUpgrades.push(upgradeId);
-    upg.apply(this.upgradeState);
-    this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
-    playPurchase();
-    Save.save();
-    this.renderShop();
-    if (price > 0) this.flashWallet(-price);
+    const upg=UPGRADES.find(u=>u.id===upgradeId); if(!upg||this.ownedUpgrades.includes(upgradeId)) return;
+    if(upg.req&&!this.ownedUpgrades.includes(upg.req)) return;
+    const price=this.priceOf(upg); if(this.credits<price) return;
+    this.credits-=price; this.ownedUpgrades.push(upgradeId); playPurchase(); Save.save(); this.renderShop(); if(price>0)this.flashWallet(-price);
+  },
+  equipPilot(pilotId) {
+    const upg=UPGRADES.find(u=>u.id===pilotId); if(!upg||!this.ownedUpgrades.includes(pilotId))return;
+    this.equippedPilotId=pilotId; this.upgradeState={}; upg.apply(this.upgradeState);
+    this.shipUpgradeStates[this.equippedShip]={state:{...this.upgradeState},owned:[...this.ownedUpgrades],pilot:pilotId};
+    playPurchase(); Save.save(); this.renderShop();
   },
 
   hideAllOverlays() {
@@ -2811,7 +2793,7 @@ const Game = {
   spawnEnemy(limit = Infinity) {
     const mix = this.currentLevelData.enemyMix;
     const make = (x, y) => {
-      const e = new Enemy(x, y, this.level, this.wave, mix);
+      const e = new Enemy(x, y, this.level, this.wave, mix); if (this.infiniteMode) { const ramp=1+Math.min(1.8,Math.max(0,this.wave-1)*0.035); e.speed*=ramp; e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(1.2,Math.max(0,this.wave-1)*0.025)))); e.maxHealth=e.health; }
       if (typeof Coop !== 'undefined' && Coop.active && Versus.isHost) e.netId = Coop.nextEnemyId++;
       if (this.hasMod('speed')) e.speed *= 1.3;
       if (this.hasMod('elite') && Math.random() < 0.25) { e.elite = true; e.health = e.health * 2 + 1; e.maxHealth = e.health; }
@@ -2833,7 +2815,7 @@ const Game = {
   },
 
   spawnBoss() {
-    this.boss = new Boss(this.level, this.width);
+    this.boss = new Boss(this.level, this.width); if (this.infiniteMode) { const ramp=1+Math.min(2.2,Math.max(0,this.wave-1)*0.04); this.boss.maxHealth=Math.ceil(this.boss.maxHealth*ramp); this.boss.health=this.boss.maxHealth; this.boss.speed*=1+Math.min(.45,Math.max(0,this.wave-1)*.008); }
     this.state = GameState.BOSS_FIGHT;
     playBossSpawn();
   },
@@ -3059,7 +3041,8 @@ const Game = {
 
       // Boss collision with player
       if ((!Coop.active || Versus.isHost) && this.updateEnemies(dt)) return;
-      if (this.updateHazards(dt)) return;
+      if (this.infiniteMode) { this.infiniteHazardTimer=(this.infiniteHazardTimer||0)+dt; if(this.infiniteHazardTimer>=24){this.infiniteHazardTimer=0;this.resetHazards();} }
+    if (this.updateHazards(dt)) return;
       if (this.boss.touches(this.player.getBounds())) {
         if (this.player.hit()) {
           this.screenShake = 0.3;
@@ -3109,6 +3092,7 @@ const Game = {
 
     // Update enemies + événements du niveau
     if ((!Coop.active || Versus.isHost) && this.updateEnemies(dt)) return;
+    if (this.infiniteMode) { this.infiniteHazardTimer=(this.infiniteHazardTimer||0)+dt; if(this.infiniteHazardTimer>=24){this.infiniteHazardTimer=0;this.resetHazards();} }
     if (this.updateHazards(dt)) return;
 
     // Update player bullets
@@ -3976,6 +3960,7 @@ const Save = {
       ownedShips: Game.creator && Creator.backup ? Creator.backup.ships : Game.ownedShips,
       equippedShip: Game.creator && Creator.backup && !Creator.backup.ships.includes(Game.equippedShip) ? 'default' : Game.equippedShip,
       ownedUpgrades: Game.ownedUpgrades,
+      equippedPilotId: Game.equippedPilotId,
       upgradeState: Game.upgradeState,
       shipUpgradeStates: Game.shipUpgradeStates,
       shipColors: Game.shipColors,
@@ -4001,7 +3986,7 @@ const Save = {
     clearTimeout(this.timer);
     Game.creator = false; Creator.backup = null; Game.devAccount = false;
     Game.credits = 0; Game.ownedShips = ['default']; Game.equippedShip = 'default';
-    Game.ownedUpgrades = []; Game.upgradeState = {}; Game.shipUpgradeStates = {}; Game.shipColors = {}; Game.unlockedLevel = 0; Game.bestScores = {};
+    Game.ownedUpgrades = []; Game.equippedPilotId = null; Game.upgradeState = {}; Game.shipUpgradeStates = {}; Game.shipColors = {}; Game.unlockedLevel = 0; Game.bestScores = {};
     const d = res && res.data;
     if (d) {
       Game.devAccount = !!d.devAccount;
