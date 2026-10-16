@@ -47,11 +47,10 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], announcements: { text: '', updatedAt: 0 }, feedback: [] };
+  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], announcements: { text: '', updatedAt: 0 } };
   if (!raw || typeof raw !== 'object') return base;
   if (raw.v === 2 || raw.v === 3) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
-    if (!Array.isArray(base.feedback)) base.feedback = [];
     return base;
   }
   base.saves = raw; // ancien format : objet de sauvegardes
@@ -197,7 +196,7 @@ app.post('/api/save', express.text({ type: '*/*', limit: '20kb' }), (req, res) =
   const r = rec(visitor(req));
   // Les privilèges développeur sont conservés côté serveur même si le client sauvegarde sa progression.
   if (r.data && r.data.devAccount) { data.devAccount = true; data.unlockedLevel = 999; data.credits = 2147483647; }
-  if (r.data && (r.data.devAccount || r.data.devTest)) { data.devAccount = true; data.devTest = true; data.credits = 2147483647; data.unlockedLevel = 999; data.ownedShips = Array.from(new Set([...(Array.isArray(data.ownedShips)?data.ownedShips:[]), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse','comet','bulwark','arc','wraith'])); data.ownedUpgrades = Array.from(new Set([...(Array.isArray(data.ownedUpgrades)?data.ownedUpgrades:[]), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])); data.chestLast6h=0; data.chestLast24h=0; data.chest6hAt=0; data.chest24hAt=0; }
+  if (r.data && (r.data.devAccount || r.data.devTest)) { data.devAccount = true; data.devTest = true; data.credits = 2147483647; data.unlockedLevel = 999; data.ownedShips = Array.from(new Set([...(Array.isArray(data.ownedShips)?data.ownedShips:[]), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse'])); data.ownedUpgrades = Array.from(new Set([...(Array.isArray(data.ownedUpgrades)?data.ownedUpgrades:[]), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])); data.chestLast6h=0; data.chestLast24h=0; data.chest6hAt=0; data.chest24hAt=0; }
   r.data = data; r.t = Date.now();
   persist();
   res.json({ ok: true });
@@ -224,26 +223,6 @@ app.post('/api/creator-off', (req, res) => {
 });
 
 // Sauvegarde complète (pour conserver la progression lors des mises à jour)
-// Retours des joueurs : bug reports et suggestions, conservés avec les données du jeu.
-app.post('/api/feedback', express.json({limit:'4kb'}), (req,res)=>{
-  const type = req.body?.type === 'suggestion' ? 'suggestion' : 'bug';
-  const title = String(req.body?.title || '').trim().slice(0,90);
-  const message = String(req.body?.message || '').trim().slice(0,1500);
-  if (message.length < 5) return res.status(400).json({ok:false,error:'Message trop court.'});
-  db.feedback = Array.isArray(db.feedback) ? db.feedback : [];
-  db.feedback.unshift({id:crypto.randomUUID(),type,title,message,playerId:visitor(req),at:Date.now(),status:'nouveau'});
-  db.feedback = db.feedback.slice(0,500); persist(); res.json({ok:true});
-});
-app.get('/api/admin/feedback', (req,res)=>{
-  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  res.json({ok:true,entries:(Array.isArray(db.feedback)?db.feedback:[])});
-});
-app.post('/api/admin/feedback/:id/status', express.json({limit:'1kb'}), (req,res)=>{
-  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const item=(db.feedback||[]).find(x=>x.id===req.params.id); if(!item)return res.status(404).json({ok:false,error:'Message introuvable.'});
-  const status=['nouveau','en_cours','résolu','refusé'].includes(req.body?.status)?req.body.status:'nouveau'; item.status=status; persist(); res.json({ok:true});
-});
-
 app.get('/api/admin/export', (req, res) => {
   const tok = req.headers['x-admin-token'] || req.query.token || '';
   if (!ADMIN_TOKEN || !safeEqual(tok, ADMIN_TOKEN)) return res.status(403).json({ ok: false });
@@ -267,6 +246,23 @@ function adminResolvePlayer(input) {
   for (const a of Object.values(db.accounts)) if (nameKey(a.name) === wanted) return a.id;
   return null;
 }
+const FEEDBACK_FILE = path.join(DATA_DIR, 'feedback.json');
+app.post('/api/feedback', express.json({limit:'4kb'}), (req,res) => {
+  const type = String(req.body?.type || 'suggestion').slice(0,30);
+  const message = String(req.body?.message || '').trim().slice(0,1500);
+  if (message.length < 5) return res.status(400).json({ok:false,error:'Message trop court.'});
+  let list=[]; try { list=JSON.parse(fs.readFileSync(FEEDBACK_FILE,'utf8')); if(!Array.isArray(list)) list=[]; } catch(e) {}
+  list.push({id:crypto.randomBytes(8).toString('hex'),type,message,createdAt:new Date().toISOString()});
+  if(list.length>1000) list=list.slice(-1000);
+  fs.writeFileSync(FEEDBACK_FILE,JSON.stringify(list)); res.json({ok:true});
+});
+app.get('/api/admin/feedback', (req,res) => {
+  const tok = req.headers['x-admin-token'] || req.query.token || '';
+  if (!ADMIN_TOKEN || !safeEqual(tok, ADMIN_TOKEN)) return res.status(403).json({ok:false});
+  let list=[]; try { list=JSON.parse(fs.readFileSync(FEEDBACK_FILE,'utf8')); if(!Array.isArray(list)) list=[]; } catch(e) {}
+  res.json({ok:true,items:list.slice(-300).reverse()});
+});
+
 app.get('/api/admin/dashboard', (req, res) => {
   if (!adminAllowed(req)) return res.status(403).json({ ok: false, error: 'Accès refusé.' });
   const accounts = Object.values(db.accounts).map(a => {
@@ -354,7 +350,7 @@ app.post('/api/admin/grant-dev/:id', express.json({limit:'1kb'}), (req,res) => {
   const id=adminResolvePlayer(req.params.id);
   if(!id) return res.status(404).json({ok:false,error:'Joueur introuvable. Vérifie le pseudo ou l’ID.'});
   const r=rec(id); r.data={...(r.data||{}), credits:2147483647, unlockedLevel:999,
-    ownedShips:Array.from(new Set([...(Array.isArray(r.data?.ownedShips)?r.data.ownedShips:[]), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse','comet','bulwark','arc','wraith'])),
+    ownedShips:Array.from(new Set([...(Array.isArray(r.data?.ownedShips)?r.data.ownedShips:[]), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse'])),
     ownedUpgrades:Array.from(new Set([...(Array.isArray(r.data?.ownedUpgrades)?r.data.ownedUpgrades:[]), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])),
     devAccount:true, devTest:true, chestLast6h:0, chestLast24h:0, chest6hAt:0, chest24hAt:0};
   r.t=Date.now(); audit('dev-grant','admin',id,{credits:'max',level:999,ships:'all configured',chests:'no cooldown'}); persist();
@@ -627,7 +623,7 @@ io.on('connection', (socket) => {
       if (r.data && (r.data.devAccount || r.data.devTest)) {
         data = { ...data, devAccount: true, devTest: true, credits: 2147483647,
           unlockedLevel: 999,
-          ownedShips: Array.from(new Set([...(Array.isArray(data.ownedShips) ? data.ownedShips : []), ...(Array.isArray(r.data.ownedShips) ? r.data.ownedShips : []), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse','comet','bulwark','arc','wraith'])),
+          ownedShips: Array.from(new Set([...(Array.isArray(data.ownedShips) ? data.ownedShips : []), ...(Array.isArray(r.data.ownedShips) ? r.data.ownedShips : []), 'default','speeder','tanker','multi','sniper','destroyer','phantom','nova','vanguard','eclipse'])),
           ownedUpgrades: Array.from(new Set([...(Array.isArray(data.ownedUpgrades) ? data.ownedUpgrades : []), ...(Array.isArray(r.data.ownedUpgrades) ? r.data.ownedUpgrades : []), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])),
           chestLast6h: 0, chestLast24h: 0, chest6hAt: 0, chest24hAt: 0 };
       }
