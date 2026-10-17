@@ -503,30 +503,39 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 /* Correctif formulaire bug/suggestion : les contrôles restent cliquables */
 #feedbackScreen{z-index:10050} #feedbackScreen .overlay-bg{z-index:0;pointer-events:none} #feedbackScreen .overlay-content{position:relative;z-index:2;pointer-events:auto} #feedbackForm,#feedbackType,#feedbackMessage{position:relative;z-index:3;pointer-events:auto;touch-action:auto} #feedbackType{display:block;width:min(90vw,440px);min-height:44px;margin:10px auto;color:#fff;background:#07111f;border:1px solid #00f0ff;border-radius:8px;padding:10px;cursor:pointer} #feedbackMessage{display:block;width:min(90vw,440px);min-height:130px;margin:12px auto;color:#fff;background:#07111f;border:1px solid #00f0ff;border-radius:8px;padding:10px;font:inherit;line-height:1.45} #feedbackMessage:focus,#feedbackType:focus{outline:2px solid #ffe45e;outline-offset:2px}
 
-/* NEON STRIKE : coffres vectoriels et dossiers pilotes */
-.pilot-art{display:block;width:116px;height:128px;max-width:100%;margin:0 auto;filter:drop-shadow(0 0 8px #00f0ff22)}
-#chestsScreen section{position:relative;overflow:hidden;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);border-radius:0!important;background:linear-gradient(135deg,#11172d,#050912)!important}
-#chestsScreen section h2{font-family:Orbitron,sans-serif;font-size:1rem;margin-bottom:10px}
-#chestsScreen section p,#chestsScreen section small{line-height:1.65}
-.chest-preview{height:125px;display:grid;place-items:center;margin:-5px 0 8px}
-.neon-chest{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 0 9px var(--chest-color))}
-.chest-preview .neon-chest{width:160px;animation:neonHover 4s ease-in-out infinite}
-.chest-beam{opacity:0;transition:opacity .4s}
-.chest-lid{transform-box:fill-box;transform-origin:center bottom;transition:transform .65s cubic-bezier(.2,.8,.2,1)}
-#chestBigButton{width:min(300px,70vw);font-size:inherit!important;filter:none!important;animation:neonHover 3s ease-in-out infinite!important;outline-offset:10px}
-#chestBigButton::after{content:'';display:block;height:3px;margin:8px 25px;background:linear-gradient(90deg,var(--chest-color) var(--charge,0%),#203048 var(--charge,0%));box-shadow:0 0 10px var(--chest-color);transition:background .15s}
-#chestBigButton.chest-open-anim{animation:neonChestImpact .34s ease-out!important}
-#chestBigButton.is-open{animation:none!important}
-.is-open .chest-lid{transform:translateY(-56px) rotate(-8deg)}
-.is-open .chest-beam{opacity:1}
-.is-open .chest-core{fill:var(--chest-color)}
-.neon-shard{position:fixed;width:5px;height:13px;pointer-events:none;z-index:10050;animation:neonShard 1.1s ease-out forwards}
-#chestReveal{background:radial-gradient(ellipse at center,#112344f5,#020510fa 70%)!important}
-#chestRevealHint{min-height:3em;color:#e6faff;text-shadow:0 0 12px #00f0ff55}
-@keyframes neonHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-@keyframes neonChestImpact{0%{transform:scale(1)}30%{transform:scale(.94) rotate(-2deg)}65%{transform:scale(1.04) rotate(1deg)}100%{transform:scale(1)}}
+#chestsScreen{overflow-y:auto !important;-webkit-overflow-scrolling:touch !important}
+#chestsScreen .chests-content{pointer-events:auto !important;position:static !important;inset:auto !important;height:auto !important;max-height:88vh !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch !important;overscroll-behavior:contain !important;touch-action:pan-y !important;padding-bottom:28px}
+#chestsScreen .overlay-bg{position:fixed !important;inset:0 !important;pointer-events:none !important}
+.chests-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;width:100%;margin:12px 0 18px}
+.chest-card{display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid color-mix(in srgb,var(--chest) 55%,transparent);border-radius:12px;background:linear-gradient(160deg,rgba(255,255,255,.03),rgba(0,0,0,.25));box-shadow:0 0 18px color-mix(in srgb,var(--chest) 12%,transparent)}
+.chest-card h2{margin:0;color:var(--chest);font-family:var(--font-display);font-size:1rem}
+.chest-card p,.chest-card small{margin:0;line-height:1.5}
+.chest-card .btn{margin-top:auto}
+.chest-art{height:120px;display:grid;place-items:center}
+.chest-art svg{width:150px;height:auto;filter:drop-shadow(0 0 8px var(--chest))}
+#chestReveal{position:fixed !important;inset:0 !important;z-index:10050 !important;display:flex;align-items:center;justify-content:center;padding:clamp(12px,4vw,40px);background:rgba(2,5,18,.96);pointer-events:auto !important}
+#chestReveal.hidden{display:none !important}
+.chest-reveal-inner{text-align:center;max-width:min(92vw,560px);width:100%;pointer-events:auto}
+#chestBigButton{width:min(72vw,340px);max-width:100%;background:transparent;border:0;cursor:pointer;padding:0;pointer-events:auto !important;position:relative;z-index:2}
+#chestBigButton svg{width:100%;height:auto;display:block;filter:drop-shadow(0 0 10px var(--chest-color,#ffdd00))}
+#chestBigButton svg .chest-lid{transform-box:fill-box;transform-origin:center bottom;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+#chestBigButton.is-open svg .chest-lid{transform:translateY(-50px) rotate(-7deg)}
+#chestBigButton svg .chest-beam{opacity:0;transition:opacity .35s}
+#chestBigButton.is-open svg .chest-beam{opacity:1}
+.neon-shard{position:fixed;width:5px;height:13px;pointer-events:none;z-index:10060;background:var(--chest-color,#ffdd00);box-shadow:0 0 10px var(--chest-color,#ffdd00);animation:neonShard 1.1s ease-out forwards}
 @keyframes neonShard{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(200deg)}}
-@media(prefers-reduced-motion:reduce){.chest-preview .neon-chest,#chestBigButton,#chestBigButton.chest-open-anim{animation:none!important}.chest-lid{transition:none}.neon-shard{display:none}}
+.settings-dock{position:absolute;top:14px;right:14px;z-index:30}
+.settings-gear{width:42px;height:42px;border-radius:50%;border:1px solid rgba(0,240,255,.35);background:rgba(5,10,22,.72);color:#9fe9ff;font-size:19px;cursor:pointer}
+.settings-popover{position:absolute;top:52px;right:0;width:min(340px,86vw);padding:14px;border:1px solid rgba(0,240,255,.4);border-radius:12px;background:rgba(5,10,22,.97)}
+.settings-title{margin:0 0 9px;font-family:var(--font-display);letter-spacing:.15em;color:var(--neon-cyan);font-size:.78rem}
+.settings-note{margin:9px 0 0;font-size:.72rem;color:rgba(255,255,255,.65)}
+.difficulty-options{display:grid;gap:7px}
+.difficulty-option{width:100%;text-align:left;padding:10px;border:1px solid #294a60;border-radius:9px;background:#081120;color:#fff;cursor:pointer}
+.difficulty-option b{display:block;font-family:var(--font-display);color:var(--neon-cyan);margin-bottom:3px}
+.difficulty-option small{display:block;font-size:.7rem;line-height:1.4;color:rgba(255,255,255,.68)}
+.difficulty-option.selected{border-color:var(--neon-cyan);background:rgba(0,240,255,.1)}
+.game-over-taunt{color:var(--neon-pink);font-family:var(--font-display);margin:.4rem 0 .8rem}
+@media (min-width:744px) and (max-width:1366px) and (pointer:coarse){body{font-size:17px}.btn,.difficulty-option,input,select,textarea{min-height:48px}.btn{font-size:1.05rem;padding:15px 22px}#gameCanvas{touch-action:none}.instructions.keyboard-hint{display:none}.instructions.touch-hint{display:block}}
 
 </style>
 </head>
@@ -549,6 +558,18 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       <p>Le tir est automatique tant que ton doigt touche l'écran</p>
       <p>Bouton <kbd>II</kbd> — Pause</p>
     </div>
+    <div class="settings-dock">
+      <button id="settingsGear" class="settings-gear" type="button" aria-expanded="false" aria-controls="settingsPopover" title="Réglages">⚙</button>
+      <div id="settingsPopover" class="settings-popover hidden" role="dialog" aria-label="Réglages">
+        <p class="settings-title">DIFFICULTÉ</p>
+        <div class="difficulty-options">
+          <button class="difficulty-option" data-difficulty="easy" type="button"><b>FACILE</b><small>Si tu prends ce mode-là, c’est parce que t’es vraiment trop à chier. Ou tu t’appelles Olivier.</small></button>
+          <button class="difficulty-option selected" data-difficulty="normal" type="button"><b>NORMAL</b><small>Le mode standard : l’équilibre de combat, la vitesse et la difficulté prévus pour la campagne.</small></button>
+          <button class="difficulty-option" data-difficulty="hard" type="button"><b>DIFFICILE</b><small>Pour les pilotes expérimentés : ennemis plus rapides, plus résistants et apparitions plus serrées.</small></button>
+        </div>
+        <p class="settings-note">Tu pourras changer ce réglage ici en tout temps.</p>
+      </div>
+    </div>
     <div class="btn-stack">
       <button class="btn" id="startBtn">Solo</button>
       <button class="btn btn-green" id="levelsBtn">Niveaux</button>
@@ -567,7 +588,8 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   <div class="overlay-content">
     <h1 class="game-over-title">JEU TERMINÉ</h1>
     <p class="final-score" id="finalScore">Score: 0</p>
-    <p class="final-wave" id="finalWave">Niveau 1</p>
+    <p class="game-over-taunt" id="gameOverTaunt" aria-live="polite"></p>
+     <p class="final-wave" id="finalWave">Niveau 1</p>
     <div class="btn-stack">
       <button class="btn" id="restartBtn">Rejouer</button>
       <button class="btn btn-small" id="gameOverMenuBtn">Menu principal</button>
@@ -791,7 +813,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   <div class="overlay-content">
     <h1 class="game-title" style="color:var(--neon-green); text-shadow:0 0 15px var(--neon-green), 0 0 30px rgba(0,255,136,0.5); animation:none;">NIVEAUX</h1>
     <p class="subtitle" style="color:var(--neon-green)" id="levelsSubtitle">Rejoue les niveaux débloqués</p>
-    <div class="level-grid" id="levelGrid"></div><button class="btn btn-yellow" id="infiniteModeBtn" type="button" style="margin:12px 0">Mode infini — vagues aléatoires</button><p style="font-size:.78rem;color:rgba(255,255,255,.65)">Récompenses réduites pour garder les crédits équilibrés.</p>
+    <div class="level-grid" id="levelGrid"></div><button class="btn btn-yellow" id="infiniteModeBtn" type="button" style="margin:12px 0">Abysse infini — survie continue</button><p style="font-size:.78rem;color:rgba(255,255,255,.65)">Un niveau infini distinct : ennemis continus, difficulté progressive, sans vagues ni boss. Récompenses réduites pour garder les crédits équilibrés.</p>
     <button class="btn btn-small" id="levelsBackBtn">Retour</button>
   </div>
 </div>
@@ -820,43 +842,29 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 
 <div id="chestsScreen" class="overlay hidden">
   <div class="overlay-bg"></div>
-  <div class="overlay-content">
+  <div class="overlay-content chests-content">
     <h1 class="game-title" style="color:var(--neon-yellow);animation:none">COFFRES NEON</h1>
     <p class="subtitle">Récompenses gratuites — les délais continuent hors ligne.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:min(620px,92vw)">
-      <section style="border:1px solid #00f0ff;border-radius:12px;padding:16px;background:rgba(0,240,255,.08)">
-        <h2 style="color:#00f0ff">Coffre rapide</h2><p>5 à 30 crédits · toutes les 6 heures</p>
-        <p id="chest6Timer" class="final-wave">Disponible !</p><button id="chest6Open" class="btn">Ouvrir</button>
-      </section>
-      <section style="border:1px solid #ffdd00;border-radius:12px;padding:16px;background:rgba(255,221,0,.08)">
-        <h2 style="color:#ffdd00">Coffre quotidien</h2><p>30 à 100 crédits · toutes les 24 heures</p>
-        <p id="chest24Timer" class="final-wave">Disponible !</p><button id="chest24Open" class="btn btn-yellow">Ouvrir</button>
-      </section>
-      <section style="border:1px solid #b36bff;border-radius:12px;padding:16px;background:rgba(179,107,255,.08)">
-        <h2 style="color:#c99aff">Coffre violet</h2><p>Coût : 300 crédits · Récompense aléatoire : 120–900 crédits</p><small>Récompenses : 120 (40 %) · 300 (35 %) · 450 (20 %) · 900 (5 %)</small>
-        <button id="buyChest300" class="btn">Acheter pour 300 ◆</button>
-      </section>
-      <section style="border:1px solid #ff8b45;border-radius:12px;padding:16px;background:rgba(255,139,69,.08)">
-        <h2 style="color:#ffad75">Coffre solaire</h2><p>Coût : 750 crédits · Récompense aléatoire : 300–2 250 crédits</p><small>Récompenses : 300 (40 %) · 750 (35 %) · 1 125 (20 %) · 2 250 (5 %)</small>
-        <button id="buyChest750" class="btn">Acheter pour 750 ◆</button>
-      </section>
-      <section style="border:1px solid #ffdd00;border-radius:12px;padding:16px;background:rgba(255,221,0,.08)">
-        <h2 style="color:#ffdd00">Coffre galactique</h2><p>Coût : 1 500 crédits · Récompense aléatoire : 600–4 500 crédits</p><small>Récompenses : 600 (40 %) · 1 500 (35 %) · 2 250 (20 %) · 4 500 (5 %)</small>
-        <button id="buyChest1500" class="btn btn-yellow">Acheter pour 1 500 ◆</button>
-      </section>
+    <div class="chests-grid">
+      <section class="chest-card" style="--chest:#00f0ff"><div class="chest-art" data-chest="#00f0ff"></div><h2>Coffre rapide</h2><p>5 à 30 crédits · toutes les 6 heures</p><p id="chest6Timer" class="final-wave">Disponible !</p><button id="chest6Open" class="btn">Ouvrir</button></section>
+      <section class="chest-card" style="--chest:#ffdd00"><div class="chest-art" data-chest="#ffdd00"></div><h2>Coffre quotidien</h2><p>30 à 100 crédits · toutes les 24 heures</p><p id="chest24Timer" class="final-wave">Disponible !</p><button id="chest24Open" class="btn btn-yellow">Ouvrir</button></section>
+      <section class="chest-card" style="--chest:#b36bff"><div class="chest-art" data-chest="#b36bff"></div><h2>Coffre violet</h2><p>Coût : 300 crédits · Récompense aléatoire : 120–900 crédits</p><small>Récompenses : 120 (40 %) · 300 (35 %) · 450 (20 %) · 900 (5 %)</small><button id="buyChest300" class="btn">Acheter pour 300 ◆</button></section>
+      <section class="chest-card" style="--chest:#ff8b45"><div class="chest-art" data-chest="#ff8b45"></div><h2>Coffre solaire</h2><p>Coût : 750 crédits · Récompense aléatoire : 300–2 250 crédits</p><small>Récompenses : 300 (40 %) · 750 (35 %) · 1 125 (20 %) · 2 250 (5 %)</small><button id="buyChest750" class="btn">Acheter pour 750 ◆</button></section>
+      <section class="chest-card" style="--chest:#ff4de1"><div class="chest-art" data-chest="#ff4de1"></div><h2>Coffre galactique</h2><p>Coût : 1 500 crédits · Récompense aléatoire : 600–4 500 crédits</p><small>Récompenses : 600 (40 %) · 1 500 (35 %) · 2 250 (20 %) · 4 500 (5 %)</small><button id="buyChest1500" class="btn btn-yellow">Acheter pour 1 500 ◆</button></section>
     </div>
     <p id="chestMessage" class="mp-status"></p>
-    <div id="chestReveal" class="hidden" style="position:fixed;inset:0;z-index:10020;background:rgba(2,5,18,.94);display:flex;align-items:center;justify-content:center;padding:20px">
-      <div style="text-align:center;max-width:520px;width:100%">
-        <p id="chestRevealTitle" class="shop-section-title">COFFRE NEON</p>
-        <p style="color:rgba(255,255,255,.7)">Clique sur le coffre pour l’ouvrir !</p>
-        <button id="chestBigButton" type="button" aria-label="Ouvrir le coffre" style="touch-action:manipulation;position:relative;z-index:10030;pointer-events:auto;display:block;margin:20px auto;background:transparent;border:0;cursor:pointer;font-size:clamp(100px,24vw,180px);filter:drop-shadow(0 0 24px #ffdd00);animation:chestFloat 1.5s ease-in-out infinite">🧰</button>
-        <p id="chestRevealHint" class="final-wave" aria-live="polite">Touchez le coffre pour révéler votre récompense</p>
-        <button id="chestRevealBack" class="btn btn-small">Annuler</button>
-      </div>
-    </div>
     <button id="chestsBackBtn" class="btn btn-small">Retour</button>
   </div>
+  <div id="chestReveal" class="hidden chest-reveal">
+    <div class="chest-reveal-inner">
+      <p id="chestRevealTitle" class="shop-section-title">COFFRE NEON</p>
+      <p class="chest-reveal-sub">Clique sur le coffre pour l’ouvrir !</p>
+      <button id="chestBigButton" type="button" aria-label="Ouvrir le coffre"></button>
+      <p id="chestRevealHint" class="final-wave" aria-live="polite">Touchez le coffre pour révéler votre récompense</p>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -995,7 +1003,6 @@ const UPGRADES = [
 ];
 
 
-// Illustrations vectorielles locales : aucun service ou téléchargement externe.
 const PilotArt = {
   colors: ['#00f0ff','#ffad45','#ff4de1','#ffdd00','#00ff88','#ff634a','#b77cff','#55aaff'],
   icons: [
@@ -1263,7 +1270,7 @@ const Input = {
 
     // Contrôle tactile : glisser le doigt déplace le vaisseau (déplacement relatif),
     // le tir est automatique tant qu'un doigt touche l'écran.
-    const ignore = (t) => t && t.closest && t.closest('button, input, label, .overlay.active');
+    const ignore = (t) => t && t.closest && t.closest('button, input, label, .overlay.active, #chestsScreen, #chestsScreen *, #chestReveal, #chestReveal *');
     const onStart = (e) => {
       if (ignore(e.target)) return;
       const t = e.changedTouches[0];
@@ -1493,8 +1500,9 @@ class Player {
     this.speed = s.speed * speedMul;
     this.fireRate = s.fireRate * fireRateMul;
     this.bulletSpeed = s.bulletSpeed;
-    this.lives = s.maxLives + extraLives;
-    this.maxLives = s.maxLives + extraLives;
+const bonusLives = (typeof Game !== 'undefined' && Game.difficulty === 'easy') ? 2 : (typeof Game !== 'undefined' && Game.difficulty === 'hard') ? -1 : 0;
+    this.lives = Math.max(1, s.maxLives + extraLives + bonusLives);
+    this.maxLives = this.lives;
     this.multishot = s.multishot;
     this.bulletDamage = s.bulletDamage + extraDamage;
     this.color = s.color;
@@ -2034,7 +2042,7 @@ class Boss {
 
   // ---------- Dégâts reçus ----------
   // Renvoie null si la balle ne touche pas le boss, sinon { mult, blocked }.
-  takeBullet(b, dmg, game) {
+  takeBullet(b, dmg, game, probe = false) {
     if (this.phase !== 1) return null;
     const st = this.st;
     const inBox = (cx, cy, w, h) => Math.abs(b.x - cx) < w / 2 + b.radius && Math.abs(b.y - cy) < h / 2 + b.radius;
@@ -2050,6 +2058,7 @@ class Boss {
       case 'dreadnought': {
         for (const tu of st.turrets) {
           if (tu.alive && inCircle(this.x + tu.ox, this.y + tu.oy, 15)) {
+            if (probe) return {mult:1,part:true};
             tu.hp -= dmg;
             if (tu.hp <= 0) {
               tu.alive = false;
@@ -2088,7 +2097,7 @@ class Boss {
       }
     }
     const res = { mult };
-    if (mult > 0) this.applyDamage(dmg * mult, game);
+    if (mult > 0 && !probe) this.applyDamage(dmg * mult, game);
     if (mult < 0.5) res.blocked = true;
     return res;
   }
@@ -2473,6 +2482,13 @@ const Game = {
   lastStartLevel: 0,
   creator: false,
   devAccount: false,
+  difficulty: localStorage.getItem('ns_difficulty') || 'normal',
+  difficultyAsked: localStorage.getItem('ns_difficulty_asked') === '1',
+  endlessRun: false,
+  endlessSeed: 0,
+  endlessDepth: 0,
+  endlessSpawnClock: 0,
+  endlessRunTime: 0,
 
   init() {
     this.canvas = document.getElementById('gameCanvas');
@@ -2485,6 +2501,15 @@ const Game = {
     this.particles = new ParticlePool(CONFIG.particle.count);
     this.initStars();
 
+    const gear=document.getElementById('settingsGear'),pop=document.getElementById('settingsPopover');
+    const closeSettings=()=>{pop.classList.add('hidden');gear.setAttribute('aria-expanded','false');};
+    gear.addEventListener('click',(e)=>{e.stopPropagation();const open=pop.classList.toggle('hidden');gear.setAttribute('aria-expanded',String(!open));});
+    document.addEventListener('click',(e)=>{if(!pop.contains(e.target)&&e.target!==gear)closeSettings();});
+    document.querySelectorAll('.difficulty-option').forEach(btn => btn.addEventListener('click', () => {
+      this.setDifficulty(btn.dataset.difficulty);
+      closeSettings();
+    }));
+    document.querySelectorAll('.difficulty-option').forEach(btn => btn.classList.toggle('selected', btn.dataset.difficulty === this.difficulty));
     document.getElementById('startBtn').addEventListener('click', () => this.start(0));
     document.getElementById('restartBtn').addEventListener('click', () => this.start(this.lastStartLevel || 0));
     document.getElementById('levelsBtn').addEventListener('click', () => this.openLevels());
@@ -2500,7 +2525,7 @@ const Game = {
       if (this.state === GameState.MULTI) Versus.togglePause(); else this.togglePause();
     });
     document.getElementById('levelsBackBtn').addEventListener('click', () => this.goToMenu());
-    const infBtn=document.getElementById('infiniteModeBtn'); if(infBtn) infBtn.addEventListener('click',()=>{ this.infiniteMode=true; this.start(Math.max(0,Math.min(this.unlockedLevel,LEVELS.length-1))); });
+    const infBtn=document.getElementById('infiniteModeBtn'); if(infBtn) infBtn.addEventListener('click',()=>this.beginEndless());
     document.getElementById('gameOverMenuBtn').addEventListener('click', () => this.goToMenu());
     document.getElementById('victoryMenuBtn').addEventListener('click', () => this.goToMenu());
     Creator.init();
@@ -2541,6 +2566,77 @@ const Game = {
     if (window.innerWidth < 600) { this.width = window.innerWidth; this.height = window.innerHeight; }
     this.canvas.width = this.width;
     this.canvas.height = this.height;
+  },
+
+
+  setDifficulty(value) {
+    if (!['easy','normal','hard'].includes(value)) return;
+    this.difficulty=value;
+    localStorage.setItem('ns_difficulty',value);
+    localStorage.setItem('ns_difficulty_asked','1');
+    this.difficultyAsked=true;
+    document.querySelectorAll('.difficulty-option').forEach(b=>b.classList.toggle('selected',b.dataset.difficulty===value));
+    Social.toast(`Difficulté : <b>${{easy:'FACILE',normal:'NORMAL',hard:'DIFFICILE'}[value]}</b>`);
+  },
+  promptFirstDifficulty() {
+    if (this.difficultyAsked) return;
+    const gear=document.getElementById('settingsGear'),pop=document.getElementById('settingsPopover');
+    if(!gear||!pop)return;
+    pop.classList.remove('hidden');gear.setAttribute('aria-expanded','true');
+    document.querySelector('.settings-note').textContent='Choisis ta difficulté pour commencer. Tu pourras la changer ici en tout temps.';
+  },
+  difficultyMods() {
+    return {
+      easy:   {enemyHealth:.65, enemySpeed:.75, spawn:1.35, lives:2},
+      normal: {enemyHealth:1, enemySpeed:1, spawn:1, lives:0},
+      hard:   {enemyHealth:1.45, enemySpeed:1.28, spawn:.72, lives:-1}
+    }[this.difficulty] || {enemyHealth:1,enemySpeed:1,spawn:1,lives:0};
+  },
+  beginEndless() {
+    this.infiniteMode = true;
+    this.endlessRun = true;
+    this.endlessSeed = (Date.now() ^ Math.floor(Math.random()*0x7fffffff)) >>> 0;
+    this.endlessDepth = 1;
+    this.start(0);
+    this.currentLevelData = this.makeEndlessLevel(1);
+    this.currentLevelData.endless = true;
+    this.wave = 1;
+    this.enemiesSpawned = 0;
+    this.enemies = [];
+    this.enemyBullets = [];
+    this.boss = null;
+    this.endlessSpawnClock = 0;
+    this.endlessRunTime = 0;
+    this.state = GameState.PLAYING;
+    Social.toast('ABYSSE INFINI — SURVIE CONTINUE');
+  },
+  makeEndlessLevel(depth) {
+    let seed = (this.endlessSeed + depth * 2654435761) >>> 0;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const palettes = [
+      ['#050510','#0a0a24','#04060f','#00f0ff','#ff00ea'],
+      ['#100505','#240a0a','#100404','#ff6b35','#ffdd00'],
+      ['#0a0510','#1f0a2b','#0a0410','#b36bff','#ff4de1'],
+      ['#04100c','#0a2418','#04100a','#00ff88','#00f0ff'],
+      ['#0f0a04','#24180a','#100a04','#ffaa00','#ff6b35']
+    ];
+    const p = palettes[Math.floor(rand()*palettes.length)];
+    const stage = Math.min(1, (depth-1)/30);
+    const mix = {normal:.64-stage*.26, fast:.12+stage*.16, tank:.07+stage*.13, splitter:.07+stage*.08, shooter:.1+stage*.15};
+    return {
+      name: 'ABYSSE INFINI',
+      bgColors: [p[0],p[1],p[2]], starColors: ['#ffffff',p[3],p[4]],
+      accentColor: p[3], enemyColor: p[4],
+      enemyMix: mix,
+      wavesCount: Infinity,
+      enemiesPerWave: Infinity,
+      waveIncrement: 0,
+      spawnInterval: Math.max(.24, 1.15-depth*.032),
+      enemySpeed: 68+depth*3.8,
+      bossColor: p[4], bossName: 'ABYSSE',
+      endless: true, endlessDepth: depth,
+      mods: depth>=6 ? [['asteroids','drift','fog','swarm'][Math.floor(rand()*4)]] : []
+    };
   },
 
   getShipData(id) {
@@ -2808,7 +2904,7 @@ const Game = {
   },
 
   hideAllOverlays() {
-    ['chestsScreen', 'startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'coopCampaignScreen', 'feedbackScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
+    ['startScreen', 'gameOverScreen', 'pauseScreen', 'levelCompleteScreen', 'victoryScreen', 'shopScreen', 'mpScreen', 'mpResultScreen', 'levelsScreen', 'coopCampaignScreen', 'feedbackScreen', 'creatorScreen', 'friendsScreen', 'chatScreen', 'accountScreen'].forEach(id => {
       const el = document.getElementById(id);
       el.classList.add('hidden');
       el.classList.remove('active');
@@ -2883,7 +2979,10 @@ const Game = {
     this.state = GameState.GAME_OVER;
     stopMusic();
     document.getElementById('finalScore').textContent = `Score: ${this.score}`;
-    document.getElementById('finalWave').textContent = `${LEVELS[this.level].name} — Vague ${this.wave}`;
+    const taunts=['Olivier, c’est-tu toi ?','Ton bouclier a demandé une pause, pas toi.','Les ennemis ont survécu; ton ego, moins.','Tu as trouvé le seul bouton qui fait perdre.','Le vide spatial t’a bien reçu, apparemment.','Prochaine fois, vise les ennemis, pas le décor.','Ton vaisseau méritait un meilleur pilote.','La galaxie a survécu. Ton score, non.'];
+     const taunt=taunts[Math.floor(Math.random()*taunts.length)];
+     document.getElementById('gameOverTaunt').textContent=taunt;
+     document.getElementById('finalWave').textContent = `${this.currentLevelData?.name || LEVELS[this.level].name} — Vague ${this.wave}`;
     const gos = document.getElementById('gameOverScreen');
     gos.classList.remove('hidden');
     gos.classList.add('active');
@@ -2892,7 +2991,9 @@ const Game = {
   spawnEnemy(limit = Infinity) {
     const mix = this.currentLevelData.enemyMix;
     const make = (x, y) => {
-      const e = new Enemy(x, y, this.level, this.wave, mix); if (this.infiniteMode) { const ramp=1+Math.min(1.8,Math.max(0,this.wave-1)*0.035); e.speed*=ramp; e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(1.2,Math.max(0,this.wave-1)*0.025)))); e.maxHealth=e.health; }
+      const e = new Enemy(x, y, this.level, this.wave, mix); const dm=this.difficultyMods();
+      e.speed*=dm.enemySpeed; e.health=Math.max(1,Math.ceil(e.health*dm.enemyHealth)); e.maxHealth=e.health;
+      if (this.endlessRun) { const ramp=1+Math.min(2.6,Math.max(0,this.endlessDepth-1)*.035); e.speed*=ramp; e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(1.7,Math.max(0,this.endlessDepth-1)*.028)))); e.maxHealth=e.health; }
       if (typeof Coop !== 'undefined' && Coop.active && Versus.isHost) e.netId = Coop.nextEnemyId++;
       if (this.hasMod('speed')) e.speed *= 1.3;
       if (this.hasMod('elite') && Math.random() < 0.25) { e.elite = true; e.health = e.health * 2 + 1; e.maxHealth = e.health; }
@@ -3102,6 +3203,7 @@ const Game = {
 
     // WAVE BREAK
     if (this.state === GameState.WAVE_BREAK) {
+      if (this.endlessRun) { this.state = GameState.PLAYING; }
       if (Coop.active && !Versus.isHost) { this.particles.update(dt); Input.endFrame(); return; }
       this.waveBreakTimer -= dt;
       if (this.waveBreakTimer <= 0) {
@@ -3132,6 +3234,7 @@ const Game = {
         this.addScore(200 + this.level * 50, this.boss.x, this.boss.y);
         this.boss = null;
         // FIX: Set flag to prevent re-spawning boss
+        if (this.endlessRun) { this.state = GameState.PLAYING; Input.endFrame(); return; }
         this.levelCompleting = true;
         this.state = GameState.WAVE_BREAK;
         this.waveBreakTimer = 2.0;
@@ -3190,6 +3293,17 @@ const Game = {
     }
 
     // Spawn enemies
+    if (this.endlessRun) {
+      this.endlessRunTime += dt;
+      this.endlessSpawnClock += dt;
+      const interval = Math.max(.18, this.currentLevelData.spawnInterval * this.difficultyMods().spawn);
+      if (this.endlessSpawnClock >= interval) {
+        this.endlessSpawnClock = 0;
+        this.spawnEnemy(1);
+      }
+      this.endlessDepth = 1 + Math.floor(this.endlessRunTime / 20);
+      if (this.endlessDepth !== this.currentLevelData.endlessDepth) this.currentLevelData = this.makeEndlessLevel(this.endlessDepth);
+    } else {
     const enemiesThisWave = this.currentLevelData.enemiesPerWave + (this.wave - 1) * this.currentLevelData.waveIncrement;
     if ((!Coop.active || Versus.isHost) && this.enemiesSpawned < enemiesThisWave) {
       this.spawnTimer -= dt;
@@ -3198,6 +3312,7 @@ const Game = {
         this.spawnTimer = (spawnInterval + Utils.randRange(-0.2, 0.2)) * (this.hasMod('swarm') ? 3.2 : 1);
         this.spawnEnemy(enemiesThisWave - this.enemiesSpawned);
       }
+    }
     }
 
     // Update enemies + événements du niveau
@@ -3213,13 +3328,16 @@ const Game = {
     this.updatePowerUps(dt);
 
     // Check wave complete
-    if ((!Coop.active || Versus.isHost) && this.enemiesSpawned >= enemiesThisWave && this.enemies.length === 0) {
+    if (!this.endlessRun) {
+      const enemiesThisWave = this.currentLevelData.enemiesPerWave + (this.wave - 1) * this.currentLevelData.waveIncrement;
+      if ((!Coop.active || Versus.isHost) && this.enemiesSpawned >= enemiesThisWave && this.enemies.length === 0) {
       this.state = GameState.WAVE_BREAK;
       this.waveBreakTimer = CONFIG.wave.breakTime || 3.0;
       this.wave++;
       this.enemiesSpawned = 0;
       this.enemiesKilled = 0;
       playWaveStart();
+      }
     }
 
     this.particles.update(dt);
@@ -3285,12 +3403,12 @@ const Game = {
       if (this.applyGravity(bullet, dt) || this.hazardBulletHit(bullet)) { this.bullets.splice(i, 1); continue; }
 
       // Boss partagé : le client invité transmet les dégâts au navigateur hôte, seul arbitre.
-      if (Coop.active && !Versus.isHost && this.boss && this.boss.phase === 1) {
+      if (Coop.active && !Versus.isHost && this.boss && this.boss.phase === 1 && Coop.bossBulletContact(bullet)) {
         Versus.send({ t: 'coop-boss-hit', x: bullet.x, y: bullet.y, radius: bullet.radius || CONFIG.bullet.radius, damage: (bullet.damage || this.player.bulletDamage) });
         this.bullets.splice(i, 1); continue;
       }
       // Boss : chaque type a sa faiblesse
-      if (this.boss && this.boss.phase === 1) {
+      if ((!Coop.active || Versus.isHost) && this.boss && this.boss.phase === 1) {
         const res = this.boss.takeBullet(bullet, (bullet.damage || this.player.bulletDamage), this);
         if (res) {
           const crit = res.mult >= 2;
@@ -3387,6 +3505,10 @@ const Game = {
             }
           }
         }
+        if(remote && bullet.netId!=null) {
+          if(!Coop.consumedBulletIds)Coop.consumedBulletIds=new Set();
+          Coop.consumedBulletIds.add(bullet.netId);
+        }
         this.enemyBullets.splice(i, 1);
       }
     }
@@ -3479,7 +3601,7 @@ const Game = {
     this.drawHazardHUD(ctx);
 
     // Wave/level transition text
-    if (this.state === GameState.WAVE_BREAK && !this.boss) {
+    if (this.state === GameState.WAVE_BREAK && !this.boss && !this.endlessRun) {
       ctx.save();
       ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
       ctx.fillRect(0, this.height / 2 - 60, this.width, 120);
@@ -3572,7 +3694,7 @@ const Game = {
     ctx.fillText(`◆ ${this.credits}`, 16, 56);
     ctx.shadowBlur = 0;
 
-    if (!(this.boss && this.boss.phase >= 1)) { // caché pendant le combat de boss (sa barre prend la place)
+    if (!(this.boss && this.boss.phase >= 1) && !this.endlessRun) { // caché pendant le combat de boss (sa barre prend la place)
     // Level + Wave
     ctx.textAlign = 'center';
     ctx.font = 'bold 14px "Orbitron", sans-serif';
@@ -3987,8 +4109,8 @@ const NeonChest = {
     const b=document.getElementById('chestBigButton');
     b.innerHTML=this.art(color); b.classList.remove('is-open','chest-open-anim');
     b.style.transform=''; b.style.animation=''; b.style.setProperty('--chest-color',color);
-    b.style.setProperty('--charge','0%'); b.setAttribute('aria-label','Charger puis ouvrir le coffre');
-    const back=document.getElementById('chestRevealBack');back.disabled=false;back.textContent='Annuler';
+    b.style.setProperty('--charge','0%'); b.setAttribute('aria-label','Ouvrir le coffre');
+    b.disabled=false; b.style.pointerEvents='auto';
   },
   burst(element,color='#00f0ff') {
     const r=element.getBoundingClientRect();
@@ -4014,22 +4136,18 @@ const Chests = {
     add('buyChest300', () => this.buyCreditsChest(300, [{amount:120, chance:40},{amount:300, chance:35},{amount:450, chance:20},{amount:900, chance:5}], 'COFFRE VIOLET'));
     add('buyChest750', () => this.buyCreditsChest(750, [{amount:300, chance:40},{amount:750, chance:35},{amount:1125, chance:20},{amount:2250, chance:5}], 'COFFRE SOLAIRE'));
     add('buyChest1500', () => this.buyCreditsChest(1500, [{amount:600, chance:40},{amount:1500, chance:35},{amount:2250, chance:20},{amount:4500, chance:5}], 'COFFRE GALACTIQUE'));
-    document.querySelectorAll('#chestsScreen section').forEach((card,i)=>{
-      const preview=document.createElement('div');preview.className='chest-preview';
-      preview.innerHTML=NeonChest.art(['#00f0ff','#ffdd00','#b36bff','#ff8b45','#ff4de1'][i]);
-      card.prepend(preview);
-    });
+    document.querySelectorAll('.chest-art').forEach(el=>{el.innerHTML=NeonChest.art(el.dataset.chest);});
     const bigChest = document.getElementById('chestBigButton');
     const openChest = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } this.reveal(); };
     bigChest.addEventListener('click', openChest, {capture:true});
-    // Le clic natif gère souris, tactile, Entrée et Espace sans compter deux fois.
-    add('chestRevealBack', () => this.cancelReveal());
+    bigChest.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') openChest(e); }, {capture:true});
+    bigChest.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openChest(e); }, {capture:true});
     const payBtn = document.getElementById('chatPayBtn');
     if (payBtn) payBtn.addEventListener('click', () => { const amount = Number(prompt('Combien de crédits veux-tu envoyer à cet ami ?')); if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) return; const input=document.getElementById('chatInput'); if (!input) return; input.value='/pay '+amount; const form=document.getElementById('chatForm'); if(form) form.requestSubmit(); });
     this.timer = setInterval(() => this.render(), 1000);
     this.render();
   },
-  open() { Game.hideAllOverlays(); Game.state = GameState.MENU; document.getElementById('chestsScreen').classList.remove('hidden'); this.render(); },
+  open() { Game.hideAllOverlays(); Game.state = GameState.MENU; const sc=document.getElementById('chestsScreen'); sc.classList.remove('hidden'); sc.classList.add('active'); this.render(); },
   ready(hours) { if (Game.devAccount) return true; const last = hours === 6 ? this.last6h : this.last24h; return Date.now() - last >= hours * 3600000; },
   remaining(hours) { return Math.max(0, hours * 3600000 - (Date.now() - (hours === 6 ? this.last6h : this.last24h))); },
   fmt(ms) { const sec = Math.ceil(ms / 1000); return `${Math.floor(sec/3600)} h ${String(Math.floor(sec%3600/60)).padStart(2,'0')} min ${String(sec%60).padStart(2,'0')} s`; },
@@ -4042,7 +4160,7 @@ const Chests = {
     }
   },
   buyCreditsChest(cost, rewardTable, label) {
-    if (this.opening || this.revealing) return;
+    if (this.opening) return;
     if (!Game.devAccount && Game.credits < cost) {
       const msg = document.getElementById('chestMessage');
       msg.textContent = `Crédits insuffisants : il faut ${Game.formatCredits(cost)} crédits.`;
@@ -4064,19 +4182,19 @@ const Chests = {
     reveal.classList.remove('hidden'); reveal.style.display = 'flex';
     document.getElementById('chestRevealTitle').textContent = label;
     document.getElementById('chestRevealHint').textContent = `Tape 3 fois sur le coffre pour révéler la récompense (0/3)`;
-    NeonChest.setup(cost===300?'#b36bff':cost===750?'#ff8b45':'#ff4de1');
+    NeonChest.setup('#b36bff');
     document.getElementById('chestBigButton').disabled = false;
     document.getElementById('chestMessage').textContent = '';
     this.paidChest = {cost, reward, label};
     Save.save(); Game.renderShop?.();
   },
   beginOpen(hours) {
-    if (!this.ready(hours) || this.opening || this.revealing) return;
+    if (!this.ready(hours) || this.opening) return;
     this.paidChest = null;
     this.pendingHours = hours; this.opening = true; this.taps = 0;
     const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
     this.pendingReward = Math.floor(Math.random() * (max - min + 1)) + min;
-    this.requiredTaps = 3; 
+    this.requiredTaps = Math.max(3, Math.min(12, 3 + Math.floor((this.pendingReward - min) / Math.max(1, (max-min)/9)))); 
     const reveal = document.getElementById('chestReveal');
     reveal.classList.remove('hidden'); reveal.style.display = 'flex';
     document.getElementById('chestRevealTitle').textContent = hours === 6 ? 'COFFRE RAPIDE' : 'COFFRE QUOTIDIEN';
@@ -4085,7 +4203,7 @@ const Chests = {
     document.getElementById('chestBigButton').disabled = false;
     document.getElementById('chestMessage').textContent = '';
   },
-  cancelReveal() { if (this.revealing) return; if (this.opening && this.paidChest && !Game.devAccount) { Game.credits += this.paidChest.cost; Save.save(); Game.renderShop?.(); } document.getElementById('chestReveal').classList.add('hidden'); document.getElementById('chestReveal').style.display = 'none'; this.pendingHours = 0; this.opening = false; this.paidChest = null; },
+  cancelReveal() { if (this.opening && this.paidChest && !Game.devAccount) { Game.credits += this.paidChest.cost; Save.save(); Game.renderShop?.(); } document.getElementById('chestReveal').classList.add('hidden'); document.getElementById('chestReveal').style.display = 'none'; this.pendingHours = 0; this.opening = false; this.paidChest = null; },
   reveal() {
     if (!this.opening || (!this.pendingHours && !this.paidChest)) return;
     const hours = this.pendingHours;
@@ -4101,16 +4219,20 @@ const Chests = {
     const amount = this.pendingReward;
     if (!this.paidChest && !Game.devAccount) { if (hours === 6) this.last6h = Date.now(); else this.last24h = Date.now(); }
     const chest = document.getElementById('chestBigButton');
-    chest.disabled = true; chest.classList.add('is-open');
-    chest.setAttribute('aria-label','Coffre ouvert');
-    this.revealing=true;document.getElementById('chestRevealBack').disabled=true;
+    chest.classList.add('is-open'); chest.style.pointerEvents='none';
     chest.classList.remove('chest-open-anim'); void chest.offsetWidth; chest.classList.add('chest-open-anim');
-    NeonChest.burst(chest,chest.style.getPropertyValue('--chest-color'));
+    const icons=['🟡','🪙','💰','✨','🪙','⚡','◆'];
+    for(let i=0;i<32;i++){
+      const el=document.createElement('span');el.className='chest-particle';el.textContent=icons[i%icons.length];
+      el.style.left=(window.innerWidth/2)+'px';el.style.top=(window.innerHeight/2)+'px';
+      el.style.setProperty('--dx',(Math.random()*520-260)+'px');el.style.setProperty('--dy',(Math.random()*420-210)+'px');
+      document.body.appendChild(el);setTimeout(()=>el.remove(),1250);
+    }
     Game.credits = Game.devAccount ? 2147483647 : Game.credits + amount; Save.save(); Game.renderShop?.(); this.render(); playPurchase();
     document.getElementById('chestRevealHint').textContent = `RÉCOMPENSE : +${amount} CRÉDITS`;
     document.getElementById('chestMessage').textContent = `Coffre ouvert : +${amount} crédits !`;
     document.getElementById('chestMessage').className = 'mp-status ok';
-    setTimeout(() => { this.revealing=false; this.cancelReveal(); this.paidChest = null; document.getElementById('chestMessage').textContent = `Récompense ajoutée : +${amount} crédits !`; }, 2100);
+    setTimeout(() => { this.cancelReveal(); this.paidChest = null; document.getElementById('chestMessage').textContent = `Récompense ajoutée : +${amount} crédits !`; }, 2100);
   }
 };
 
@@ -4280,6 +4402,7 @@ const Auth = {
       Social.toast(reg
         ? `Compte <b>${Social.esc(st.account.name)}</b> créé${st.migrated ? ', avec ta progression' : ''}.`
         : `Bon retour, <b>${Social.esc(st.account.name)}</b>.`);
+      if (reg) setTimeout(() => Game.promptFirstDifficulty(), 350);
     });
   },
   logout() {
@@ -5412,14 +5535,11 @@ const Versus = {
 // Les deux joueurs jouent une mission de vagues en parallèle et voient la position du coéquipier.
 // Les vagues/ennemis sont simulés localement sur chaque navigateur; seules les positions sont synchronisées.
 
-// Tampon indépendant par flux. Le temps distant n'est jamais comparé directement à l'horloge locale.
 class CoopTimeline {
   constructor() { this.frames=[]; this.offset=null; this.delay=120; this.lastArrival=0; this.lastRender=-Infinity; }
   push(data) {
     const now=performance.now(), remote=Number.isFinite(data.ts)?data.ts:now;
-    if (this.lastArrival && now-this.lastArrival>1500) {
-      this.frames=[]; this.offset=null; this.lastRender=-Infinity;
-    }
+    if (this.lastArrival && now-this.lastArrival>1500) { this.frames=[]; this.offset=null; this.lastRender=-Infinity; }
     if (this.frames.length && remote <= this.frames[this.frames.length-1].t) return false;
     const gap=this.lastArrival ? now-this.lastArrival : 50;
     this.delay += (Math.max(90,Math.min(180,85+Math.abs(gap-50)*1.4))-this.delay)*.08;
@@ -5443,9 +5563,7 @@ class CoopTimeline {
 }
 function coopBlend(a,b,k) {
   const out={...a};
-  for(const key of ['x','y','rotation','tilt','age','bobPhase']) {
-    if(Number.isFinite(a[key])&&Number.isFinite(b[key]))out[key]=a[key]+(b[key]-a[key])*k;
-  }
+  for(const key of ['x','y','rotation','tilt','age','bobPhase']) if(Number.isFinite(a[key])&&Number.isFinite(b[key]))out[key]=a[key]+(b[key]-a[key])*k;
   return out;
 }
 
@@ -5457,7 +5575,7 @@ const Coop = {
     if (this.active && Game.level === level) return;
     this.active = true; this.peer = null; this.sendClock = 0; this.worldClock = 0;
     this.worldStream = new CoopTimeline(); this.peerStream = new CoopTimeline();
-    this.appliedFrame = null; this.pickedIds = new Set(); this.collisionCooldown = 0;
+    this.appliedFrame = null; this.pickedIds = new Set(); this.collisionCooldown = 0; this.consumedBulletIds = new Set();
     this.nextEnemyId = 1; this.selectedLevel = level; this.lastPeerAt = performance.now();
     Game.hideAllOverlays();
     Game.start(level);
@@ -5518,11 +5636,9 @@ const Coop = {
     blendList(Game.enemies,a.enemies,b.enemies);
     blendList(Game.enemyBullets,a.enemyBullets,b.enemyBullets);
     blendList(Game.powerUps,a.powerUps,b.powerUps);
-    if(Game.boss && a.boss && b.boss) {
-      const p=coopBlend(a.boss,b.boss,k);
-      Game.boss.x=p.x;Game.boss.y=p.y;Game.boss.rotation=p.rotation;
-    }
+    if(Game.boss && a.boss && b.boss) { const p=coopBlend(a.boss,b.boss,k); Game.boss.x=p.x;Game.boss.y=p.y;Game.boss.rotation=p.rotation; }
   },
+  bossBulletContact(bullet) { const boss=Game.boss; return boss ? !!boss.takeBullet(bullet,0,Game,true) : false; },
   checkGuestCollisions() {
     if (!Game.player) return false;
     for(const e of Game.enemies) if(Game.checkCollision(e.getBounds(),Game.player.getBounds()) && Game.player.hit()) {
@@ -5581,7 +5697,8 @@ const Coop = {
       enemies: Game.enemies.map(e => ({ id: e.netId || (e.netId = this.nextEnemyId++), x:e.x,y:e.y,baseX:e.baseX,w:e.w,h:e.h,health:e.health,maxHealth:e.maxHealth,speed:e.speed,fireTimer:e.fireTimer,fireRate:e.fireRate,zigzagPhase:e.zigzagPhase,zigzagSpeed:e.zigzagSpeed,zigzagAmp:e.zigzagAmp,rotation:e.rotation,type:e.type,color:e.color,size:e.size,elite:!!e.elite,level:e.level,wave:e.wave })),
       enemyBullets: Game.enemyBullets.map(b => ({id:b.netId || (b.netId=this.nextEnemyId++),x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,radius:b.radius,age:b.age,homing:b.homing,split:b.split})),
       powerUps: Game.powerUps.map(p => ({id:p.netId || (p.netId = this.nextEnemyId++),x:p.x,y:p.y,type:p.type,vy:p.vy,size:p.size,rotation:p.rotation,bobPhase:p.bobPhase,color:p.color})),
-      boss: Game.boss ? { x:Game.boss.x,y:Game.boss.y,hp:Game.boss.hp,health:Game.boss.health,maxHealth:Game.boss.maxHealth,phase:Game.boss.phase,rotation:Game.boss.rotation,fire:Game.boss.fire,cycle:Game.boss.cycle, color:Game.boss.color } : null
+      boss: Game.boss ? { x:Game.boss.x,y:Game.boss.y,hp:Game.boss.hp,health:Game.boss.health,maxHealth:Game.boss.maxHealth,phase:Game.boss.phase,rotation:Game.boss.rotation,fire:Game.boss.fire,cycle:Game.boss.cycle, color:Game.boss.color, t:Game.boss.t, st:JSON.parse(JSON.stringify(Game.boss.st)),
+        rage:Game.boss.rage, flash:Game.boss.flash, deathTimer:Game.boss.deathTimer } : null
     };
   },
   tick(dt) {
@@ -5591,7 +5708,7 @@ const Coop = {
     if (this.sendClock >= 0.05) {
       this.sendClock %= 0.05;
       const p = Game.player;
-      Versus.send({ t:'coop-state', ts:performance.now(), scale:p?p.shipScale:1, tilt:p?p.tiltAngle:0, x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', ship:Game.equippedShip, bullets:(Game.bullets||[]).slice(-36).map(b=>[b.x/Game.width,b.y/Game.height,b.netId || (b.netId=this.nextEnemyId++)]), hp:p?p.lives:0 });
+      Versus.send({ t:'coop-state', ts:performance.now(), scale:p?p.shipScale:1, hitbox:p?p.hitboxMul:1, tilt:p?p.tiltAngle:0, x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', ship:Game.equippedShip, bullets:(Game.bullets||[]).slice(-36).map(b=>[b.x/Game.width,b.y/Game.height,b.netId || (b.netId=this.nextEnemyId++)]), hp:p?p.lives:0 });
     }
     if (Versus.isHost) {
       this.worldClock += dt;
@@ -5600,7 +5717,7 @@ const Coop = {
     if (this.peer && performance.now() - this.lastPeerAt > 6000) this.peer = null;
     if (this.peer && this.peer.alive && Game.player && Game.state !== GameState.GAME_OVER && this.collisionCooldown <= 0) {
       const px=Number(this.peer.x)*Game.width, py=Number(this.peer.y)*Game.height;
-      if (Utils.distance(Game.player.x,Game.player.y,px,py) < 27 && Game.player.hit()) { this.collisionCooldown=1.25; Game.screenShake=.25; playHit(); if(Game.player.lives<=0) Game.gameOver(); }
+      if (Game.checkCollision(Game.player.getBounds(),{x:px-12*(this.peer.hitbox||1),y:py-13*(this.peer.hitbox||1),w:24*(this.peer.hitbox||1),h:26*(this.peer.hitbox||1)}) && Game.player.hit()) { this.collisionCooldown=1.25; Game.screenShake=.25; playHit(); if(Game.player.lives<=0) Game.gameOver(); }
     }
   },
   drawPartner(ctx) {
@@ -5909,7 +6026,351 @@ const Social = {
 
 Game.init();
 </script>
-<script>
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  const DEFAULT_LINE_HEIGHT = 16;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_BY") {
+      const { deltaX, deltaY, deltaMode } = event.data;
+      if (!scrollForwarding || !Number.isFinite(deltaX) || !Number.isFinite(deltaY)) return;
+      if (deltaMode !== 0 && deltaMode !== 1 && deltaMode !== 2) return;
+      const lineHeight =
+        parseFloat(getComputedStyle(document.documentElement).lineHeight) || DEFAULT_LINE_HEIGHT;
+      const scaleX = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerWidth : 1;
+      const scaleY = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerHeight : 1;
+      // The selection overlay receives the wheel event instead of this iframe.
+      // Instant scrolling preserves trackpad deltas even on smooth-scroll sites.
+      window.scrollBy({ left: deltaX * scaleX, top: deltaY * scaleY, behavior: "instant" });
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+
+</script><script>
 (async()=>{try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement');const j=await r.json();const el=document.getElementById('devAnnouncement');if(j.ok&&j.announcement&&j.announcement.text){el.textContent='📢 '+j.announcement.text;el.classList.remove('hidden')}}catch(e){}})();
 </script></body>
 </html>
