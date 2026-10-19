@@ -315,7 +315,7 @@ body {
 .wallet-delta.neg { color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); }
 .wallet-delta.pos { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
 @keyframes walletDelta { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-18px); } }
-.shop-item-missing { display: block; font-size: 0.6rem; color: rgba(255, 0, 234, 0.85); margin-top: 0.2rem; }
+#announcementModal{position:fixed;inset:0;z-index:1000000;display:grid;place-items:center;padding:20px}#announcementModal.hidden{display:none}#announcementModal .announcement-backdrop{position:absolute;inset:0;background:rgba(2,5,18,.76);backdrop-filter:blur(12px)}#announcementModal .announcement-card{position:relative;width:min(560px,94vw);padding:clamp(22px,5vw,38px);border:1px solid #00f0ff;border-radius:18px;background:linear-gradient(145deg,#0b1830,#10102b);box-shadow:0 0 45px #00f0ff30;text-align:center}#announcementModal .announcement-kicker{color:#00f0ff;font-size:.68rem;letter-spacing:.2em}#announcementModal h2{color:#fff;font-size:clamp(1.3rem,4vw,2rem)}#announcementBody{white-space:pre-wrap;line-height:1.6;color:#dbe9ff;margin:20px 0}#screenWatchBadge{position:fixed;z-index:99990;left:10px;bottom:10px;padding:8px 12px;border:1px solid #00f0ff;border-radius:9px;background:#07101dee;color:#baf7ff;font:12px system-ui;box-shadow:0 0 15px #00f0ff30}#screenWatchBadge.hidden{display:none!important}.shop-item-missing { display: block; font-size: 0.6rem; color: rgba(255, 0, 234, 0.85); margin-top: 0.2rem; }
 
 .pause-credits {
   font-family: var(--font-display); font-size: 1rem; color: var(--neon-yellow);
@@ -539,7 +539,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 
 </style>
 </head>
-<body><div id="devAnnouncement" class="hidden" style="position:relative;z-index:20000;text-align:center;padding:10px 14px;background:linear-gradient(90deg,#10223b,#073144);border-bottom:1px solid #00f0ff;color:#fff;font-weight:700;white-space:pre-wrap"></div>
+<body><div id="announcementModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="announcementTitle"><div class="announcement-backdrop"></div><section class="announcement-card"><span class="announcement-kicker">NEON STRIKE · TRANSMISSION</span><h2 id="announcementTitle">Annonce</h2><p id="announcementBody"></p><button id="announcementClose" class="btn btn-green">Fermer</button></section></div><div id="screenWatchBadge" class="hidden" role="status">Partage de la zone de jeu activé</div>
 <canvas id="gameCanvas"></canvas>
 <div id="coopSpectateBanner" class="hidden" style="position:fixed;z-index:10001;top:12px;left:50%;transform:translateX(-50%);padding:8px 14px;border:1px solid #ffdd00;border-radius:10px;background:#07101def;color:#ffdd80;font:700 12px system-ui;pointer-events:auto;text-align:center"><span id="coopSpectateMessage"></span> <button id="coopSpectateQuit" type="button" style="margin-left:8px;padding:4px 8px;font-size:11px">Quitter</button></div>
 
@@ -580,6 +580,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       <button class="btn btn-purple" id="chestsBtn">Coffres gratuits</button>
       <button class="btn btn-pink" id="multiBtn">Multijoueur</button>
       <button class="btn btn-yellow" id="rankOpenBtn">🏆 Classement mondial</button>
+      <button class="btn btn-small hidden" id="announcementOpenBtn">📢 Lire l’annonce</button>
       <button class="btn btn-purple" id="friendsBtn">Amis <span class="badge hidden" id="friendsBadge">0</span></button>
     </div>
   </div>
@@ -647,8 +648,8 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       </div>
     </div>
     <div class="shop-section">
-      <p class="shop-section-title">Pilotes — un seul équipé à la fois</p>
-      <div class="shop-grid" id="upgradeGrid"></div>
+      <p class="shop-section-title">Pilotes — achat unique pour toute la flotte, un seul équipé à la fois</p>
+      <div class="shop-grid" id="upgradeGrid"></div><p class="shop-section-title" style="margin-top:20px">Modules pour ce vaisseau</p><p class="shop-item-desc">Bonus modestes, achetés séparément pour chaque vaisseau. Les pilotes achetés restent disponibles sur toute ta flotte.</p><div class="shop-grid" id="moduleGrid"></div>
     </div>
     <button class="btn btn-green" id="shopContinueBtn">Lancer le prochain niveau</button>
   </div>
@@ -817,7 +818,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   <div class="overlay-content">
     <h1 class="game-title" style="color:var(--neon-green); text-shadow:0 0 15px var(--neon-green), 0 0 30px rgba(0,255,136,0.5); animation:none;">NIVEAUX</h1>
     <p class="subtitle" style="color:var(--neon-green)" id="levelsSubtitle">Rejoue les niveaux débloqués</p>
-    <div class="level-grid" id="levelGrid"></div><button class="btn btn-yellow" id="infiniteModeBtn" type="button" style="margin:12px 0">Abysse infini — survie continue</button><p style="font-size:.78rem;color:rgba(255,255,255,.65)">Un niveau infini distinct : ennemis continus, difficulté progressive, sans vagues ni boss. Récompenses réduites pour garder les crédits équilibrés.</p>
+    <div class="level-grid" id="levelGrid"></div><button class="btn btn-pink" id="weeklyLevelBtn" type="button" style="margin:12px 0">✦ Défi spécial de la semaine</button><button class="btn btn-yellow" id="infiniteModeBtn" type="button" style="margin:12px 0">Abysse infini — survie continue</button><p style="font-size:.78rem;color:rgba(255,255,255,.65)">Un niveau infini distinct : ennemis continus, difficulté progressive, sans vagues ni boss. Récompenses réduites pour garder les crédits équilibrés.</p>
     <button class="btn btn-small" id="levelsBackBtn">Retour</button>
   </div>
 </div>
@@ -1006,6 +1007,14 @@ const UPGRADES = [
  {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Guidage ionique : les projectiles corrigent leur trajectoire vers une cible. +1 dégât.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}}
 ];
 
+
+
+const SHIP_MODULES=[
+ {id:'module-multi',name:'Faisceau auxiliaire',desc:'+1 projectile par salve (maximum 5).',factor:.20,min:350},
+ {id:'module-life',name:'Cellule de survie',desc:'+1 vie au lancement (maximum 8).',factor:.24,min:400},
+ {id:'module-vts',name:'Propulseur VTS',desc:'+5 % de vitesse, sans pénalité.',factor:.18,min:300},
+ {id:'module-cadence',name:'Condensateur de cadence',desc:'Cadence de tir améliorée de 5 %.',factor:.22,min:350},
+];
 
 const PilotArt = {
   colors: ['#00f0ff','#ffad45','#ff4de1','#ffdd00','#00ff88','#ff634a','#b77cff','#55aaff'],
@@ -1499,15 +1508,16 @@ class Player {
     const us = this.upgradeState;
     const speedMul = (us.speedMul || 1) * (Game.runBuffs?.speedMul || 1);
     const fireRateMul = (us.fireRateMul || 1) * (Game.runBuffs?.fireRateMul || 1);
-    const extraLives = (us.extraLives || 0) + (Game.runBuffs?.extraLives || 0);
+    const modules=Game.shipUpgradeStates?.[Game.equippedShip]?.modules||[];
+    const extraLives = (us.extraLives || 0) + (Game.runBuffs?.extraLives || 0) + (modules.includes('module-life')?1:0);
     const extraDamage = (us.extraDamage || 0) + (Game.runBuffs?.extraDamage || 0);
-    this.speed = s.speed * speedMul;
-    this.fireRate = s.fireRate * fireRateMul;
+    this.speed = s.speed * speedMul * (modules.includes('module-vts')?1.05:1);
+    this.fireRate = s.fireRate * fireRateMul * (modules.includes('module-cadence')?.95:1);
     this.bulletSpeed = s.bulletSpeed;
 const bonusLives = (typeof Game !== 'undefined' && Game.difficulty === 'easy') ? 2 : (typeof Game !== 'undefined' && Game.difficulty === 'hard') ? -1 : 0;
     this.lives = Math.max(1, s.maxLives + extraLives + bonusLives);
     this.maxLives = this.lives;
-    this.multishot = s.multishot;
+    this.multishot = Math.min(5,s.multishot+(modules.includes('module-multi')?1:0));
     this.bulletDamage = s.bulletDamage + extraDamage;
     this.color = s.color;
     this.shipScale = us.shipScale || 1;
@@ -2592,6 +2602,7 @@ const Game = {
     document.querySelector('.settings-note').textContent='Choisis ta difficulté pour commencer. Tu pourras la changer ici en tout temps.';
   },
   difficultyMods() {
+    if(this.weeklyChallenge)return {enemyHealth:1.38,enemySpeed:1.18,spawn:.82,lives:0};
     return {
       easy:   {enemyHealth:.65, enemySpeed:.75, spawn:1.35, lives:2},
       normal: {enemyHealth:1, enemySpeed:1, spawn:1, lives:0},
@@ -2599,6 +2610,7 @@ const Game = {
     }[this.difficulty] || {enemyHealth:1,enemySpeed:1,spawn:1,lives:0};
   },
   beginEndless() {
+    this.launchingEndless = true;
     this.infiniteMode = true;
     this.endlessRun = true;
     this.endlessSeed = (Date.now() ^ Math.floor(Math.random()*0x7fffffff)) >>> 0;
@@ -2653,7 +2665,9 @@ const Game = {
 
   start(levelIndex = 0) {
     if (typeof levelIndex !== 'number') levelIndex = 0;
-    levelIndex = Utils.clamp(levelIndex, 0, Coop.active ? LEVELS.length - 1 : Math.min(this.unlockedLevel, LEVELS.length - 1));
+    const endlessLaunch=!!this.launchingEndless,weeklyLaunch=!!this.weeklyChallenge;this.launchingEndless=false;
+    if(!endlessLaunch&&!weeklyLaunch){this.endlessRun=false;this.infiniteMode=false;}
+    levelIndex = Utils.clamp(levelIndex, 0, (Coop.active||weeklyLaunch) ? LEVELS.length - 1 : Math.min(this.unlockedLevel, LEVELS.length - 1));
     initAudio();
     audioCtx.resume();
     stopMusic();
@@ -2680,7 +2694,7 @@ const Game = {
     this.enemiesSpawned = 0;
     this.enemiesKilled = 0;
 
-    this.currentLevelData = LEVELS[levelIndex];
+    this.currentLevelData = weeklyLaunch&&this.weeklyChallengeData ? {...LEVELS[levelIndex],name:this.weeklyChallengeData.name,mods:[...this.weeklyChallengeData.mods],wavesCount:Math.max(LEVELS[levelIndex].wavesCount,5),spawnInterval:Math.max(.55,LEVELS[levelIndex].spawnInterval*.82),enemyMix:{normal:.42,fast:.2,tank:.14,splitter:.12,shooter:.12},weeklyChallenge:true} : LEVELS[levelIndex];
     this.resetHazards();
     this.initStars();
     const shipData = this.getShipData(this.equippedShip);
@@ -2735,7 +2749,7 @@ const Game = {
 
   openShop(returnTo = 'level') {
     this.shopReturn = returnTo;
-    this.shopSnapshot = { ship: this.equippedShip, upgrades: this.ownedUpgrades.length, pilot: this.equippedPilotId };
+    this.shopSnapshot = { ship: this.equippedShip, upgrades: this.ownedUpgrades.length, pilot: this.equippedPilotId, modules:(this.shipUpgradeStates[this.equippedShip]?.modules||[]).length };
     if (returnTo === 'pause') {
       const ps = document.getElementById('pauseScreen');
       ps.classList.add('hidden'); ps.classList.remove('active');
@@ -2766,7 +2780,7 @@ const Game = {
     if (this.shopReturn === 'pause') {
       // Applique immédiatement le nouveau vaisseau / les améliorations achetées
       const snap = this.shopSnapshot;
-      if (this.player && snap && (snap.ship !== this.equippedShip || snap.upgrades !== this.ownedUpgrades.length || snap.pilot !== this.equippedPilotId)) {
+      if (this.player && snap && (snap.ship !== this.equippedShip || snap.upgrades !== this.ownedUpgrades.length || snap.pilot !== this.equippedPilotId || snap.modules !== (this.shipUpgradeStates[this.equippedShip]?.modules||[]).length)) {
         const old = this.player;
         const p = new Player(old.x, old.y, this.getShipData(this.equippedShip), this.upgradeState);
         p.lives = Utils.clamp(old.lives + (p.maxLives - old.maxLives), 1, p.maxLives);
@@ -2857,6 +2871,7 @@ const Game = {
       if (owned && !equipped) item.addEventListener('click',()=>this.equipPilot(upg.id)); else if (!owned && canAfford) item.addEventListener('click',()=>this.buyUpgrade(upg.id));
       upgradeGrid.appendChild(item);
     }
+    const moduleGrid=document.getElementById('moduleGrid');if(moduleGrid){moduleGrid.innerHTML='';const ship=this.getShipData(this.equippedShip),state=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});if(!Array.isArray(state.modules))state.modules=[];for(const module of SHIP_MODULES){const cost=this.creator?0:Math.max(module.min,Math.round(Math.max(1200,ship.price||0)*module.factor));const owned=state.modules.includes(module.id),item=document.createElement('div');item.className='shop-item'+(owned?' owned':'')+(this.credits<cost&&!owned?' cant-afford':'');item.innerHTML=`<div class="shop-item-name">${module.name}</div><div class="shop-item-desc">${module.desc}</div>${owned?'<span class="shop-item-status owned">Installé sur ce vaisseau</span>':`<span class="shop-item-price">${this.formatCredits(cost)} crédits</span>`}`;if(!owned&&this.credits>=cost)item.addEventListener('click',()=>this.buyModule(module.id));moduleGrid.appendChild(item);}}
   },
 
   priceOf(item) { return this.creator ? 0 : item.price; },
@@ -2871,44 +2886,32 @@ const Game = {
     c.restore();
   },
 
+  buyModule(moduleId){const module=SHIP_MODULES.find(m=>m.id===moduleId);if(!module)return;const ship=this.getShipData(this.equippedShip),state=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});if(!Array.isArray(state.modules))state.modules=[];if(state.modules.includes(moduleId))return;const cost=this.creator?0:Math.max(module.min,Math.round(Math.max(1200,ship.price||0)*module.factor));if(this.credits<cost)return;state.modules.push(moduleId);this.credits-=cost;Save.save();this.renderShop();if(cost)this.flashWallet(-cost);},
+
   buyOrEquipShip(shipId) {
-    const ship = this.getShipData(shipId);
-    if (this.ownedShips.includes(shipId)) {
-      // Chaque vaisseau conserve ses propres améliorations.
-      this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
-      this.equippedShip = shipId;
-      const saved = this.shipUpgradeStates[shipId] || {state:{}, owned:[], pilot:null};
-      this.upgradeState = {...saved.state}; this.ownedUpgrades = [...saved.owned]; this.equippedPilotId = saved.pilot || null;
-      playPurchase();
-    } else {
-      const price = this.priceOf(ship);
-      if (this.credits < price) return;
-      this.credits -= price;
-      if (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount) { this.credits += price; return; }
-      this.shipUpgradeStates[this.equippedShip] = { state: {...this.upgradeState}, owned: [...this.ownedUpgrades] };
-      this.ownedShips.push(shipId);
-      this.equippedShip = shipId; this.upgradeState = {}; this.ownedUpgrades = []; this.shipUpgradeStates[shipId] = {state:{},owned:[],pilot:null};
-      playPurchase();
-      Save.save();
-      this.renderShop();
-      if (price > 0) this.flashWallet(-price);
-      return;
+    const ship=this.getShipData(shipId),current=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});
+    current.state={};current.owned=[...this.ownedUpgrades];current.pilot=this.equippedPilotId;
+    if(this.ownedShips.includes(shipId)){
+      this.equippedShip=shipId;const saved=this.shipUpgradeStates[shipId]||(this.shipUpgradeStates[shipId]={state:{},owned:[],modules:[]});
+      if(!Array.isArray(saved.modules))saved.modules=[];saved.owned=[...new Set([...this.ownedUpgrades,...(saved.owned||[])])];this.ownedUpgrades=[...saved.owned];
+      this.upgradeState={};const pilot=UPGRADES.find(x=>x.id===this.equippedPilotId);if(pilot)pilot.apply(this.upgradeState);saved.state={};saved.pilot=this.equippedPilotId;
+      playPurchase();Save.save();this.renderShop();return;
     }
-    Save.save();
-    this.renderShop();
+    const price=this.priceOf(ship);if(this.credits<price)return;if(ship.unlockLevel&&this.unlockedLevel<ship.unlockLevel&&!this.devAccount)return;
+    this.credits-=price;this.ownedShips.push(shipId);this.equippedShip=shipId;this.shipUpgradeStates[shipId]={state:{},owned:[...this.ownedUpgrades],pilot:this.equippedPilotId,modules:[]};
+    this.upgradeState={};const pilot=UPGRADES.find(x=>x.id===this.equippedPilotId);if(pilot)pilot.apply(this.upgradeState);playPurchase();Save.save();this.renderShop();if(price)this.flashWallet(-price);
   },
 
   buyUpgrade(upgradeId) {
-    const upg=UPGRADES.find(u=>u.id===upgradeId); if(!upg||this.ownedUpgrades.includes(upgradeId)) return;
-    if(upg.req&&!this.ownedUpgrades.includes(upg.req)) return;
-    const price=this.priceOf(upg); if(this.credits<price) return;
-    this.credits-=price; this.ownedUpgrades.push(upgradeId); playPurchase(); Save.save(); this.renderShop(); if(price>0)this.flashWallet(-price);
+    const upg=UPGRADES.find(u=>u.id===upgradeId);if(!upg||this.ownedUpgrades.includes(upgradeId))return;const price=this.priceOf(upg);if(this.credits<price)return;
+    this.credits-=price;this.ownedUpgrades.push(upgradeId);for(const state of Object.values(this.shipUpgradeStates))if(state)state.owned=[...this.ownedUpgrades];playPurchase();Save.save();this.renderShop();if(price)this.flashWallet(-price);
   },
   equipPilot(pilotId) {
-    const upg=UPGRADES.find(u=>u.id===pilotId); if(!upg||!this.ownedUpgrades.includes(pilotId))return;
-    this.equippedPilotId=pilotId; this.upgradeState={}; upg.apply(this.upgradeState);
-    this.shipUpgradeStates[this.equippedShip]={state:{...this.upgradeState},owned:[...this.ownedUpgrades],pilot:pilotId};
-    playPurchase(); Save.save(); this.renderShop();
+    const upg=UPGRADES.find(u=>u.id===pilotId);if(!upg||!this.ownedUpgrades.includes(pilotId))return;
+    this.equippedPilotId=pilotId;this.upgradeState={};upg.apply(this.upgradeState);
+    for(const [id,state] of Object.entries(this.shipUpgradeStates)){if(!state)continue;state.state={};state.owned=[...this.ownedUpgrades];state.pilot=pilotId;}
+    this.shipUpgradeStates[this.equippedShip]||=(this.shipUpgradeStates[this.equippedShip]={modules:[]});this.shipUpgradeStates[this.equippedShip].state={};this.shipUpgradeStates[this.equippedShip].owned=[...this.ownedUpgrades];this.shipUpgradeStates[this.equippedShip].pilot=pilotId;
+    playPurchase();Save.save();this.renderShop();
   },
 
   hideAllOverlays() {
@@ -2963,7 +2966,7 @@ const Game = {
     stopMusic();
     this.state = GameState.MENU;
     this.boss = null; this.enemies = []; this.bullets = []; this.enemyBullets = []; this.powerUps = [];
-    this.levelCompleting = false;
+    this.levelCompleting = false;this.endlessRun=false;this.infiniteMode=false;this.launchingEndless=false;this.weeklyChallenge=false;this.weeklyChallengeData=null;this.weeklyChallengeComplete=false;
     this.hideAllOverlays();
     const st = document.getElementById('startScreen');
     st.classList.remove('hidden'); st.classList.add('active');
@@ -3473,7 +3476,7 @@ const Game = {
             playExplosion();
             this.screenShake = Math.max(this.screenShake, 0.15);
             if (Math.random() < (enemy.elite ? 1 : 0.12)) {
-              const types = ['rapid', 'shield', 'multi'];
+              const types = ['rapid', 'shield', 'multi', 'heal'];
               this.powerUps.push(new PowerUp(enemy.x, enemy.y, types[Math.floor(Math.random() * types.length)]));
             }
           }
@@ -3539,9 +3542,10 @@ const Game = {
         if (pu.type === 'rapid') this.powerUp.rapid = duration;
         else if (pu.type === 'shield') this.powerUp.shield = duration;
         else if (pu.type === 'multi') this.powerUp.multi = duration;
+        else if (pu.type === 'heal') { const gain=Math.min(1,this.player.maxLives-this.player.lives);this.player.lives+=gain;Social.toast(gain?'❤️ +1 vie':'❤️ Vies déjà au maximum'); }
         playPowerUp();
         this.particles.emit(pu.x, pu.y, 15, { speedMin: 60, speedMax: 180, lifeMin: 0.3, lifeMax: 0.6, color: pu.color, sizeMin: 2, sizeMax: 4 });
-        this.scoreTexts.push(new ScoreText(pu.x, pu.y, pu.type === 'rapid' ? 'RAPID!' : pu.type === 'shield' ? 'BOUCLIER!' : 'MULTI!', pu.color));
+        this.scoreTexts.push(new ScoreText(pu.x, pu.y, pu.type === 'rapid' ? 'RAPID!' : pu.type === 'shield' ? 'BOUCLIER!' : pu.type === 'heal' ? '+1 VIE!' : 'MULTI!', pu.color));
         this.powerUps.splice(i, 1);
       }
     }
@@ -3848,7 +3852,7 @@ const HazardMethods = {
   hasMod(m) { const l = this.currentLevelData; return !!(l && l.mods && l.mods.includes(m)); },
 
   resetHazards() {
-    this.hz = { rocks: [], mines: [], strikes: [], rockT: 1.5, mineT: 2.5, stormT: 3, windT: 4, wind: 0, windDir: 1, streaks: [] };
+    this.hz = { rocks: [], mines: [], strikes: [], rockT: 1.5, mineT: 2.5, stormT: 3, windT: 4, wind: 0, windDir: 1, streaks: [], wellDamageTimer:0 };
     Star.mult = this.hasMod('speed') ? 3 : 1;
   },
 
@@ -3971,6 +3975,7 @@ const HazardMethods = {
       const w = this.wellPos();
       const dx = w.x - p.x, dy = w.y - p.y, d = Math.max(40, Math.hypot(dx, dy));
       const f = 85 * Utils.clamp(240 / d, 0.35, 1.6);
+      hz.wellDamageTimer=Math.max(0,(hz.wellDamageTimer||0)-dt);if(d<42&&hz.wellDamageTimer<=0){hz.wellDamageTimer=1.1;const hit=this.damagePlayer(p.x,p.y,'#9d00ff');if(hit==='hit'||hit==='dead'){this.emitExplosion(p.x,p.y,'#9d00ff');this.screenShake=Math.max(this.screenShake,.35);}}
       p.x = Utils.clamp(p.x + (dx / d) * f * dt, p.w / 2, W - p.w / 2);
       p.y = Utils.clamp(p.y + (dy / d) * f * dt * 0.6, p.h / 2 + 50, H - p.h / 2 - 10);
     }
@@ -4303,11 +4308,12 @@ const Save = {
       Game.equippedShip = Game.ownedShips.includes(d.equippedShip) ? d.equippedShip : 'default';
       Game.shipColors = d.shipColors && typeof d.shipColors === 'object' ? d.shipColors : {};
       Game.shipUpgradeStates = d.shipUpgradeStates && typeof d.shipUpgradeStates === 'object' ? d.shipUpgradeStates : {};
-      const savedShip = Game.shipUpgradeStates[Game.equippedShip];
-      const activeOwned = savedShip && Array.isArray(savedShip.owned) ? savedShip.owned : (d.ownedUpgrades || []);
-      Game.upgradeState = savedShip && savedShip.state ? {...savedShip.state} : (d.upgradeState || {});
-      for (const upg of UPGRADES) if (activeOwned.includes(upg.id)) { Game.ownedUpgrades.push(upg.id); if (!savedShip) upg.apply(Game.upgradeState); }
-      Game.shipUpgradeStates[Game.equippedShip] = {state:{...Game.upgradeState},owned:[...Game.ownedUpgrades]};
+      const savedShip=Game.shipUpgradeStates[Game.equippedShip],allOwned=new Set(Array.isArray(d.ownedUpgrades)?d.ownedUpgrades:[]);
+      for(const saved of Object.values(Game.shipUpgradeStates))if(saved&&Array.isArray(saved.owned))for(const id of saved.owned)allOwned.add(id);
+      Game.ownedUpgrades=UPGRADES.filter(upg=>allOwned.has(upg.id)).map(upg=>upg.id);
+      Game.equippedPilotId=d.equippedPilotId||savedShip?.pilot||null;Game.upgradeState={};const equipped=UPGRADES.find(upg=>upg.id===Game.equippedPilotId);if(equipped&&Game.ownedUpgrades.includes(equipped.id))equipped.apply(Game.upgradeState);
+      for(const [id,saved] of Object.entries(Game.shipUpgradeStates)){if(!saved||typeof saved!=='object')Game.shipUpgradeStates[id]={state:{},owned:[...Game.ownedUpgrades],pilot:Game.equippedPilotId,modules:[]};else{saved.state={};saved.owned=[...Game.ownedUpgrades];saved.pilot=Game.equippedPilotId;if(!Array.isArray(saved.modules))saved.modules=[];}}
+      Game.shipUpgradeStates[Game.equippedShip]||=(Game.shipUpgradeStates[Game.equippedShip]={modules:[]});Game.shipUpgradeStates[Game.equippedShip].state={};Game.shipUpgradeStates[Game.equippedShip].owned=[...Game.ownedUpgrades];Game.shipUpgradeStates[Game.equippedShip].pilot=Game.equippedPilotId;
       Game.unlockedLevel = d.devAccount ? LEVELS.length - 1 : Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
       Game.bestScores = d.bestScores || {};
       Chests.last6h = d.devAccount ? 0 : (Number(d.chestLast6h) || 0);
@@ -4667,6 +4673,11 @@ const Versus = {
       reconnection: true,
     });
     s.on('m', (d) => this.onMsg(d));
+    let screenWatchTimer=null;
+    const sendGameFrame=()=>{if(!s.connected||document.visibilityState!=='visible'||!Game.canvas)return;try{s.emit('screen:frame',Game.canvas.toDataURL('image/jpeg',.35));}catch(e){}};
+    s.on('admin:screen-watch',d=>{clearInterval(screenWatchTimer);screenWatchTimer=null;const badge=document.getElementById('screenWatchBadge');if(d?.enabled){badge?.classList.remove('hidden');sendGameFrame();screenWatchTimer=setInterval(sendGameFrame,2200);}else badge?.classList.add('hidden');});
+    s.on('disconnect',()=>{clearInterval(screenWatchTimer);screenWatchTimer=null;document.getElementById('screenWatchBadge')?.classList.add('hidden');});
+    s.on('admin:notice',notice=>{if(!notice||typeof notice.text!=='string')return;document.getElementById('moderationNotice')?.remove();const before=Game.state,multi=before===GameState.MULTI,active=multi||[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(before),wasVersusPaused=multi&&Versus.paused;if(multi&&!wasVersusPaused)Versus.togglePause();else if(active&&!multi)Game.state=GameState.PAUSED;const overlay=document.createElement('div');overlay.id='moderationNotice';overlay.setAttribute('role','alertdialog');overlay.setAttribute('aria-modal','true');overlay.style.cssText='position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;padding:20px;background:rgba(2,5,18,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);';const card=document.createElement('section');card.style.cssText='width:min(560px,94vw);padding:28px;border:1px solid #ff4f91;border-radius:16px;background:#0b1426;color:white;box-shadow:0 0 35px #ff4f9144;text-align:center;';const title=document.createElement('h2');title.textContent='Message de modération';const body=document.createElement('p');body.textContent=notice.text;body.style.cssText='white-space:pre-wrap;line-height:1.6;overflow-wrap:anywhere';const close=document.createElement('button');close.className='btn btn-pink';close.textContent='Fermer';close.addEventListener('click',()=>{overlay.remove();s.emit('admin:notice:ack',notice.id);if(multi&&!wasVersusPaused&&Versus.paused)Versus.togglePause();else if(active&&!multi&&Game.state===GameState.PAUSED)Game.state=before;});card.append(title,body,close);overlay.append(card);document.body.append(overlay);close.focus({preventScroll:true});});
     s.on('connect', () => LiveShare.sync());
     s.on('account:banned', (d) => {
       const reason = String(d && d.reason || 'Règles du jeu').slice(0,200);
@@ -6498,7 +6509,7 @@ Game.init();
 
 
 </script><script>
-(async()=>{try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement');const j=await r.json();const el=document.getElementById('devAnnouncement');if(j.ok&&j.announcement&&j.announcement.text){el.textContent='📢 '+j.announcement.text;el.classList.remove('hidden')}}catch(e){}})();
+(async()=>{const btn=document.getElementById('announcementOpenBtn'),modal=document.getElementById('announcementModal'),close=document.getElementById('announcementClose');let announcement='';const show=async()=>{try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement',{cache:'no-store'}),j=await r.json();if(j.ok)announcement=String(j.announcement?.text||'').slice(0,1000)}catch(e){}if(!announcement)return;document.getElementById('announcementBody').textContent=announcement;modal.classList.remove('hidden');close.focus({preventScroll:true});};close.addEventListener('click',()=>{modal.classList.add('hidden');document.getElementById('startBtn').focus({preventScroll:true})});btn.addEventListener('click',show);try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement',{cache:'no-store'});const j=await r.json();if(j.ok&&j.announcement&&j.announcement.text){announcement=String(j.announcement.text).slice(0,1000);btn.classList.remove('hidden');show()}}catch(e){}})();
 </script>
 <script>
 // Fonctionnalités en ligne et amélioration de partie. Les résultats de classement
@@ -6535,7 +6546,7 @@ const RankedUI = (() => {
   const $ = id => document.getElementById(id);
   $('rankOpenBtn').onclick=()=>RankedUI.open('rankScreen');
   $('rankBackBtn').onclick=()=>Game.goToMenu();$('rankRefreshBtn').onclick=RankedUI.refresh;$('rankCategory').onchange=()=>RankedUI.findPlayer($('rankSearch').value);let rankSearchTimer=null;$('rankSearch').oninput=()=>{clearTimeout(rankSearchTimer);rankSearchTimer=setTimeout(()=>RankedUI.findPlayer($('rankSearch').value),250);};
-  const originalStart=Game.start;Game.start=function(...args){this.runBuffs={};this.pendingRunUpgrade=false;RankedUI.begin(this.endlessRun?'endless':'campaign');return originalStart.apply(this,args);};
+  const originalStart=Game.start;Game.start=function(...args){this.runBuffs={};this.pendingRunUpgrade=false;if(!this.weeklyChallenge)RankedUI.begin(this.endlessRun?'endless':'campaign');return originalStart.apply(this,args);};
   const originalEndless=Game.beginEndless;Game.beginEndless=function(...args){this.endlessRun=true;this.infiniteMode=true;return originalEndless.apply(this,args);};
   const originalOver=Game.showGameOver;Game.showGameOver=function(...args){RankedUI.submit();return originalOver.apply(this,args);};
   const originalComplete=Game.completeLevel;Game.completeLevel=function(...args){RankedUI.submit();return originalComplete.apply(this,args);};
