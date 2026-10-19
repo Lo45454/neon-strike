@@ -2643,7 +2643,7 @@ const Game = {
       enemySpeed: 68+depth*3.8,
       bossColor: p[4], bossName: 'ABYSSE',
       endless: true, endlessDepth: depth,
-      mods: depth>=6 ? [['asteroids','drift','fog','swarm'][Math.floor(rand()*4)]] : []
+      mods: depth>=6 ? [['asteroids','drift','fog','swarm','ice','station','gravity','storm'][Math.floor(rand()*8)]] : []
     };
   },
 
@@ -2811,6 +2811,7 @@ const Game = {
       const owned = this.ownedShips.includes(ship.id);
       const equipped = this.equippedShip === ship.id;
       const canAfford = this.credits >= this.priceOf(ship);
+      const secretLocked = !!ship.secret && !owned;
 
       if (equipped) item.classList.add('equipped');
       else if (owned) item.classList.add('owned');
@@ -2819,6 +2820,7 @@ const Game = {
       let status = '';
       if (equipped) status = '<span class="shop-item-status equipped">Équipé</span>';
       else if (owned) status = `<span class="shop-item-status owned" style="cursor:pointer;">Équiper</span>`;
+      else if(secretLocked) status = `<span class="shop-item-missing">Vaisseau secret — maîtrise ou mystère requis</span>`;
       else status = `<span class="shop-item-price">${ship.price.toLocaleString('fr-CA')} crédits</span>` + (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount ? `<span class="shop-item-missing">Niveau ${ship.unlockLevel + 1} requis</span>` : (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(ship.price - this.credits)} crédits</span>`));
 
       item.classList.add('ship-item');
@@ -2832,7 +2834,7 @@ const Game = {
       `;
       this.drawShipPreview(item.querySelector('canvas'), {...ship, color:this.shipColors[ship.id] || ship.color});
 
-      if (!equipped) { item.addEventListener('click', () => { if (!owned && ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount) return; this.buyOrEquipShip(ship.id); }); }
+      if (!equipped) { item.addEventListener('click', () => { if (!owned && (ship.secret || ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount)) return; this.buyOrEquipShip(ship.id); }); }
 
       shipGrid.appendChild(item);
     }
@@ -3838,6 +3840,8 @@ const MOD_INFO = {
   mines:     { label: 'Mines', desc: 'Les mines explosent en anneau de balles' },
   storm:     { label: 'Orages', desc: 'La foudre frappe les zones marquées en rouge' },
   gravity:   { label: 'Trou noir', desc: 'Il attire ton vaisseau et courbe les balles' },
+  ice:       { label: 'Planète de glace', desc: 'Le sol gelé prolonge les glissades' },
+  station:   { label: 'Station orbitale', desc: 'Les tourelles de défense tirent sur les pilotes' },
   speed:     { label: 'Hypervitesse', desc: 'Tout va plus vite, mais score x1,5' },
   elite:     { label: 'Élites', desc: 'Ennemis dorés plus résistants, bonus garanti' },
   swarm:     { label: 'Essaims', desc: 'Les ennemis arrivent en formation' },
@@ -6509,19 +6513,20 @@ const RankedUI = (() => {
   const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const socket = () => Versus && Versus.socket && Versus.socket.connected ? Versus.socket : null;
   const emit = (event,payload) => new Promise(resolve => { const so=socket(); if(!so)return resolve({ok:false,error:'Serveur indisponible. Reconnecte-toi pour utiliser le classement.'}); so.emit(event,payload||{},resolve); setTimeout(()=>resolve({ok:false,error:'Délai dépassé. Réessaie.'}),8000); });
-  async function begin(mode){clearInterval(pulseTimer);ticket=null;const r=await emit('rank:start',{mode}); ticket=r.ok?r.ticket:null; if(r.ok)pulseTimer=setInterval(()=>emit('rank:pulse',{ticket,active:Game.state===GameState.PLAYING||Game.state===GameState.BOSS_FIGHT}),2000); if(!r.ok) console.info(r.error);}
+  async function begin(mode){clearInterval(pulseTimer);ticket=null;const r=await emit('rank:start',{mode}); ticket=r.ok?r.ticket:null; if(r.ok)pulseTimer=setInterval(()=>emit('rank:pulse',{ticket,active:Game.state===GameState.PLAYING||Game.state===GameState.BOSS_FIGHT||Game.state===GameState.WAVE_BREAK}),2000); if(!r.ok) console.info(r.error);}
   async function submit(){if(!ticket)return;const t=ticket;ticket=null;clearInterval(pulseTimer);const r=await emit('rank:submit',{ticket:t}); if(r.ok&&r.rank){data=r.rank;renderRank();}}
-  function paintRows(node, rows, search='') { const f=search.trim().toLocaleLowerCase(); const list=(rows||[]).filter(x=>!f||x.name.toLocaleLowerCase().includes(f)); if(!list.length){node.innerHTML='<p>Aucun résultat enregistré pour l’instant.</p>';return;} node.innerHTML=list.map(x=>`<div style="display:grid;grid-template-columns:55px 1fr auto;gap:10px;padding:9px;border-bottom:1px solid #28405e;align-items:center"><strong style="color:${x.rank===1?'#ffdd00':x.rank<=3?'#ff8b45':x.rank<=10?'#b36bff':'#9fc8ff'}">${x.rank===1?'👑 ':''}#${x.rank}</strong><span>${esc(x.name)} ${x.rank===1?'<small>CHAMPION EN TITRE</small>':''}</span><b>${Number(x.score).toLocaleString('fr-CA')} pts</b></div>`).join(''); }
+  function paintRows(node, rows, search='') { const f=search.trim().toLocaleLowerCase(); const list=(rows||[]).filter(x=>!f||x.name.toLocaleLowerCase().includes(f)); if(!list.length){node.innerHTML='<p>Aucun résultat enregistré pour l’instant.</p>';return;} node.innerHTML=list.map(x=>`<div style="display:grid;grid-template-columns:55px 1fr auto;gap:10px;padding:9px;border-bottom:1px solid #28405e;align-items:center"><strong style="color:${x.rank===1?'#ffdd00':x.rank<=3?'#ff8b45':x.rank<=10?'#b36bff':'#9fc8ff'}">${x.rank===1?'👑 ':''}#${x.rank}</strong><span>${esc(x.avatar||'🚀')} ${esc(x.name)} ${x.rank===1?'<small>CHAMPION EN TITRE</small>':x.rank<=3?'<small>EFFET TOP 3</small>':x.rank<=10?'<small>BADGE TOP 10</small>':''}</span><b>${Number(x.score).toLocaleString('fr-CA')} pts</b></div>`).join(''); }
+  async function findPlayer(q){if(q.trim().length<2){renderRank();return;}const r=await emit('rank:find',q);if(!r.ok)return;const cat=$('rankCategory').value,rows=(r.items||[]).filter(x=>x.category===cat);paintRows($('rankRows'),rows,q);if(!rows.length)$('rankRows').innerHTML='<p>Aucun pilote trouvé dans cette catégorie.</p>';}
   function renderRank(){if(!data)return;const cat=$('rankCategory').value,rows=data.rankings?.[cat]||[];const q=$('rankSearch').value;paintRows($('rankRows'),rows,q);const me=data.rankings?.me;$('rankMe').textContent=me?`Ton rang général : #${me.rank} · ${me.score.toLocaleString('fr-CA')} points`:'Connecte-toi et soumets une partie classée pour établir ton rang.';$('rankStatus').textContent=data.account?`Joueur : ${data.account} · classement actualisé à l’instant`:'Classement public · connecte-toi pour participer';}
   async function refresh(){const r=await emit('rank:get');if(!r.ok){$('rankStatus').textContent=r.error;return;}data=r;renderRank();const t=r.tournament;$('tournamentStatus').textContent=`${t.name} · ${t.id} · classement asynchrone`; $('tournamentRules').textContent=t.rules+' Récompenses : '+t.rewards.join(' · '); paintRows($('tournamentRows'),t.standings);$('tournamentHistory').innerHTML=(r.history||[]).map(h=>`<details><summary>${esc(h.id)}</summary>${h.rows.map(x=>`#${x.rank} ${esc(x.name)} — ${x.score.toLocaleString('fr-CA')} pts`).join('<br>')||'Aucune participation'}</details>`).join('')||'Aucun tournoi terminé.'; clearInterval(countdown);const end=Date.parse(t.endsAt);countdown=setInterval(()=>{const ms=Math.max(0,end-Date.now());$('tournamentCountdown').textContent=`Fin dans ${Math.floor(ms/86400000)} j ${String(Math.floor(ms/3600000)%24).padStart(2,'0')} h ${String(Math.floor(ms/60000)%60).padStart(2,'0')} min`;},1000);}
   function open(id){Game.hideAllOverlays();const el=$(id);el.classList.remove('hidden');el.classList.add('active');refresh();}
   function offerUpgrade(){if(!Game.player||Game.state!==GameState.PLAYING||Game.pendingRunUpgrade)return;Game.pendingRunUpgrade=true;Game.state=GameState.PAUSED;const choices=[['Tirs multiples','+1 projectile par salve','multishot'],['Cadence photonique','Tire 18 % plus vite, dégâts −1','rapid'],['Bouclier renforcé','Une vie supplémentaire','shield'],['Propulseur','Vitesse +15 %, vie max −1','speed'],['Canon lourd','Dégâts +1, cadence −12 %','damage']].sort(()=>Math.random()-.5).slice(0,3);const box=$('runUpgradeChoices');box.replaceChildren();choices.forEach(([name,desc,key])=>{const b=document.createElement('button');b.className='btn btn-green';b.textContent=`${name} — ${desc}`;b.onclick=()=>{Game.runBuffs=Game.runBuffs||{};const p=Game.player;if(key==='rapid')Game.runBuffs.fireRateMul=(Game.runBuffs.fireRateMul||1)*.82,p.fireRate*=.82,p.bulletDamage=Math.max(1,p.bulletDamage-1);if(key==='shield')p.lives=Math.min(8,p.lives+1);if(key==='speed')p.speed*=1.15,p.lives=Math.max(1,p.lives-1);if(key==='damage')p.bulletDamage++,p.fireRate*=1.12;if(key==='multishot')p.multishot=Math.min(5,p.multishot+1);Game.pendingRunUpgrade=false;$('runUpgradeScreen').classList.add('hidden');$('runUpgradeScreen').classList.remove('active');Game.state=GameState.PLAYING;};box.append(b);});$('runUpgradeScreen').classList.remove('hidden');$('runUpgradeScreen').classList.add('active');}
-  return {begin,submit,open,refresh,renderRank,offerUpgrade};
+  return {begin,submit,open,refresh,renderRank,findPlayer,offerUpgrade};
 })();
 (function(){
   const $ = id => document.getElementById(id);
   $('rankOpenBtn').onclick=()=>RankedUI.open('rankScreen');$('tournamentOpenBtn').onclick=()=>RankedUI.open('tournamentScreen');
-  $('rankBackBtn').onclick=$('tournamentBackBtn').onclick=()=>Game.goToMenu();$('rankRefreshBtn').onclick=RankedUI.refresh;$('rankCategory').onchange=RankedUI.renderRank;$('rankSearch').oninput=RankedUI.renderRank;
+  $('rankBackBtn').onclick=$('tournamentBackBtn').onclick=()=>Game.goToMenu();$('rankRefreshBtn').onclick=RankedUI.refresh;$('rankCategory').onchange=()=>RankedUI.findPlayer($('rankSearch').value);let rankSearchTimer=null;$('rankSearch').oninput=()=>{clearTimeout(rankSearchTimer);rankSearchTimer=setTimeout(()=>RankedUI.findPlayer($('rankSearch').value),250);};
   const originalStart=Game.start;Game.start=function(...args){this.runBuffs={};this.pendingRunUpgrade=false;RankedUI.begin(this.endlessRun?'endless':'campaign');return originalStart.apply(this,args);};
   const originalEndless=Game.beginEndless;Game.beginEndless=function(...args){this.endlessRun=true;this.infiniteMode=true;return originalEndless.apply(this,args);};
   const originalOver=Game.showGameOver;Game.showGameOver=function(...args){RankedUI.submit();return originalOver.apply(this,args);};
@@ -6532,5 +6537,6 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
+<script src="/expansion.js" defer></script>
 </body>
 </html>
