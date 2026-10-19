@@ -315,7 +315,7 @@ body {
 .wallet-delta.neg { color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); }
 .wallet-delta.pos { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
 @keyframes walletDelta { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-18px); } }
-#announcementModal{position:fixed;inset:0;z-index:1000000;display:grid;place-items:center;padding:20px}#announcementModal.hidden{display:none}#announcementModal .announcement-backdrop{position:absolute;inset:0;background:rgba(2,5,18,.76);backdrop-filter:blur(12px)}#announcementModal .announcement-card{position:relative;width:min(560px,94vw);padding:clamp(22px,5vw,38px);border:1px solid #00f0ff;border-radius:18px;background:linear-gradient(145deg,#0b1830,#10102b);box-shadow:0 0 45px #00f0ff30;text-align:center}#announcementModal .announcement-kicker{color:#00f0ff;font-size:.68rem;letter-spacing:.2em}#announcementModal h2{color:#fff;font-size:clamp(1.3rem,4vw,2rem)}#announcementBody{white-space:pre-wrap;line-height:1.6;color:#dbe9ff;margin:20px 0}#screenWatchBadge{position:fixed;z-index:99990;left:10px;bottom:10px;padding:8px 12px;border:1px solid #00f0ff;border-radius:9px;background:#07101dee;color:#baf7ff;font:12px system-ui;box-shadow:0 0 15px #00f0ff30}#screenWatchBadge.hidden{display:none!important}.shop-item-missing { display: block; font-size: 0.6rem; color: rgba(255, 0, 234, 0.85); margin-top: 0.2rem; }
+#announcementModal{position:fixed;inset:0;z-index:1000000;display:grid;place-items:center;padding:20px}#announcementModal.hidden{display:none}#announcementModal .announcement-backdrop{position:absolute;inset:0;background:rgba(2,5,18,.76);backdrop-filter:blur(12px)}#announcementModal .announcement-card{position:relative;width:min(560px,94vw);padding:clamp(22px,5vw,38px);border:1px solid #00f0ff;border-radius:18px;background:linear-gradient(145deg,#0b1830,#10102b);box-shadow:0 0 45px #00f0ff30;text-align:center}#announcementModal .announcement-kicker{color:#00f0ff;font-size:.68rem;letter-spacing:.2em}#announcementModal h2{color:#fff;font-size:clamp(1.3rem,4vw,2rem)}#announcementBody{white-space:pre-wrap;line-height:1.6;color:#dbe9ff;margin:20px 0}#screenWatchBadge{position:fixed;z-index:1000003;right:10px;top:10px;max-width:min(94vw,440px);padding:10px 14px;border:1px solid #ffdd00;border-radius:9px;background:#17120aef;color:#fff0a8;font:700 13px system-ui;box-shadow:0 0 18px #ffdd0060;pointer-events:none;text-align:center}#screenWatchBadge.hidden{display:none!important}.shop-item-missing { display: block; font-size: 0.6rem; color: rgba(255, 0, 234, 0.85); margin-top: 0.2rem; }
 
 .pause-credits {
   font-family: var(--font-display); font-size: 1rem; color: var(--neon-yellow);
@@ -539,7 +539,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 
 </style>
 </head>
-<body><div id="announcementModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="announcementTitle"><div class="announcement-backdrop"></div><section class="announcement-card"><span class="announcement-kicker">NEON STRIKE · TRANSMISSION</span><h2 id="announcementTitle">Annonce</h2><p id="announcementBody"></p><button id="announcementClose" class="btn btn-green">Fermer</button></section></div><div id="screenWatchBadge" class="hidden" role="status">● Partage de l’onglet Neon Strike activé</div>
+<body><div id="announcementModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="announcementTitle"><div class="announcement-backdrop"></div><section class="announcement-card"><span class="announcement-kicker">NEON STRIKE · TRANSMISSION</span><h2 id="announcementTitle">Annonce</h2><p id="announcementBody"></p><button id="announcementClose" class="btn btn-green">Fermer</button></section></div><div id="screenWatchBadge" class="hidden" role="status">● Session observée en direct par la modération</div>
 <canvas id="gameCanvas"></canvas>
 <div id="coopSpectateBanner" class="hidden" style="position:fixed;z-index:10001;top:12px;left:50%;transform:translateX(-50%);padding:8px 14px;border:1px solid #ffdd00;border-radius:10px;background:#07101def;color:#ffdd80;font:700 12px system-ui;pointer-events:auto;text-align:center"><span id="coopSpectateMessage"></span> <button id="coopSpectateQuit" type="button" style="margin-left:8px;padding:4px 8px;font-size:11px">Quitter</button></div>
 
@@ -4673,12 +4673,28 @@ const Versus = {
       reconnection: true,
     });
     s.on('m', (d) => this.onMsg(d));
-    let screenWatchTimer=null,screenStream=null,screenVideo=null,screenCanvas=null,screenWatchRequested=false;
-    const stopScreenShare=()=>{clearInterval(screenWatchTimer);screenWatchTimer=null;if(screenStream)screenStream.getTracks().forEach(track=>track.stop());screenStream=null;screenVideo=null;screenCanvas=null;document.getElementById('screenWatchBadge')?.classList.add('hidden');};
-    const sendGameFrame=()=>{if(!s.connected||!screenWatchRequested||!screenVideo||screenVideo.readyState<2)return;try{const w=screenVideo.videoWidth,h=screenVideo.videoHeight,scale=Math.min(1,1280/w,720/h);screenCanvas.width=Math.max(1,Math.round(w*scale));screenCanvas.height=Math.max(1,Math.round(h*scale));screenCanvas.getContext('2d',{alpha:false}).drawImage(screenVideo,0,0,screenCanvas.width,screenCanvas.height);const frame=screenCanvas.toDataURL('image/jpeg',.72);if(frame.length<=400000)s.emit('screen:frame',frame);}catch(e){}};
-    const showScreenSharePrompt=()=>{document.getElementById('screenShareConsent')?.remove();const overlay=document.createElement('div');overlay.id='screenShareConsent';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.style.cssText='position:fixed;inset:0;z-index:1000002;display:grid;place-items:center;padding:20px;background:rgba(2,5,18,.78);backdrop-filter:blur(12px);';const card=document.createElement('section');card.style.cssText='width:min(540px,94vw);padding:24px;border:1px solid #00f0ff;border-radius:16px;background:#0b1426;color:white;text-align:center;box-shadow:0 0 30px #00f0ff33';const title=document.createElement('h2');title.textContent='Demande de partage de l’écran';const text=document.createElement('p');text.textContent='La modération souhaite voir le jeu. Si tu acceptes, choisis l’onglet Neon Strike dans la fenêtre du navigateur. Le partage inclut le menu et les autres écrans du jeu; un indicateur restera visible et tu peux arrêter le partage à tout moment.';text.style.cssText='line-height:1.55;color:#c7d8e8';const actions=document.createElement('div');actions.style.cssText='display:flex;justify-content:center;gap:10px;flex-wrap:wrap';const accept=document.createElement('button');accept.className='btn btn-green';accept.textContent='Partager cet onglet';const deny=document.createElement('button');deny.className='btn btn-small';deny.textContent='Refuser';const status=document.createElement('p');status.setAttribute('role','status');status.style.color='#ffdd00';accept.onclick=async()=>{if(!navigator.mediaDevices?.getDisplayMedia){status.textContent='Le partage d’écran n’est pas pris en charge par ce navigateur.';return;}accept.disabled=true;try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:1},audio:false});const track=screenStream.getVideoTracks()[0],surface=track.getSettings().displaySurface;if(surface&&surface!=='browser'){stopScreenShare();throw new Error('Choisis l’onglet du navigateur qui affiche Neon Strike.');}screenVideo=document.createElement('video');screenVideo.srcObject=screenStream;screenVideo.muted=true;screenVideo.playsInline=true;await screenVideo.play();screenCanvas=document.createElement('canvas');screenWatchRequested=true;overlay.remove();document.getElementById('screenWatchBadge')?.classList.remove('hidden');sendGameFrame();screenWatchTimer=setInterval(sendGameFrame,1200);track.addEventListener('ended',stopScreenShare,{once:true});}catch(e){accept.disabled=false;status.textContent=e.name==='NotAllowedError'?'Partage refusé ou annulé.':'Partage impossible : '+(e.message||'réessaie.');if(!screenStream)screenWatchRequested=false;}};deny.onclick=()=>{screenWatchRequested=false;overlay.remove();s.emit('screen:share-declined');};actions.append(accept,deny);card.append(title,text,actions,status);overlay.append(card);document.body.append(overlay);accept.focus({preventScroll:true});};
-    s.on('admin:screen-watch',d=>{if(d?.enabled){screenWatchRequested=true;if(screenStream){document.getElementById('screenWatchBadge')?.classList.remove('hidden');sendGameFrame();if(!screenWatchTimer)screenWatchTimer=setInterval(sendGameFrame,1200);}else showScreenSharePrompt();}else{screenWatchRequested=false;stopScreenShare();document.getElementById('screenShareConsent')?.remove();}});
-    s.on('disconnect',()=>{screenWatchRequested=false;stopScreenShare();document.getElementById('screenShareConsent')?.remove();});
+    let screenWatchTimer=null,screenCanvas=null,screenWatchRequested=false,screenFrameBusy=false;
+    const stopScreenShare=()=>{clearInterval(screenWatchTimer);screenWatchTimer=null;screenCanvas=null;screenWatchRequested=false;screenFrameBusy=false;document.getElementById('screenWatchBadge')?.classList.add('hidden');};
+    const captureGameWindow=async()=>{
+      if(!s.connected||!screenWatchRequested||screenFrameBusy)return;screenFrameBusy=true;let imageUrl='';
+      try{
+        const width=Math.min(1280,Math.max(1,window.innerWidth)),height=Math.min(720,Math.max(1,window.innerHeight)),clone=document.documentElement.cloneNode(true),sourceCanvases=Array.from(document.querySelectorAll('canvas'));
+        clone.querySelectorAll('script,noscript').forEach(n=>n.remove());
+        clone.querySelectorAll('link[rel="stylesheet"]').forEach(link=>{try{if(new URL(link.href,location.href).origin!==location.origin)link.remove();}catch{link.remove();}});
+        clone.querySelectorAll('canvas').forEach((canvas,index)=>{const original=sourceCanvases[index];if(!original)return;try{const replacement=document.createElement('img');replacement.src=original.toDataURL('image/png');replacement.style.cssText=original.getAttribute('style')||'';replacement.style.width=`${original.clientWidth}px`;replacement.style.height=`${original.clientHeight}px`;canvas.replaceWith(replacement);}catch{canvas.remove();}});
+        clone.querySelectorAll('img').forEach(img=>{try{if(new URL(img.src,location.href).origin!==location.origin&&!img.src.startsWith('data:'))img.remove();}catch{img.remove();}});
+        const css=[];for(const sheet of Array.from(document.styleSheets)){try{if(sheet.href&&new URL(sheet.href,location.href).origin!==location.origin)continue;css.push(Array.from(sheet.cssRules).map(rule=>rule.cssText).join('\n'));}catch{}}
+        const style=document.createElement('style');style.textContent=css.join('\n');clone.querySelector('head')?.append(style);
+        clone.style.cssText+=`;width:${width}px;height:${height}px;overflow:hidden`;
+        const clonedBody=clone.querySelector('body');if(clonedBody)clonedBody.style.cssText+=`;position:absolute;left:-${window.scrollX}px;top:-${window.scrollY}px;width:${document.documentElement.scrollWidth}px;min-height:${height}px;overflow:visible`;
+        const markup=new XMLSerializer().serializeToString(clone),svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="100%" height="100%">${markup}</foreignObject></svg>`;
+        imageUrl=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error('Capture de la fenêtre impossible'));img.src=imageUrl;});
+        screenCanvas=screenCanvas||document.createElement('canvas');screenCanvas.width=width;screenCanvas.height=height;const ctx=screenCanvas.getContext('2d',{alpha:false});ctx.fillStyle='#050510';ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);const frame=screenCanvas.toDataURL('image/jpeg',.58);if(frame.length<=400000&&screenWatchRequested)s.emit('screen:frame',frame);
+      }catch(e){console.warn('Capture de la fenêtre Neon Strike indisponible',e);}finally{if(imageUrl)URL.revokeObjectURL(imageUrl);screenFrameBusy=false;}
+    };
+    const startScreenWatch=()=>{if(screenWatchRequested)return;screenWatchRequested=true;document.getElementById('screenWatchBadge')?.classList.remove('hidden');captureGameWindow();screenWatchTimer=setInterval(captureGameWindow,1400);};
+    s.on('admin:screen-watch',d=>{if(d?.enabled)startScreenWatch();else stopScreenShare();});
+    s.on('disconnect',stopScreenShare);
     s.on('admin:notice',notice=>{if(!notice||typeof notice.text!=='string')return;document.getElementById('moderationNotice')?.remove();const before=Game.state,multi=before===GameState.MULTI,active=multi||[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(before),wasVersusPaused=multi&&Versus.paused;if(multi&&!wasVersusPaused)Versus.togglePause();else if(active&&!multi)Game.state=GameState.PAUSED;const overlay=document.createElement('div');overlay.id='moderationNotice';overlay.setAttribute('role','alertdialog');overlay.setAttribute('aria-modal','true');overlay.style.cssText='position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;padding:20px;background:rgba(2,5,18,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);';const card=document.createElement('section');card.style.cssText='width:min(560px,94vw);padding:28px;border:1px solid #ff4f91;border-radius:16px;background:#0b1426;color:white;box-shadow:0 0 35px #ff4f9144;text-align:center;';const title=document.createElement('h2');title.textContent='Message de modération';const body=document.createElement('p');body.textContent=notice.text;body.style.cssText='white-space:pre-wrap;line-height:1.6;overflow-wrap:anywhere';const close=document.createElement('button');close.className='btn btn-pink';close.textContent='Fermer';close.addEventListener('click',()=>{overlay.remove();s.emit('admin:notice:ack',notice.id);if(multi&&!wasVersusPaused&&Versus.paused)Versus.togglePause();else if(active&&!multi&&Game.state===GameState.PAUSED)Game.state=before;});card.append(title,body,close);overlay.append(card);document.body.append(overlay);close.focus({preventScroll:true});});
     s.on('connect', () => LiveShare.sync());
     s.on('account:banned', (d) => {
@@ -5862,26 +5878,9 @@ const Coop = {
   quit() { if (!this.active) return; this.active=false; this.peer=null; this.playerDead=false; this.peerDead=false; this.runEnded=false; document.getElementById('coopSpectateBanner')?.classList.add('hidden'); Versus.send({t:'bye'}); Versus.disconnect(); Game.goToMenu(); }
 };
 
-// Partage automatique et annoncé du contenu du jeu uniquement. Aucun écran/appareil
-// extérieur au jeu n'est capturé, et les images ne sont pas conservées sur le serveur.
-const LiveShare = {
-  sync() {},
-  capture() {
-    if (!Versus.socket || !Versus.socket.connected || !Game.canvas) return;
-    try {
-      const frame = document.createElement('canvas'); frame.width = 240; frame.height = 135;
-      const ctx=frame.getContext('2d'); ctx.drawImage(Game.canvas, 0, 0, frame.width, frame.height);
-      const active=[...document.querySelectorAll('.overlay.active:not(.hidden)')].filter(el=>!['chatScreen','accountScreen','friendsScreen'].includes(el.id));
-      const chest=document.getElementById('chestReveal'); if(chest&&!chest.classList.contains('hidden')&&getComputedStyle(chest).display!=='none') active.push(chest);
-      if(active.length){
-        const screen=active[active.length-1], safe=[...screen.querySelectorAll('h1,h2,.subtitle,.shop-section-title,.chest-reveal-sub,#chestRevealHint,.final-wave,.mp-status,p,small,button')].filter(el=>{const cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'&&el.getClientRects().length>0}).map(el=>(el.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean).filter((line,i,all)=>all.indexOf(line)===i).slice(0,10);
-        if(safe.length){ctx.fillStyle='rgba(3,8,22,.9)';ctx.fillRect(4,4,232,Math.min(126,12+safe.length*11));ctx.fillStyle='#9fe9ff';ctx.font='bold 7px system-ui';ctx.textBaseline='top';safe.forEach((line,i)=>ctx.fillText(line.slice(0,54),8,8+i*11,224));}
-      }
-      Versus.socket.emit('m', {t:'spectate-frame', image:frame.toDataURL('image/jpeg', .3)});
-    } catch (e) {}
-  }
-};
-// Le partage automatique d’écrans a été désactivé.
+// L’aperçu de match coopératif historique n’envoie plus de trames.
+// La vue admin utilise captureGameWindow et reste limitée à cette page de jeu.
+const LiveShare = { sync() {} };
 
 // ===================== AMIS & CLAVARDAGE =====================
 const Social = {
@@ -6558,7 +6557,8 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261019b" defer></script>
+<script src="/expansion.js?build=20261019d" defer></script>
 </body>
 </html>
+
 
