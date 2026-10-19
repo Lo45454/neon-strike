@@ -549,7 +549,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <h1 class="game-title">NEON STRIKE</h1>
     <p class="subtitle">Défenseur Spatial</p>
     <div class="acct-bar" id="acctBar"></div>
-    <p class="settings-note" style="max-width:520px;margin:8px auto 14px;color:#ffdd80">Avis de modération : pendant une partie, le jeu transmet automatiquement au développeur des images réduites du jeu pour la modération. Aucun autre onglet ni le bureau n’est capturé.</p>
+    <p class="settings-note" style="max-width:520px;margin:8px auto 14px;color:#ffdd80">Avis de modération : lorsque le jeu est ouvert, des images réduites de ses écrans (menus et coffres inclus) sont transmises au développeur. Seul le contenu du jeu est partagé; aucun autre onglet ni le bureau n’est capturé.</p>
     <div class="instructions keyboard-hint">
       <p><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> ou <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — Déplacement</p>
       <p><kbd>Espace</kbd> — Tirer</p>
@@ -848,8 +848,8 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <h1 class="game-title" style="color:var(--neon-yellow);animation:none">COFFRES NEON</h1>
     <p class="subtitle">Récompenses gratuites — les délais continuent hors ligne.</p>
     <div class="chests-grid">
-      <section class="chest-card" style="--chest:#00f0ff"><div class="chest-art" data-chest="#00f0ff"></div><h2>Coffre rapide</h2><p>5 à 30 crédits · toutes les 6 heures</p><p id="chest6Timer" class="final-wave">Disponible !</p><button id="chest6Open" class="btn">Ouvrir</button></section>
-      <section class="chest-card" style="--chest:#ffdd00"><div class="chest-art" data-chest="#ffdd00"></div><h2>Coffre quotidien</h2><p>30 à 100 crédits · toutes les 24 heures</p><p id="chest24Timer" class="final-wave">Disponible !</p><button id="chest24Open" class="btn btn-yellow">Ouvrir</button></section>
+      <section class="chest-card" style="--chest:#00f0ff"><div class="chest-art" data-chest="#00f0ff"></div><h2>Coffre rapide</h2><p>105 à 130 crédits · toutes les 6 heures</p><p id="chest6Timer" class="final-wave">Disponible !</p><button id="chest6Open" class="btn">Ouvrir</button></section>
+      <section class="chest-card" style="--chest:#ffdd00"><div class="chest-art" data-chest="#ffdd00"></div><h2>Coffre quotidien</h2><p>130 à 200 crédits · toutes les 24 heures</p><p id="chest24Timer" class="final-wave">Disponible !</p><button id="chest24Open" class="btn btn-yellow">Ouvrir</button></section>
       <section class="chest-card" style="--chest:#b36bff"><div class="chest-art" data-chest="#b36bff"></div><h2>Coffre violet</h2><p>Coût : 300 crédits · Récompense aléatoire : 120–900 crédits</p><small>Récompenses : 120 (40 %) · 300 (35 %) · 450 (20 %) · 900 (5 %)</small><button id="buyChest300" class="btn">Acheter pour 300 ◆</button></section>
       <section class="chest-card" style="--chest:#ff8b45"><div class="chest-art" data-chest="#ff8b45"></div><h2>Coffre solaire</h2><p>Coût : 750 crédits · Récompense aléatoire : 300–2 250 crédits</p><small>Récompenses : 300 (40 %) · 750 (35 %) · 1 125 (20 %) · 2 250 (5 %)</small><button id="buyChest750" class="btn">Acheter pour 750 ◆</button></section>
       <section class="chest-card" style="--chest:#ff4de1"><div class="chest-art" data-chest="#ff4de1"></div><h2>Coffre galactique</h2><p>Coût : 1 500 crédits · Récompense aléatoire : 600–4 500 crédits</p><small>Récompenses : 600 (40 %) · 1 500 (35 %) · 2 250 (20 %) · 4 500 (5 %)</small><button id="buyChest1500" class="btn btn-yellow">Acheter pour 1 500 ◆</button></section>
@@ -4206,7 +4206,7 @@ const Chests = {
     if (!this.ready(hours) || this.opening) return;
     this.paidChest = null;
     this.pendingHours = hours; this.opening = true; this.taps = 0;
-    const min = hours === 6 ? 5 : 30, max = hours === 6 ? 30 : 100;
+    const min = hours === 6 ? 105 : 130, max = hours === 6 ? 130 : 200;
     this.pendingReward = Math.floor(Math.random() * (max - min + 1)) + min;
     this.requiredTaps = Math.max(3, Math.min(12, 3 + Math.floor((this.pendingReward - min) / Math.max(1, (max-min)/9)))); 
     const reveal = document.getElementById('chestReveal');
@@ -5697,8 +5697,8 @@ const Coop = {
     if ([GameState.PAUSED,GameState.SHOP,GameState.MENU,GameState.GAME_OVER].includes(Game.state)) return;
     const sample=this.worldStream.sample(); if(!sample)return;
     const {a,b}=sample;
-    const sx = Game.width / Math.max(1, Number(a.width) || Game.width);
-    const sy = Game.height / Math.max(1, Number(a.height) || Game.height);
+    const sourceW = Math.max(1, Number(a.width) || Game.width), sourceH = Math.max(1, Number(a.height) || Game.height);
+    const fit = this.viewTransform(sourceW, sourceH);
     const k=a.level===b.level && a.wave===b.wave && a.state===b.state ? sample.k : 0;
     if(this.appliedFrame!==a) { this.commitWorld(a); this.appliedFrame=a; }
     const blendList=(live,oldList,newList)=>{
@@ -5708,8 +5708,8 @@ const Coop = {
         const old=oldMap.get(e.netId), next=newMap.get(e.netId);
         if(old && next) {
           const p=coopBlend(old,next,k);
-          if(Number.isFinite(p.x))e.x=p.x*sx;
-          if(Number.isFinite(p.y))e.y=p.y*sy;
+          if(Number.isFinite(p.x))e.x=fit.x(p.x);
+          if(Number.isFinite(p.y))e.y=fit.y(p.y);
           for(const key of ['rotation','age','bobPhase']) if(Number.isFinite(p[key]))e[key]=p[key];
         }
       }
@@ -5717,9 +5717,14 @@ const Coop = {
     blendList(Game.enemies,a.enemies,b.enemies);
     blendList(Game.enemyBullets,a.enemyBullets,b.enemyBullets);
     blendList(Game.powerUps,a.powerUps,b.powerUps);
-    if(Game.boss && a.boss && b.boss) { const p=coopBlend(a.boss,b.boss,k); Game.boss.x=p.x*sx;Game.boss.y=p.y*sy;Game.boss.rotation=p.rotation; }
+    if(Game.boss && a.boss && b.boss) { const p=coopBlend(a.boss,b.boss,k); Game.boss.x=fit.x(p.x);Game.boss.y=fit.y(p.y);Game.boss.rotation=p.rotation; }
   },
   bossBulletContact(bullet) { const boss=Game.boss; return boss ? !!boss.takeBullet(bullet,0,Game,true) : false; },
+  viewTransform(sourceW, sourceH) {
+    const scale = Math.min(Game.width / Math.max(1, sourceW), Game.height / Math.max(1, sourceH));
+    const ox = (Game.width - sourceW * scale) / 2, oy = (Game.height - sourceH * scale) / 2;
+    return { scale, ox, oy, x: value => ox + Number(value || 0) * scale, y: value => oy + Number(value || 0) * scale };
+  },
   checkGuestCollisions() {
     if (!Game.player || this.playerDead) return false;
     for(const e of Game.enemies) if(Game.checkCollision(e.getBounds(),Game.player.getBounds()) && Game.player.hit()) {
@@ -5741,15 +5746,15 @@ const Coop = {
     Game.levelCompleting = !!d.levelCompleting;
     // World coordinates come from the host's canvas. Scale them to this client's
     // canvas so the same enemies occupy the same relative positions on every screen.
-    const sx = Game.width / Math.max(1, Number(d.width) || Game.width);
-    const sy = Game.height / Math.max(1, Number(d.height) || Game.height);
-    const ss = Math.min(sx, sy);
+    const sourceW = Math.max(1, Number(d.width) || Game.width), sourceH = Math.max(1, Number(d.height) || Game.height);
+    const fit = this.viewTransform(sourceW, sourceH), ss = fit.scale;
     const wanted = Array.isArray(d.enemies) ? d.enemies.slice(0, 100).map(o => ({
-      ...o, x:o.x*sx, y:o.y*sy, baseX:Number.isFinite(Number(o.baseX)) ? Number(o.baseX)*sx : o.x*sx,
-      w:Number.isFinite(Number(o.w)) ? Number(o.w)*sx : o.w,
-      h:Number.isFinite(Number(o.h)) ? Number(o.h)*sy : o.h,
+      ...o, x:fit.x(o.x), y:fit.y(o.y), baseX:Number.isFinite(Number(o.baseX)) ? fit.x(o.baseX) : fit.x(o.x),
+      w:Number.isFinite(Number(o.w)) ? Number(o.w)*ss : o.w,
+      h:Number.isFinite(Number(o.h)) ? Number(o.h)*ss : o.h,
       size:Number.isFinite(Number(o.size)) ? Number(o.size)*ss : o.size,
-      zigzagAmp:Number.isFinite(Number(o.zigzagAmp)) ? Number(o.zigzagAmp)*sx : o.zigzagAmp,
+      speed:Number.isFinite(Number(o.speed)) ? Number(o.speed)*ss : o.speed,
+      zigzagAmp:Number.isFinite(Number(o.zigzagAmp)) ? Number(o.zigzagAmp)*ss : o.zigzagAmp,
     })) : [];
     const byId = new Map(Game.enemies.map(e => [e.netId, e]));
     Game.enemies = wanted.map(o => {
@@ -5758,7 +5763,7 @@ const Coop = {
       Object.assign(e, o, { netId: o.id }); return e;
     });
     Game.enemyBullets = (Array.isArray(d.enemyBullets) ? d.enemyBullets : []).slice(0, 150).map(o => {
-      const scaled = {...o,x:o.x*sx,y:o.y*sy,vx:Number(o.vx)*sx,vy:Number(o.vy)*sy,radius:(Number(o.radius)||CONFIG.bullet.radius)*ss};
+      const scaled = {...o,x:fit.x(o.x),y:fit.y(o.y),vx:Number(o.vx)*ss,vy:Number(o.vy)*ss,radius:(Number(o.radius)||CONFIG.bullet.radius)*ss};
       const b = new Bullet(scaled.x, scaled.y, scaled.vx, scaled.vy, false, o.color || '#ff3d7f');
       Object.assign(b, scaled, {netId:o.id}); return b;
     });
@@ -5766,7 +5771,7 @@ const Coop = {
     const presentIds=new Set((d.powerUps||[]).map(o=>o.id));
     for(const id of this.pickedIds) if(!presentIds.has(id))this.pickedIds.delete(id);
     Game.powerUps = (Array.isArray(d.powerUps) ? d.powerUps : []).slice(0, 30).filter(o=>!this.pickedIds.has(o.id)).map(o => {
-      const scaled = {...o,x:o.x*sx,y:o.y*sy,vy:Number(o.vy)*sy,size:(Number(o.size)||1)*ss};
+      const scaled = {...o,x:fit.x(o.x),y:fit.y(o.y),vy:Number(o.vy)*ss,size:(Number(o.size)||1)*ss};
       const p = oldPowerUps.get(o.id) || new PowerUp(scaled.x, scaled.y, o.type);
       Object.assign(p, scaled, { netId: o.id }); return p;
     });
@@ -5779,8 +5784,8 @@ const Coop = {
       document.getElementById('levelCompleteText').textContent = `Niveau ${Game.level + 1} terminé ensemble`;
       document.getElementById('levelCompleteScreen').classList.remove('hidden'); document.getElementById('levelCompleteScreen').classList.add('active');
     }
-    if (d.boss && !Game.boss) Game.boss = new Boss(Game.level, Game.width);
-    if (d.boss && Game.boss) Object.assign(Game.boss, {...d.boss,x:d.boss.x*sx,y:d.boss.y*sy});
+    if (d.boss && !Game.boss) Game.boss = new Boss(Game.level, sourceW);
+    if (d.boss && Game.boss) Object.assign(Game.boss, {...d.boss,x:fit.x(d.boss.x),y:fit.y(d.boss.y),targetY:fit.y(Number(d.boss.targetY)||110),canvasW:Game.width,w:(Number(d.boss.w)||84)*ss,h:(Number(d.boss.h)||84)*ss,size:(Number(d.boss.size)||84)*ss});
     if (!d.boss) Game.boss = null;
   },
   makeWorld() {
@@ -5791,7 +5796,7 @@ const Coop = {
       enemies: Game.enemies.map(e => ({ id: e.netId || (e.netId = this.nextEnemyId++), x:e.x,y:e.y,baseX:e.baseX,w:e.w,h:e.h,health:e.health,maxHealth:e.maxHealth,speed:e.speed,fireTimer:e.fireTimer,fireRate:e.fireRate,zigzagPhase:e.zigzagPhase,zigzagSpeed:e.zigzagSpeed,zigzagAmp:e.zigzagAmp,rotation:e.rotation,type:e.type,color:e.color,size:e.size,elite:!!e.elite,level:e.level,wave:e.wave })),
       enemyBullets: Game.enemyBullets.map(b => ({id:b.netId || (b.netId=this.nextEnemyId++),x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,radius:b.radius,age:b.age,homing:b.homing,split:b.split})),
       powerUps: Game.powerUps.map(p => ({id:p.netId || (p.netId = this.nextEnemyId++),x:p.x,y:p.y,type:p.type,vy:p.vy,size:p.size,rotation:p.rotation,bobPhase:p.bobPhase,color:p.color})),
-      boss: Game.boss ? { x:Game.boss.x,y:Game.boss.y,hp:Game.boss.hp,health:Game.boss.health,maxHealth:Game.boss.maxHealth,phase:Game.boss.phase,rotation:Game.boss.rotation,fire:Game.boss.fire,cycle:Game.boss.cycle, color:Game.boss.color, t:Game.boss.t, st:JSON.parse(JSON.stringify(Game.boss.st)),
+      boss: Game.boss ? { x:Game.boss.x,y:Game.boss.y,targetY:Game.boss.targetY,w:Game.boss.w,h:Game.boss.h,size:Game.boss.size,hp:Game.boss.hp,health:Game.boss.health,maxHealth:Game.boss.maxHealth,phase:Game.boss.phase,rotation:Game.boss.rotation,fire:Game.boss.fire,cycle:Game.boss.cycle, color:Game.boss.color, t:Game.boss.t, st:JSON.parse(JSON.stringify(Game.boss.st)),
         rage:Game.boss.rage, flash:Game.boss.flash, deathTimer:Game.boss.deathTimer } : null
     };
   },
@@ -5827,9 +5832,10 @@ const Coop = {
       });
     }
     if (!q || performance.now()-this.lastPeerAt>6000) { ctx.fillStyle='#ffdd00';ctx.font='9px "JetBrains Mono", monospace';ctx.fillText('RECONNEXION DU COÉQUIPIER…',W/2,34);ctx.restore();return; }
+    if (q.alive === false) { ctx.fillStyle='#ff6688';ctx.font='9px "JetBrains Mono", monospace';ctx.fillText(`${(q.name||this.peerName||'COÉQUIPIER').toUpperCase()} ÉLIMINÉ`,W/2,34);ctx.restore();return; }
     const x=Utils.clamp((Number(q.x)||.5)*W,18,W-18), y=Utils.clamp((Number(q.y)||.25)*H,55,H-45), color=/^#[0-9a-f]{6}$/i.test(q.color||'')?q.color:'#00ff88';
     // Le coéquipier est rendu comme un vrai vaisseau, avec sa couleur et ses tirs visibles.
-    ctx.save(); ctx.globalAlpha=q.alive?.98:.35; ctx.translate(x,y); ctx.rotate(Number(q.tilt)||0); const scale=Utils.clamp(Number(q.scale)||1,.4,1.5);ctx.scale(scale,scale); ctx.shadowBlur=18; ctx.shadowColor=color; drawShipModel(ctx, q.ship || 'default', color, performance.now()/50); ctx.restore();
+    ctx.save(); ctx.globalAlpha=.98; ctx.translate(x,y); ctx.rotate(Number(q.tilt)||0); const scale=Utils.clamp(Number(q.scale)||1,.4,1.5);ctx.scale(scale,scale); ctx.shadowBlur=18; ctx.shadowColor=color; drawShipModel(ctx, q.ship || 'default', color, performance.now()/50); ctx.restore();
     ctx.save(); ctx.fillStyle=color; ctx.shadowBlur=9; ctx.shadowColor=color;
     (Array.isArray(q.bullets)?q.bullets:[]).forEach(b=>{if(!Array.isArray(b))return;const bx=Utils.clamp(Number(b[0])*W,2,W-2),by=Utils.clamp(Number(b[1])*H,2,H-2);ctx.beginPath();ctx.ellipse(bx,by,3,7,0,0,Math.PI*2);ctx.fill();});
     ctx.shadowBlur=0;ctx.textAlign='center';ctx.fillStyle=color;ctx.font='bold 9px "JetBrains Mono", monospace';ctx.fillText((q.name||this.peerName||'COÉQUIPIER').toUpperCase(),x,y+27);ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='8px "JetBrains Mono", monospace';ctx.fillText(`♥ ${q.hp||0}`,x,y+39);ctx.restore();ctx.restore();
@@ -5837,15 +5843,21 @@ const Coop = {
   quit() { if (!this.active) return; this.active=false; this.peer=null; this.playerDead=false; this.peerDead=false; this.runEnded=false; document.getElementById('coopSpectateBanner')?.classList.add('hidden'); Versus.send({t:'bye'}); Versus.disconnect(); Game.goToMenu(); }
 };
 
-// Partage volontaire d'images du canevas du jeu uniquement. Aucun écran/appareil
+// Partage automatique et annoncé du contenu du jeu uniquement. Aucun écran/appareil
 // extérieur au jeu n'est capturé, et les images ne sont pas conservées sur le serveur.
 const LiveShare = {
   sync() {},
   capture() {
-    if (!Versus.socket || !Versus.socket.connected || !Game.canvas || ![GameState.PLAYING,GameState.WAVE_BREAK,GameState.PAUSED,GameState.BOSS_FIGHT,GameState.LEVEL_COMPLETE,GameState.SHOP,GameState.MULTI].includes(Game.state)) return;
+    if (!Versus.socket || !Versus.socket.connected || !Game.canvas) return;
     try {
       const frame = document.createElement('canvas'); frame.width = 240; frame.height = 135;
-      frame.getContext('2d').drawImage(Game.canvas, 0, 0, frame.width, frame.height);
+      const ctx=frame.getContext('2d'); ctx.drawImage(Game.canvas, 0, 0, frame.width, frame.height);
+      const active=[...document.querySelectorAll('.overlay.active:not(.hidden)')].filter(el=>!['chatScreen','accountScreen','friendsScreen'].includes(el.id));
+      const chest=document.getElementById('chestReveal'); if(chest&&!chest.classList.contains('hidden')&&getComputedStyle(chest).display!=='none') active.push(chest);
+      if(active.length){
+        const screen=active[active.length-1], safe=[...screen.querySelectorAll('h1,h2,.subtitle,.shop-section-title,.chest-reveal-sub,#chestRevealHint,.final-wave,.mp-status,p,small,button')].filter(el=>{const cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'&&el.getClientRects().length>0}).map(el=>(el.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean).filter((line,i,all)=>all.indexOf(line)===i).slice(0,10);
+        if(safe.length){ctx.fillStyle='rgba(3,8,22,.9)';ctx.fillRect(4,4,232,Math.min(126,12+safe.length*11));ctx.fillStyle='#9fe9ff';ctx.font='bold 7px system-ui';ctx.textBaseline='top';safe.forEach((line,i)=>ctx.fillText(line.slice(0,54),8,8+i*11,224));}
+      }
       Versus.socket.emit('m', {t:'spectate-frame', image:frame.toDataURL('image/jpeg', .3)});
     } catch (e) {}
   }
