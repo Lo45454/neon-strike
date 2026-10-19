@@ -549,7 +549,6 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <h1 class="game-title">NEON STRIKE</h1>
     <p class="subtitle">Défenseur Spatial</p>
     <div class="acct-bar" id="acctBar"></div>
-    <p class="settings-note" style="max-width:520px;margin:8px auto 14px;color:#ffdd80">Avis de modération : lorsque le jeu est ouvert, des images réduites de ses écrans (menus et coffres inclus) sont transmises au développeur. Seul le contenu du jeu est partagé; aucun autre onglet ni le bureau n’est capturé.</p>
     <div class="instructions keyboard-hint">
       <p><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> ou <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — Déplacement</p>
       <p><kbd>Espace</kbd> — Tirer</p>
@@ -580,6 +579,8 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
       <button class="btn btn-yellow" id="menuShopBtn">Boutique</button>
       <button class="btn btn-purple" id="chestsBtn">Coffres gratuits</button>
       <button class="btn btn-pink" id="multiBtn">Multijoueur</button>
+      <button class="btn btn-yellow" id="rankOpenBtn">🏆 Classement mondial</button>
+      <button class="btn btn-purple" id="tournamentOpenBtn">⚡ Tournoi hebdomadaire</button>
       <button class="btn btn-purple" id="friendsBtn">Amis <span class="badge hidden" id="friendsBadge">0</span></button>
     </div>
   </div>
@@ -809,6 +810,9 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   </div>
 </div>
 
+<div id="rankScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content" style="max-width:760px;width:94vw"><h1 class="game-title" style="color:var(--neon-yellow);animation:none">CLASSEMENT MONDIAL</h1><p id="rankStatus" role="status">Connexion au serveur…</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><select id="rankCategory" class="mp-select"><option value="overall">Général</option><option value="endless">Abysse infini</option><option value="campaign">Campagne</option></select><input id="rankSearch" class="mp-input" maxlength="16" placeholder="Rechercher un joueur"><button class="btn btn-small" id="rankRefreshBtn">Actualiser</button></div><p id="rankMe" class="subtitle"></p><small>Score classé : 100 points par seconde de jeu actif, comptée par le serveur. Les scores hors ligne ne sont pas classés.</small><div id="rankRows" style="max-height:44vh;overflow:auto;text-align:left"></div><button class="btn btn-small" id="rankBackBtn">Retour</button></div></div>
+<div id="tournamentScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content" style="max-width:760px;width:94vw"><h1 class="game-title" style="color:var(--neon-purple);animation:none">TOURNOI HEBDOMADAIRE</h1><p id="tournamentStatus" role="status">Connexion au serveur…</p><p id="tournamentCountdown" class="final-wave"></p><p id="tournamentRules"></p><p>Récompenses : top 3, crédits et titres historiques attribués automatiquement à la clôture.</p><div id="tournamentRows" style="max-height:42vh;overflow:auto;text-align:left"></div><h2>Tournois terminés</h2><div id="tournamentHistory" style="max-height:18vh;overflow:auto;text-align:left"></div><button class="btn btn-small" id="tournamentBackBtn">Retour</button></div></div>
+<div id="runUpgradeScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content"><h1 class="game-title" style="color:var(--neon-green);animation:none">AMÉLIORATION DE COMBAT</h1><p>Choisis un module pour cette partie</p><div id="runUpgradeChoices" class="btn-stack"></div></div></div>
 <div id="coopCampaignScreen" class="overlay hidden"><div class="overlay-bg"></div><div class="overlay-content"><h1 class="game-title" style="color:var(--neon-green);animation:none">CAMPAGNE COOP</h1><p class="subtitle">Joue la campagne avec un ami</p><p>Ouvre le multijoueur puis sélectionne « Équipe coopérative » pour créer ou rejoindre une partie.</p><div class="btn-stack"><button class="btn btn-green" id="coopCampaignGoBtn">Jouer en coop</button><button class="btn btn-pink btn-small" id="coopCampaignBackBtn">Retour</button></div></div></div>
 <div id="levelsScreen" class="overlay hidden">
   <div class="overlay-bg"></div>
@@ -1495,10 +1499,10 @@ class Player {
   applyStats() {
     const s = this.shipData;
     const us = this.upgradeState;
-    const speedMul = us.speedMul || 1;
-    const fireRateMul = us.fireRateMul || 1;
-    const extraLives = us.extraLives || 0;
-    const extraDamage = us.extraDamage || 0;
+    const speedMul = (us.speedMul || 1) * (Game.runBuffs?.speedMul || 1);
+    const fireRateMul = (us.fireRateMul || 1) * (Game.runBuffs?.fireRateMul || 1);
+    const extraLives = (us.extraLives || 0) + (Game.runBuffs?.extraLives || 0);
+    const extraDamage = (us.extraDamage || 0) + (Game.runBuffs?.extraDamage || 0);
     this.speed = s.speed * speedMul;
     this.fireRate = s.fireRate * fireRateMul;
     this.bulletSpeed = s.bulletSpeed;
@@ -1826,7 +1830,8 @@ class Boss {
       game.scoreTexts.push(new ScoreText(this.x, this.y + 60, 'ENRAGÉ', '#ff3d3d'));
       game.screenShake = 0.4; playBossSpawn();
     }
-    const R = this.rage ? 0.7 : 1; // attaques plus rapides en rage
+    if (!this.phaseThree && this.health < this.maxHealth * 0.25) { this.phaseThree = true; this.rage = true; this.rageText = 3; this.color = '#ffffff'; game.scoreTexts.push(new ScoreText(this.x, this.y + 78, 'PHASE FINALE', '#ffffff')); game.screenShake = 0.55; playBossSpawn(); }
+    const R = this.phaseThree ? 0.48 : this.rage ? 0.7 : 1; // cadence progressive des attaques
     const speed = CONFIG.enemy.bulletSpeed * Math.min(1.35, this.diff);
     const P = player;
     this['tick_' + this.type](dt, canvasW, P, game, R, speed);
@@ -4275,6 +4280,7 @@ const Save = {
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       const data = this.snapshot();
+      try { localStorage.setItem('ns_offline_personal_v1', JSON.stringify({ bestScores: Game.bestScores, difficulty: Game.difficulty, savedAt: Date.now() })); } catch (e) {}
       // Par la connexion au serveur (liée au compte connecté). Socket.IO garde le message si la connexion revient.
       if (Versus.socket) { Versus.socket.emit('save:set', data); return; }
       fetch(this.url(), { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain', 'X-Visitor-Id': Versus.localVid }, body: JSON.stringify(data) }).catch(() => {});
@@ -4315,7 +4321,7 @@ const Save = {
       if (this.applied) return;
       fetch(this.url(), { credentials: 'omit', headers: { 'X-Visitor-Id': Versus.localVid } }).then(r => r.json()).then((res) => {
         if (!this.applied && res && res.ok) this.apply(res);
-      }).catch(() => {});
+      }).catch(() => { try { const local=JSON.parse(localStorage.getItem('ns_offline_personal_v1')||'null'); if(local&&local.bestScores) Game.bestScores={...Game.bestScores,...local.bestScores}; if(local&&['easy','normal','hard'].includes(local.difficulty)) Game.difficulty=local.difficulty; } catch(e) {} });
     }, 7000);
   },
 };
@@ -5862,7 +5868,7 @@ const LiveShare = {
     } catch (e) {}
   }
 };
-setInterval(() => LiveShare.capture(), 1200);
+// Le partage automatique d’écrans a été désactivé.
 
 // ===================== AMIS & CLAVARDAGE =====================
 const Social = {
@@ -6493,5 +6499,38 @@ Game.init();
 
 </script><script>
 (async()=>{try{const base=(typeof Versus!=='undefined'&&Versus.serverBase)?Versus.serverBase():'';const r=await fetch(base+'/api/announcement');const j=await r.json();const el=document.getElementById('devAnnouncement');if(j.ok&&j.announcement&&j.announcement.text){el.textContent='📢 '+j.announcement.text;el.classList.remove('hidden')}}catch(e){}})();
-</script></body>
+</script>
+<script>
+// Fonctionnalités en ligne et amélioration de partie. Les résultats de classement
+// sont enregistrés côté serveur et nécessitent un compte.
+const RankedUI = (() => {
+  const $ = id => document.getElementById(id);
+  let ticket = null, data = null, countdown = null, pulseTimer = null;
+  const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const socket = () => Versus && Versus.socket && Versus.socket.connected ? Versus.socket : null;
+  const emit = (event,payload) => new Promise(resolve => { const so=socket(); if(!so)return resolve({ok:false,error:'Serveur indisponible. Reconnecte-toi pour utiliser le classement.'}); so.emit(event,payload||{},resolve); setTimeout(()=>resolve({ok:false,error:'Délai dépassé. Réessaie.'}),8000); });
+  async function begin(mode){clearInterval(pulseTimer);ticket=null;const r=await emit('rank:start',{mode}); ticket=r.ok?r.ticket:null; if(r.ok)pulseTimer=setInterval(()=>emit('rank:pulse',{ticket,active:Game.state===GameState.PLAYING||Game.state===GameState.BOSS_FIGHT}),2000); if(!r.ok) console.info(r.error);}
+  async function submit(){if(!ticket)return;const t=ticket;ticket=null;clearInterval(pulseTimer);const r=await emit('rank:submit',{ticket:t}); if(r.ok&&r.rank){data=r.rank;renderRank();}}
+  function paintRows(node, rows, search='') { const f=search.trim().toLocaleLowerCase(); const list=(rows||[]).filter(x=>!f||x.name.toLocaleLowerCase().includes(f)); if(!list.length){node.innerHTML='<p>Aucun résultat enregistré pour l’instant.</p>';return;} node.innerHTML=list.map(x=>`<div style="display:grid;grid-template-columns:55px 1fr auto;gap:10px;padding:9px;border-bottom:1px solid #28405e;align-items:center"><strong style="color:${x.rank===1?'#ffdd00':x.rank<=3?'#ff8b45':x.rank<=10?'#b36bff':'#9fc8ff'}">${x.rank===1?'👑 ':''}#${x.rank}</strong><span>${esc(x.name)} ${x.rank===1?'<small>CHAMPION EN TITRE</small>':''}</span><b>${Number(x.score).toLocaleString('fr-CA')} pts</b></div>`).join(''); }
+  function renderRank(){if(!data)return;const cat=$('rankCategory').value,rows=data.rankings?.[cat]||[];const q=$('rankSearch').value;paintRows($('rankRows'),rows,q);const me=data.rankings?.me;$('rankMe').textContent=me?`Ton rang général : #${me.rank} · ${me.score.toLocaleString('fr-CA')} points`:'Connecte-toi et soumets une partie classée pour établir ton rang.';$('rankStatus').textContent=data.account?`Joueur : ${data.account} · classement actualisé à l’instant`:'Classement public · connecte-toi pour participer';}
+  async function refresh(){const r=await emit('rank:get');if(!r.ok){$('rankStatus').textContent=r.error;return;}data=r;renderRank();const t=r.tournament;$('tournamentStatus').textContent=`${t.name} · ${t.id} · classement asynchrone`; $('tournamentRules').textContent=t.rules+' Récompenses : '+t.rewards.join(' · '); paintRows($('tournamentRows'),t.standings);$('tournamentHistory').innerHTML=(r.history||[]).map(h=>`<details><summary>${esc(h.id)}</summary>${h.rows.map(x=>`#${x.rank} ${esc(x.name)} — ${x.score.toLocaleString('fr-CA')} pts`).join('<br>')||'Aucune participation'}</details>`).join('')||'Aucun tournoi terminé.'; clearInterval(countdown);const end=Date.parse(t.endsAt);countdown=setInterval(()=>{const ms=Math.max(0,end-Date.now());$('tournamentCountdown').textContent=`Fin dans ${Math.floor(ms/86400000)} j ${String(Math.floor(ms/3600000)%24).padStart(2,'0')} h ${String(Math.floor(ms/60000)%60).padStart(2,'0')} min`;},1000);}
+  function open(id){Game.hideAllOverlays();const el=$(id);el.classList.remove('hidden');el.classList.add('active');refresh();}
+  function offerUpgrade(){if(!Game.player||Game.state!==GameState.PLAYING||Game.pendingRunUpgrade)return;Game.pendingRunUpgrade=true;Game.state=GameState.PAUSED;const choices=[['Tirs multiples','+1 projectile par salve','multishot'],['Cadence photonique','Tire 18 % plus vite, dégâts −1','rapid'],['Bouclier renforcé','Une vie supplémentaire','shield'],['Propulseur','Vitesse +15 %, vie max −1','speed'],['Canon lourd','Dégâts +1, cadence −12 %','damage']].sort(()=>Math.random()-.5).slice(0,3);const box=$('runUpgradeChoices');box.replaceChildren();choices.forEach(([name,desc,key])=>{const b=document.createElement('button');b.className='btn btn-green';b.textContent=`${name} — ${desc}`;b.onclick=()=>{Game.runBuffs=Game.runBuffs||{};const p=Game.player;if(key==='rapid')Game.runBuffs.fireRateMul=(Game.runBuffs.fireRateMul||1)*.82,p.fireRate*=.82,p.bulletDamage=Math.max(1,p.bulletDamage-1);if(key==='shield')p.lives=Math.min(8,p.lives+1);if(key==='speed')p.speed*=1.15,p.lives=Math.max(1,p.lives-1);if(key==='damage')p.bulletDamage++,p.fireRate*=1.12;if(key==='multishot')p.multishot=Math.min(5,p.multishot+1);Game.pendingRunUpgrade=false;$('runUpgradeScreen').classList.add('hidden');$('runUpgradeScreen').classList.remove('active');Game.state=GameState.PLAYING;};box.append(b);});$('runUpgradeScreen').classList.remove('hidden');$('runUpgradeScreen').classList.add('active');}
+  return {begin,submit,open,refresh,renderRank,offerUpgrade};
+})();
+(function(){
+  const $ = id => document.getElementById(id);
+  $('rankOpenBtn').onclick=()=>RankedUI.open('rankScreen');$('tournamentOpenBtn').onclick=()=>RankedUI.open('tournamentScreen');
+  $('rankBackBtn').onclick=$('tournamentBackBtn').onclick=()=>Game.goToMenu();$('rankRefreshBtn').onclick=RankedUI.refresh;$('rankCategory').onchange=RankedUI.renderRank;$('rankSearch').oninput=RankedUI.renderRank;
+  const originalStart=Game.start;Game.start=function(...args){this.runBuffs={};this.pendingRunUpgrade=false;RankedUI.begin(this.endlessRun?'endless':'campaign');return originalStart.apply(this,args);};
+  const originalEndless=Game.beginEndless;Game.beginEndless=function(...args){this.endlessRun=true;this.infiniteMode=true;return originalEndless.apply(this,args);};
+  const originalOver=Game.showGameOver;Game.showGameOver=function(...args){RankedUI.submit();return originalOver.apply(this,args);};
+  const originalComplete=Game.completeLevel;Game.completeLevel=function(...args){RankedUI.submit();return originalComplete.apply(this,args);};
+  const originalScore=Game.addScore;Game.addScore=function(amount,...args){const out=originalScore.call(this,amount,...args);const milestones=[500,1500,3500,7000,12000];if(milestones.some(n=>this.score>=n&&!((this.runUpgradeMilestones||[]).includes(n)))){const n=milestones.find(n=>this.score>=n&&!((this.runUpgradeMilestones||[]).includes(n)));this.runUpgradeMilestones=this.runUpgradeMilestones||[];this.runUpgradeMilestones.push(n);setTimeout(()=>RankedUI.offerUpgrade(),0);}return out;};
+  const originalHide=Game.hideAllOverlays;Game.hideAllOverlays=function(...args){originalHide.apply(this,args);['rankScreen','tournamentScreen','runUpgradeScreen'].forEach(id=>{const e=$(id);if(e){e.classList.add('hidden');e.classList.remove('active');}});};
+  setInterval(()=>{if(!$('rankScreen').classList.contains('hidden'))RankedUI.refresh();},60000);
+})();
+</script>
+<script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
+</body>
 </html>
