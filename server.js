@@ -47,10 +47,12 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 }, ranked: {}, tournamentHistory: {}, tournamentAwards: {} };
+  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 }, ranked: {}, weeklyQuest: null };
   if (!raw || typeof raw !== 'object') return base;
   if (raw.v === 2 || raw.v === 3) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
+    for (const record of Object.values(base.ranked || {})) if (record && typeof record === 'object') delete record.weeks;
+    for (const save of Object.values(base.saves || {})) if (save && save.data && typeof save.data === 'object') delete save.data.tournamentTitles;
     return base;
   }
   base.saves = raw; // ancien format : objet de sauvegardes
@@ -183,7 +185,7 @@ function cleanName(n) {
 function cleanCode(c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); }
 function chatKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
 
-// ===================== CLASSEMENTS & TOURNOIS =====================
+// ===================== CLASSEMENT & QUÊTES =====================
 const rankTickets = new Map();
 const rankLastSubmit = new Map();
 function weekKey(at = new Date()) {
@@ -193,11 +195,29 @@ function weekKey(at = new Date()) {
   const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
-function weekBounds(key = weekKey()) {
-  const [year, w] = key.split('-W').map(Number);
-  const jan4 = new Date(Date.UTC(year, 0, 4));
-  const start = new Date(jan4); start.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7) + (w - 1) * 7);
-  return { start: start.getTime(), end: start.getTime() + 7 * 86400000 };
+const WEEKLY_QUESTS = [
+  {id:'flight',name:'Patrouille prolongée',description:'Cumule 10 minutes de vol en campagne ou dans l’Abysse.',metric:'seconds',target:600,reward:300},
+  {id:'score',name:'Chasseur de points',description:'Gagne 10 000 points pendant tes parties.',metric:'points',target:10000,reward:300},
+  {id:'campaign',name:'Route de campagne',description:'Termine 3 niveaux de campagne.',metric:'levels',target:3,reward:350},
+  {id:'boss',name:'Briseur de cuirasse',description:'Vaincs 2 boss.',metric:'bosses',target:2,reward:400},
+  {id:'abyss',name:'Dans les profondeurs',description:'Survis 4 minutes dans l’Abysse infini.',metric:'abyssSeconds',target:240,reward:350},
+  {id:'kills',name:'Nettoyage orbital',description:'Détruis 60 ennemis.',metric:'kills',target:60,reward:300},
+  {id:'ships',name:'Pilote polyvalent',description:'Joue avec 3 vaisseaux différents.',metric:'ships',target:3,reward:350},
+  {id:'coop',name:'Escadron uni',description:'Termine 2 niveaux en coop.',metric:'coopLevels',target:2,reward:400},
+  {id:'hard',name:'À l’épreuve du vide',description:'Termine un niveau en difficulté difficile.',metric:'hardLevels',target:1,reward:450},
+  {id:'mystery',name:'Signaux mystérieux',description:'Découvre 2 indices NEON MYSTERY.',metric:'clues',target:2,reward:350},
+];
+function activeWeeklyQuest() {
+  const key=weekKey();
+  if(!db.weeklyQuest||db.weeklyQuest.week!==key) {
+    const n=Number(key.split('-W')[1])%WEEKLY_QUESTS.length;
+    db.weeklyQuest={week:key,questId:WEEKLY_QUESTS[n].id,source:'rotation',updatedAt:Date.now()};
+    persist();
+  }
+  const quest=WEEKLY_QUESTS.find(q=>q.id===db.weeklyQuest.questId)||WEEKLY_QUESTS[0];
+  const match=key.match(/^(\d+)-W(\d+)$/),year=Number(match[1]),week=Number(match[2]);
+  const jan4=new Date(Date.UTC(year,0,4)); const start=new Date(jan4); start.setUTCDate(jan4.getUTCDate()-((jan4.getUTCDay()+6)%7)+(week-1)*7);
+  return {...quest,week:key,startsAt:start.toISOString(),endsAt:new Date(start.getTime()+7*86400000).toISOString(),selectedByAdmin:db.weeklyQuest.source==='admin'};
 }
 function leaderboard(category = 'overall') {
   const rows = [];
@@ -209,32 +229,9 @@ function leaderboard(category = 'overall') {
   }
   return rows.sort((a,b) => b.score - a.score || a.name.localeCompare(b.name)).map((p,i) => ({ ...p, rank: i + 1, reward: i === 0 ? 'Couronne du champion' : i < 3 ? 'Effet du top 3' : i < 10 ? 'Badge du top 10' : '' }));
 }
-function finalizeWeek(key) {
-  if (!key || db.tournamentAwards[key]) return;
-  const rows = Object.values(db.ranked || {}).map(r => ({ id:r.id, name:(accIndex.get(r.id)||{}).name, score:Number((r.weeks||{})[key])||0 })).filter(r => r.name && r.score > 0).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
-  db.tournamentHistory[key] = rows.slice(0,100).map((r,i)=>({...r,rank:i+1}));
-  const prizes = [1000,600,350];
-  rows.slice(0,3).forEach((row,i)=>{ const save=rec(row.id); save.data=save.data||{}; save.data.credits=Math.min(2147483647,(Number(save.data.credits)||0)+prizes[i]); save.data.tournamentTitles=Array.isArray(save.data.tournamentTitles)?save.data.tournamentTitles:[]; save.data.tournamentTitles.push({week:key,rank:i+1,title:`Champion du tournoi ${key}`}); save.data.tournamentTitles=save.data.tournamentTitles.slice(-20); for(const socket of socketsOf(row.id)) socket.emit('admin:credits-updated',{credits:save.data.credits}); });
-  db.tournamentAwards[key] = Date.now();
-  const historyKeys=Object.keys(db.tournamentAwards).sort(); for(const old of historyKeys.slice(0,-52)){delete db.tournamentAwards[old];delete db.tournamentHistory[old];}
-  persist();
-}
-function currentTournament() {
-  const key = weekKey(), bounds = weekBounds(key);
-  const prev = db.activeTournamentWeek;
-  if (prev && prev < key) finalizeWeek(prev);
-  if (prev !== key) { db.activeTournamentWeek=key; persist(); }
-  const cycle=Number(key.split('-W')[1])%4;
-  const variants=[{name:'Abysse infini — Survie',mode:'endless',type:'survie',rules:'Meilleure durée active cumulée sur une tentative; 100 points par seconde active côté serveur.'},{name:'Campagne — Endurance',mode:'campaign',type:'campagne',rules:'Meilleure performance de campagne; les points sont calculés à partir du temps de jeu actif chronométré par le serveur.'},{name:'Campagne — Escarmouche',mode:'campaign',type:'score',rules:'Défi asynchrone de campagne; 100 points par seconde active, mesurés par le serveur.'},{name:'Abysse infini — Secteur dangereux',mode:'endless',type:'spécial',rules:'Survie asynchrone dans l’Abysse infini; meilleure durée active, 100 points par seconde active.'}];
-  const v=variants[cycle]; return { id:key, name:`Tournoi hebdomadaire — ${v.name}`, mode:v.mode, type:v.type, startsAt:new Date(bounds.start).toISOString(), endsAt:new Date(bounds.end).toISOString(), rules:v.rules, rewards:['1er : 1 000 crédits + titre historique','2e : 600 crédits + titre historique','3e : 350 crédits + titre historique'] };
-}
 function rankPayload(id) {
-  const top = leaderboard('overall');
-  const mine = top.find(p => p.id === id) || null;
-  const ranked = db.ranked[id] || {};
-  const week = currentTournament();
-  const weekly = Object.values(db.ranked).map(r=>({id:r.id,name:(accIndex.get(r.id)||{}).name,score:Number((r.weeks||{})[week.id])||0})).filter(r=>r.name&&r.score>0).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name)).map((r,i)=>({...r,rank:i+1}));
-  return { ok:true, account: accIndex.get(id)?.name || null, historicalTitles:(db.saves[id]?.data?.tournamentTitles)||[], rankings:{overall:top.slice(0,100),endless:leaderboard('endless').slice(0,100),campaign:leaderboard('campaign').slice(0,100),me:mine,personal:ranked}, tournament:{...week,standings:weekly.slice(0,100),me:weekly.find(p=>p.id===id)||null}, history:Object.entries(db.tournamentHistory||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12).map(([id,rows])=>({id,rows})) };
+  const top=leaderboard('overall'),mine=top.find(p=>p.id===id)||null,ranked=db.ranked[id]||{};
+  return {ok:true,account:accIndex.get(id)?.name||null,rankings:{overall:top.slice(0,100),endless:leaderboard('endless').slice(0,100),campaign:leaderboard('campaign').slice(0,100),me:mine,personal:ranked}};
 }
 // ===================== HTTP =====================
 function visitor(req) { return String(req.headers['x-visitor-id'] || 'local').slice(0, 100); }
@@ -388,6 +385,20 @@ function audit(action, actor='admin', target='', detail={}) {
   if (db.audit.length > 500) db.audit.length = 500;
   persist();
 }
+
+app.get('/api/weekly-quest', (req,res) => res.json({ok:true,quest:activeWeeklyQuest()}));
+app.get('/api/admin/weekly-quest', (req,res) => {
+  if(!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  res.json({ok:true,quest:activeWeeklyQuest(),quests:WEEKLY_QUESTS});
+});
+app.post('/api/admin/weekly-quest', express.json({limit:'2kb'}), (req,res) => {
+  if(!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const quest=WEEKLY_QUESTS.find(q=>q.id===String(req.body?.questId||''));
+  if(!quest) return res.status(400).json({ok:false,error:'Choisis une quête dans la liste.'});
+  const key=weekKey(); db.weeklyQuest={week:key,questId:quest.id,source:'admin',updatedAt:Date.now()};
+  audit('weekly-quest','admin','all',{week:key,questId:quest.id});
+  res.json({ok:true,quest:activeWeeklyQuest()});
+});
 app.get('/api/announcement', (req,res) => res.json({ok:true, announcement: db.announcements || {text:'',updatedAt:0}}));
 app.post('/api/admin/announcement', express.json({limit:'4kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
@@ -629,11 +640,10 @@ io.on('connection', (socket) => {
     rankLastSubmit.set(vid,now);
     // Le score classé est calculé par le serveur à partir du temps écoulé; aucun score client n'est accepté.
     const score = Math.floor(activeMs/1000)*100;
-    const key=weekKey(), r=db.ranked[vid]||(db.ranked[vid]={id:vid,overall:0,endless:0,campaign:0,weeks:{},stats:{runs:0,bestTime:0},titles:[]});
+    const r=db.ranked[vid]||(db.ranked[vid]={id:vid,overall:0,endless:0,campaign:0,stats:{runs:0,bestTime:0},titles:[]});
     const improved=score>Number(r[t.mode]||0);
     r[t.mode]=Math.max(Number(r[t.mode]||0),score); r.overall=Math.max(Number(r.overall)||0,r.endless+r.campaign);
-    const activeEvent=currentTournament(); if(t.mode===activeEvent.mode) r.weeks[key]=Math.max(Number(r.weeks[key])||0,score); r.stats.runs=(Number(r.stats.runs)||0)+1; r.stats.bestTime=Math.max(Number(r.stats.bestTime)||0,Math.floor(activeMs/1000)); r.updatedAt=Date.now();
-    const evict=Object.keys(r.weeks).sort().slice(0,-12); evict.forEach(k=>delete r.weeks[k]);
+    r.stats.runs=(Number(r.stats.runs)||0)+1; r.stats.bestTime=Math.max(Number(r.stats.bestTime)||0,Math.floor(activeMs/1000)); r.updatedAt=Date.now();
     persist(); ack({ok:true,improved,score,rank:rankPayload(vid)});
   });
 
@@ -744,7 +754,6 @@ io.on('connection', (socket) => {
           ownedUpgrades: Array.from(new Set([...(Array.isArray(data.ownedUpgrades) ? data.ownedUpgrades : []), ...(Array.isArray(r.data.ownedUpgrades) ? r.data.ownedUpgrades : []), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])),
           chestLast6h: 0, chestLast24h: 0, chest6hAt: 0, chest24hAt: 0 };
       }
-      if (r.data && Array.isArray(r.data.tournamentTitles)) data.tournamentTitles = r.data.tournamentTitles;
       r.data = data; r.t = Date.now(); persist();
     }
     if (typeof ack === 'function') ack({ ok });
