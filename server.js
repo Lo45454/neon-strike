@@ -12,6 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
+const RELEASE_ID = 'neon-2026-10-19-screen-v3';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -509,7 +510,7 @@ app.post('/api/admin/friends/:id', express.json({limit:'2kb'}), (req,res) => {
   audit('force-friend','admin',id,{otherId}); persist(); emitTo(id,'social',socialState(id)); emitTo(otherId,'social',socialState(otherId)); res.json({ok:true});
 });
 
-app.get('/health', (req, res) => res.json({ ok: true, rooms: rooms.size, players: io.engine.clientsCount }));
+app.get('/health', (req, res) => res.json({ ok: true, release: RELEASE_ID, rooms: rooms.size, players: io.engine.clientsCount }));
 io.engine.on('connection_error', (err) => console.log('[socket] erreur', err.code, err.message));
 
 // ===================== SALLES DE DUEL =====================
