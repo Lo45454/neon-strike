@@ -47,7 +47,7 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], announcements: { text: '', updatedAt: 0 } };
+  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 } };
   if (!raw || typeof raw !== 'object') return base;
   if (raw.v === 2 || raw.v === 3) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
@@ -246,21 +246,44 @@ function adminResolvePlayer(input) {
   for (const a of Object.values(db.accounts)) if (nameKey(a.name) === wanted) return a.id;
   return null;
 }
-const FEEDBACK_FILE = path.join(DATA_DIR, 'feedback.json');
+// Import legacy local reports after Supabase has loaded, so they are not
+// overwritten by the cloud snapshot during startup.
+function migrateLegacyFeedback() {
+  try {
+    const oldFeedback = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'feedback.json'), 'utf8'));
+    if (!Array.isArray(oldFeedback)) return;
+    const known = new Set(db.feedback.map(x => x.id));
+    const additions = oldFeedback.filter(x => x && x.id && !known.has(x.id));
+    if (additions.length) { db.feedback.push(...additions); persist(); }
+  } catch (e) {}
+}
 app.post('/api/feedback', express.json({limit:'4kb'}), (req,res) => {
   const type = String(req.body?.type || 'suggestion').slice(0,30);
   const message = String(req.body?.message || '').trim().slice(0,1500);
   if (message.length < 5) return res.status(400).json({ok:false,error:'Message trop court.'});
-  let list=[]; try { list=JSON.parse(fs.readFileSync(FEEDBACK_FILE,'utf8')); if(!Array.isArray(list)) list=[]; } catch(e) {}
-  list.push({id:crypto.randomBytes(8).toString('hex'),type,message,createdAt:new Date().toISOString()});
-  if(list.length>1000) list=list.slice(-1000);
-  fs.writeFileSync(FEEDBACK_FILE,JSON.stringify(list)); res.json({ok:true});
+  db.feedback.push({id:crypto.randomBytes(8).toString('hex'),type,message,createdAt:new Date().toISOString()});
+  persist(); res.json({ok:true});
 });
 app.get('/api/admin/feedback', (req,res) => {
   const tok = req.headers['x-admin-token'] || req.query.token || '';
   if (!ADMIN_TOKEN || !safeEqual(tok, ADMIN_TOKEN)) return res.status(403).json({ok:false});
-  let list=[]; try { list=JSON.parse(fs.readFileSync(FEEDBACK_FILE,'utf8')); if(!Array.isArray(list)) list=[]; } catch(e) {}
-  res.json({ok:true,items:list.slice(-300).reverse()});
+  res.json({ok:true,items:[...db.feedback].reverse()});
+});
+
+// Les images de jeu ne sont transmises qu'après activation volontaire du partage.
+// Elles restent en mémoire vive, expirent rapidement et ne sont jamais archivées.
+const liveFrames = new Map();
+app.get('/api/admin/live-frames', (req,res) => {
+  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const now = Date.now();
+  const frames = [];
+  for (const [id, frame] of liveFrames) {
+    if (now - frame.at > 5000 || !online.has(id) || !online.get(id).size) { liveFrames.delete(id); continue; }
+    const account = accIndex.get(id);
+    const save = db.saves[id];
+    frames.push({id, name:account?.name || save?.profile?.name || 'Invité', at:frame.at, image:frame.image});
+  }
+  res.json({ok:true,frames});
 });
 
 app.get('/api/admin/dashboard', (req, res) => {
@@ -482,6 +505,7 @@ io.on('connection', (socket) => {
   socket.data.room = null;
   socket.data.activity = 'Connecté au jeu'; socket.data.location = 'Menu principal'; socket.data.lastActivityAt = Date.now();
   socket.data.chatTimes = [];
+  socket.data.shareLiveGame = false;
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
   online.get(vid).add(socket.id);
@@ -836,6 +860,21 @@ io.on('connection', (socket) => {
 
   socket.on('m', (data) => {
     if (data && typeof data === 'object') {
+      if (data.t === 'spectate-consent') {
+        socket.data.shareLiveGame = data.enabled === true;
+        if (!socket.data.shareLiveGame) {
+          const current = liveFrames.get(vid);
+          if (current && current.socketId === socket.id) liveFrames.delete(vid);
+        }
+        return;
+      }
+      if (data.t === 'spectate-frame') {
+        const image = String(data.image || '');
+        if (socket.data.shareLiveGame && /^data:image\/jpeg;base64,/.test(image) && image.length <= 45000) {
+          liveFrames.set(vid, {image, at:Date.now(), socketId:socket.id});
+        }
+        return;
+      }
       socket.data.lastActivityAt = Date.now();
       if (data.t === 'hello' || data.t === 'start') { socket.data.activity = 'Préparation / lancement de partie'; socket.data.location = 'Salle multijoueur'; }
       else if (data.t === 'coop-state') { socket.data.activity = data.alive ? 'En mission coop' : 'Éliminé en coop'; socket.data.location = `Coop · niveau ${(Number(data.level)||0)+1}, vague ${Number(data.wave)||1}`; }
@@ -852,6 +891,8 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const sessionRec = rec(vid); sessionRec.lastOnlineAt = Date.now(); sessionRec.lastSessionSeconds = Math.max(0, Math.round((Date.now() - (socket.data.connectedAt || Date.now())) / 1000)); persist();
     leaveRoom(socket);
+    const currentFrame = liveFrames.get(vid);
+    if (currentFrame && currentFrame.socketId === socket.id) liveFrames.delete(vid);
     const set = online.get(vid);
     if (set) { set.delete(socket.id); if (!set.size) { online.delete(vid); notifyFriendsOf(vid); } }
   });
@@ -872,5 +913,6 @@ setInterval(() => {
 (async () => {
   if (useSupabase) await loadSupabaseData();
   else console.log('[data] Supabase non configuré; stockage local actif');
+  migrateLegacyFeedback();
   server.listen(PORT, '0.0.0.0', () => console.log(`NEON STRIKE serveur sur le port ${PORT}${useSupabase ? ' (Supabase)' : ''}`));
 })();
