@@ -568,6 +568,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
           <button class="difficulty-option" data-difficulty="hard" type="button"><b>DIFFICILE</b><small>Pour les pilotes expérimentés : ennemis plus rapides, plus résistants et apparitions plus serrées.</small></button>
         </div>
         <p class="settings-note">Tu pourras changer ce réglage ici en tout temps.</p>
+        <label class="settings-note" style="display:flex;gap:8px;align-items:flex-start;margin-top:14px"><input id="liveShareToggle" type="checkbox" style="min-width:0;margin-top:2px"><span>Partager les images de ma partie avec le développeur pendant que je joue. Le partage est désactivé par défaut et peut être arrêté ici.</span></label>
       </div>
     </div>
     <div class="btn-stack">
@@ -2542,6 +2543,11 @@ const Game = {
       this.goToMenu();
     });
     document.getElementById('nextLevelBtn').addEventListener('click', () => this.openShop('level'));
+    const liveShare = document.getElementById('liveShareToggle');
+    if (liveShare) {
+      liveShare.checked = LiveShare.enabled;
+      liveShare.addEventListener('change', () => LiveShare.setEnabled(liveShare.checked));
+    }
     document.getElementById('victoryBtn').addEventListener('click', () => this.start(0));
     document.getElementById('shopContinueBtn').addEventListener('click', () => this.closeShop());
     document.getElementById('multiBtn').addEventListener('click', () => Versus.openLobby());
@@ -2754,6 +2760,7 @@ const Game = {
 
   closeShop() {
     const ss = document.getElementById('shopScreen');
+    if (this.shopReturn === 'level' && typeof Coop !== 'undefined' && Coop.active) { Coop.requestNextLevel(); return; }
     if (this.shopReturn === 'level') { this.nextLevel(); return; }
     ss.classList.add('hidden'); ss.classList.remove('active');
     if (this.shopReturn === 'pause') {
@@ -4177,11 +4184,13 @@ const Chests = {
     this.pendingHours = 0;
     this.opening = true;
     this.taps = 0;
-    this.requiredTaps = 3;
+    const rewards = rewardTable.map(entry => entry.amount);
+    const minReward = Math.min(...rewards), maxReward = Math.max(...rewards);
+    this.requiredTaps = Math.max(3, Math.min(12, 3 + Math.floor((reward - minReward) / Math.max(1, (maxReward - minReward) / 9))));
     const reveal = document.getElementById('chestReveal');
     reveal.classList.remove('hidden'); reveal.style.display = 'flex';
     document.getElementById('chestRevealTitle').textContent = label;
-    document.getElementById('chestRevealHint').textContent = `Tape 3 fois sur le coffre pour révéler la récompense (0/3)`;
+    document.getElementById('chestRevealHint').textContent = `Tape ${this.requiredTaps} fois sur le coffre pour révéler la récompense (0/${this.requiredTaps})`;
     NeonChest.setup('#b36bff');
     document.getElementById('chestBigButton').disabled = false;
     document.getElementById('chestMessage').textContent = '';
@@ -4647,6 +4656,7 @@ const Versus = {
       reconnection: true,
     });
     s.on('m', (d) => this.onMsg(d));
+    s.on('connect', () => LiveShare.sync());
     s.on('account:banned', (d) => {
       const reason = String(d && d.reason || 'Règles du jeu').slice(0,200);
       this.connected = false; this.code = '';
@@ -4836,6 +4846,8 @@ const Versus = {
     this.lastMsg = performance.now();
     const W = Game.width, H = Game.height;
     if (d.t === 'coop-state') { Coop.onMsg(d); return; }
+    if (d.t === 'coop-next-ready') { Coop.onNextReady(d); return; }
+    if (d.t === 'coop-next-level') { Coop.applyNextLevel(d); return; }
     if (d.t === 'coop-world') { Coop.applyWorld(d); return; }
     if (d.t === 'coop-hit' && Versus.isHost) { Coop.applyHit(d.id, d.damage); return; }
     if (d.t === 'coop-boss-hit' && Versus.isHost && Game.boss) { Game.boss.takeBullet({x:Number(d.x)||Game.boss.x,y:Number(d.y)||Game.boss.y,radius:Number(d.radius)||CONFIG.bullet.radius}, Math.max(1, Number(d.damage)||1), Game); return; }
@@ -5568,12 +5580,13 @@ function coopBlend(a,b,k) {
 }
 
 const Coop = {
-  active: false, peer: null, sendClock: 0, lastPeerAt: 0, peerName: 'COÉQUIPIER',
+  active: false, peer: null, sendClock: 0, lastPeerAt: 0, peerName: 'COÉQUIPIER', nextReady: false, peerNextReady: false,
   nextEnemyId: 1, worldClock: 0, selectedLevel: 0, lastWorld: 0,
   begin(level = 0) {
     level = Math.max(0, Math.min(LEVELS.length - 1, Number(level) || 0));
     if (this.active && Game.level === level) return;
     this.active = true; this.peer = null; this.sendClock = 0; this.worldClock = 0;
+    this.nextReady = false; this.peerNextReady = false;
     this.worldStream = new CoopTimeline(); this.peerStream = new CoopTimeline();
     this.appliedFrame = null; this.pickedIds = new Set(); this.collisionCooldown = 0; this.consumedBulletIds = new Set();
     this.nextEnemyId = 1; this.selectedLevel = level; this.lastPeerAt = performance.now();
@@ -5589,6 +5602,37 @@ const Coop = {
     this.peer = d;
     this.peerName = String(d.name || 'COÉQUIPIER').slice(0, 16);
     this.lastPeerAt = performance.now();
+  },
+  requestNextLevel() {
+    if (!this.active || Game.state !== GameState.SHOP || Game.shopReturn !== 'level') return;
+    this.nextReady = true;
+    Versus.send({t:'coop-next-ready', level:Game.level});
+    this.updateReadyStatus();
+    if (Versus.isHost) this.tryNextLevel();
+  },
+  onNextReady(d) {
+    if (!this.active || Number(d.level) !== Game.level) return;
+    this.peerNextReady = true;
+    this.updateReadyStatus();
+    if (Versus.isHost) this.tryNextLevel();
+  },
+  updateReadyStatus() {
+    const btn = document.getElementById('shopContinueBtn');
+    if (!btn || Game.shopReturn !== 'level') return;
+    btn.textContent = this.nextReady ? 'Prêt — en attente du coéquipier…' : this.peerNextReady ? 'Le coéquipier est prêt — clique pour continuer' : 'Je suis prêt';
+    btn.disabled = this.nextReady;
+  },
+  tryNextLevel() {
+    if (!Versus.isHost || !this.nextReady || !this.peerNextReady) return;
+    const level = Game.level;
+    Versus.send({t:'coop-next-level', level});
+    this.applyNextLevel({level});
+  },
+  applyNextLevel(d) {
+    if (!this.active || Number(d.level) !== Game.level || Game.shopReturn !== 'level') return;
+    this.nextReady = false; this.peerNextReady = false;
+    Game.hideAllOverlays();
+    Game.nextLevel();
   },
   requestEnemyHit(id, damage) {
     if (id == null) return;
@@ -5742,6 +5786,29 @@ const Coop = {
   },
   quit() { if (!this.active) return; this.active=false; this.peer=null; Versus.send({t:'bye'}); Versus.disconnect(); Game.goToMenu(); }
 };
+
+// Partage volontaire d'images du canevas du jeu uniquement. Aucun écran/appareil
+// extérieur au jeu n'est capturé, et les images ne sont pas conservées sur le serveur.
+const LiveShare = {
+  enabled: localStorage.getItem('ns_live_share') === '1',
+  setEnabled(enabled) {
+    this.enabled = !!enabled;
+    localStorage.setItem('ns_live_share', this.enabled ? '1' : '0');
+    this.sync();
+  },
+  sync() {
+    if (Versus.socket && Versus.socket.connected) Versus.socket.emit('m', {t:'spectate-consent', enabled:this.enabled});
+  },
+  capture() {
+    if (!this.enabled || !Versus.socket || !Versus.socket.connected || !Game.canvas || ![GameState.PLAYING,GameState.WAVE_BREAK,GameState.BOSS_FIGHT,GameState.LEVEL_COMPLETE].includes(Game.state)) return;
+    try {
+      const frame = document.createElement('canvas'); frame.width = 320; frame.height = 180;
+      frame.getContext('2d').drawImage(Game.canvas, 0, 0, frame.width, frame.height);
+      Versus.socket.emit('m', {t:'spectate-frame', image:frame.toDataURL('image/jpeg', .38)});
+    } catch (e) {}
+  }
+};
+setInterval(() => LiveShare.capture(), 1200);
 
 // ===================== AMIS & CLAVARDAGE =====================
 const Social = {
