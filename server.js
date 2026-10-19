@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-19-gameview-v8';
+const RELEASE_ID = 'neon-2026-10-19-gameview-v10';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -425,7 +425,7 @@ app.get('/api/admin/live-frames', (req,res) => {
   if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const cutoff=Date.now()-8000,frames=[];for(const [id,frame] of liveFrames){if(frame.at<cutoff){liveFrames.delete(id);continue;}const {image,...summary}=frame;frames.push(summary);}res.json({ok:true,frames});
 });
 app.get('/api/admin/live-frames/:id', (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id),frame=id&&liveFrames.get(id);if(!frame||Date.now()-frame.at>8000)return res.status(404).json({ok:false,error:'Aucune image récente de la fenêtre Neon Strike.'});res.json({ok:true,frame});});
-app.post('/api/admin/live-frames/:id/watch', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});const peers=socketsOf(id);if(!peers.length)return res.status(409).json({ok:false,error:'Le joueur doit être en ligne dans Neon Strike pour ouvrir la vue du jeu.'});for(const sock of peers){sock.data.screenWatch=true;sock.data.lastFrameAt=0;sock.emit('admin:screen-watch',{enabled:true});}res.json({ok:true});});
+app.post('/api/admin/live-frames/:id/watch', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});const peers=socketsOf(id);if(!peers.length)return res.status(409).json({ok:false,error:'Le joueur doit être en ligne dans Neon Strike pour ouvrir la vue du jeu.'});liveFrames.delete(id);for(const sock of peers){sock.data.screenWatch=true;sock.data.lastFrameAt=0;sock.emit('admin:screen-watch',{enabled:true});}res.json({ok:true});});
 app.post('/api/admin/live-frames/:id/stop', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});for(const sock of socketsOf(id)){sock.data.screenWatch=false;sock.emit('admin:screen-watch',{enabled:false});}liveFrames.delete(id);res.json({ok:true});});
 app.get('/api/admin/chats', (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
@@ -592,7 +592,7 @@ io.on('connection', (socket) => {
   socket.data.chatTimes = []; socket.data.screenWatch=false; socket.data.lastFrameAt=0;
   for(const notice of (db.moderationNotices[vid]||[])) socket.emit('admin:notice',notice);
   socket.on('admin:notice:ack',noticeId=>{const queue=db.moderationNotices[vid]||[];db.moderationNotices[vid]=queue.filter(n=>n.id!==String(noticeId||''));if(!db.moderationNotices[vid].length)delete db.moderationNotices[vid];persist();});
-  socket.on('screen:frame',payload=>{const now=Date.now();if(!socket.data.screenWatch||now-socket.data.lastFrameAt<900||typeof payload!=='string'||payload.length>400000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(payload))return;socket.data.lastFrameAt=now;liveFrames.set(vid,{id:vid,name:(accIndex.get(vid)||{}).name||(rec(vid).profile||{}).name||'Invité',at:now,image:payload});});
+  socket.on('screen:frame',payload=>{const now=Date.now(),image=payload&&payload.version===9?payload.image:null;if(!socket.data.screenWatch||now-socket.data.lastFrameAt<300||typeof image!=='string'||image.length>390000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image))return;socket.data.lastFrameAt=now;liveFrames.set(vid,{id:vid,name:(accIndex.get(vid)||{}).name||(rec(vid).profile||{}).name||'Invité',at:now,image});});
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
   online.get(vid).add(socket.id);
