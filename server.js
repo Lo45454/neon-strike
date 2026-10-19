@@ -18,7 +18,7 @@ const io = new Server(server, {
   cors: { origin: true, credentials: true },
   pingInterval: 10000,
   pingTimeout: 15000,
-  maxHttpBufferSize: 64 * 1024,
+  maxHttpBufferSize: 192 * 1024,
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -47,9 +47,9 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 }, ranked: {}, weeklyQuest: null };
+  const base = { v: 4, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 }, ranked: {}, dailyQuest: null, weeklyLevel: null, moderationNotices: {} };
   if (!raw || typeof raw !== 'object') return base;
-  if (raw.v === 2 || raw.v === 3) {
+  if (raw.v === 2 || raw.v === 3 || raw.v === 4) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
     for (const record of Object.values(base.ranked || {})) if (record && typeof record === 'object') delete record.weeks;
     for (const save of Object.values(base.saves || {})) if (save && save.data && typeof save.data === 'object') delete save.data.tournamentTitles;
@@ -195,29 +195,44 @@ function weekKey(at = new Date()) {
   const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
-const WEEKLY_QUESTS = [
-  {id:'flight',name:'Patrouille prolongée',description:'Cumule 10 minutes de vol en campagne ou dans l’Abysse.',metric:'seconds',target:600,reward:300},
-  {id:'score',name:'Chasseur de points',description:'Gagne 10 000 points pendant tes parties.',metric:'points',target:10000,reward:300},
-  {id:'campaign',name:'Route de campagne',description:'Termine 3 niveaux de campagne.',metric:'levels',target:3,reward:350},
-  {id:'boss',name:'Briseur de cuirasse',description:'Vaincs 2 boss.',metric:'bosses',target:2,reward:400},
-  {id:'abyss',name:'Dans les profondeurs',description:'Survis 4 minutes dans l’Abysse infini.',metric:'abyssSeconds',target:240,reward:350},
-  {id:'kills',name:'Nettoyage orbital',description:'Détruis 60 ennemis.',metric:'kills',target:60,reward:300},
-  {id:'ships',name:'Pilote polyvalent',description:'Joue avec 3 vaisseaux différents.',metric:'ships',target:3,reward:350},
-  {id:'coop',name:'Escadron uni',description:'Termine 2 niveaux en coop.',metric:'coopLevels',target:2,reward:400},
-  {id:'hard',name:'À l’épreuve du vide',description:'Termine un niveau en difficulté difficile.',metric:'hardLevels',target:1,reward:450},
-  {id:'mystery',name:'Signaux mystérieux',description:'Découvre 2 indices NEON MYSTERY.',metric:'clues',target:2,reward:350},
+const DAILY_QUESTS = [
+  {id:'flight',name:'Patrouille prolongée',description:'Cumule 5 minutes de vol en campagne ou dans l’Abysse.',metric:'seconds',target:300,reward:150},
+  {id:'score',name:'Chasseur de points',description:'Gagne 4 000 points pendant tes parties.',metric:'points',target:4000,reward:150},
+  {id:'campaign',name:'Route de campagne',description:'Termine un niveau de campagne.',metric:'levels',target:1,reward:175},
+  {id:'boss',name:'Briseur de cuirasse',description:'Vaincs un boss.',metric:'bosses',target:1,reward:200},
+  {id:'abyss',name:'Dans les profondeurs',description:'Survis 2 minutes dans l’Abysse infini.',metric:'abyssSeconds',target:120,reward:175},
+  {id:'kills',name:'Nettoyage orbital',description:'Détruis 25 ennemis.',metric:'kills',target:25,reward:150},
+  {id:'ships',name:'Pilote polyvalent',description:'Joue avec 2 vaisseaux différents.',metric:'ships',target:2,reward:175},
+  {id:'coop',name:'Escadron uni',description:'Termine un niveau en coop.',metric:'coopLevels',target:1,reward:200},
+  {id:'hard',name:'À l’épreuve du vide',description:'Termine un niveau en difficulté difficile.',metric:'hardLevels',target:1,reward:225},
+  {id:'mystery',name:'Signaux mystérieux',description:'Découvre un indice NEON MYSTERY.',metric:'clues',target:1,reward:175},
 ];
-function activeWeeklyQuest() {
+function dayKey(at=new Date()) { return at.toISOString().slice(0,10); }
+function activeDailyQuest() {
+  const key=dayKey();
+  if(!db.dailyQuest||db.dailyQuest.day!==key) { const n=(Math.floor(Date.parse(key+'T00:00:00Z')/86400000))%DAILY_QUESTS.length; db.dailyQuest={day:key,questId:DAILY_QUESTS[(n+DAILY_QUESTS.length)%DAILY_QUESTS.length].id,source:'rotation',updatedAt:Date.now()};persist(); }
+  const quest=DAILY_QUESTS.find(q=>q.id===db.dailyQuest.questId)||DAILY_QUESTS[0];
+  const start=new Date(key+'T00:00:00.000Z');
+  return {...quest,day:key,startsAt:start.toISOString(),endsAt:new Date(start.getTime()+86400000).toISOString(),selectedByAdmin:db.dailyQuest.source==='admin'};
+}
+const WEEKLY_LEVELS = [
+  {id:'rift-01',name:'Faille de l’Aurore',description:'Traverse la faille et vaincs le boss sans aide de difficulté.',levelIndex:2,mods:['gravity','asteroids'],cosmetic:'aura-aurora'},
+  {id:'rift-02',name:'Pluie de cendres',description:'Affronte des vagues serrées sous un bombardement continu.',levelIndex:4,mods:['storm','swarm'],cosmetic:'aura-ember'},
+  {id:'rift-03',name:'Station fantôme',description:'Survis aux mines dans un couloir orbital étroit.',levelIndex:6,mods:['mines','station'],cosmetic:'aura-phantom'},
+  {id:'rift-04',name:'Périgée glacé',description:'Garde le contrôle dans une zone glacée et balayée par les vents.',levelIndex:8,mods:['ice','drift'],cosmetic:'aura-glacier'},
+  {id:'rift-05',name:'Orbite instable',description:'Le trou noir courbe les tirs au milieu d’une pluie d’astéroïdes.',levelIndex:10,mods:['gravity','asteroids'],cosmetic:'aura-prism'},
+  {id:'rift-06',name:'Essaim rouge',description:'Des ennemis rapides arrivent en formations plus denses.',levelIndex:12,mods:['speed','swarm'],cosmetic:'aura-comet'},
+  {id:'rift-07',name:'Tempête ionique',description:'Bats le boss dans une tempête et un champ de mines.',levelIndex:14,mods:['storm','mines'],cosmetic:'aura-ion'},
+  {id:'rift-08',name:'Nébuleuse d’élite',description:'Élimine les ennemis d’élite au milieu du brouillard.',levelIndex:16,mods:['elite','fog'],cosmetic:'aura-nebula'},
+  {id:'rift-09',name:'Cœur en rotation',description:'Combine gravité et ennemis renforcés.',levelIndex:18,mods:['gravity','elite'],cosmetic:'aura-singularity'},
+  {id:'rift-10',name:'Dernier signal',description:'Une épreuve complète avec vagues serrées et tempête.',levelIndex:19,mods:['storm','swarm','elite'],cosmetic:'aura-crown'},
+];
+function activeWeeklyLevel(){
   const key=weekKey();
-  if(!db.weeklyQuest||db.weeklyQuest.week!==key) {
-    const n=Number(key.split('-W')[1])%WEEKLY_QUESTS.length;
-    db.weeklyQuest={week:key,questId:WEEKLY_QUESTS[n].id,source:'rotation',updatedAt:Date.now()};
-    persist();
-  }
-  const quest=WEEKLY_QUESTS.find(q=>q.id===db.weeklyQuest.questId)||WEEKLY_QUESTS[0];
-  const match=key.match(/^(\d+)-W(\d+)$/),year=Number(match[1]),week=Number(match[2]);
-  const jan4=new Date(Date.UTC(year,0,4)); const start=new Date(jan4); start.setUTCDate(jan4.getUTCDate()-((jan4.getUTCDay()+6)%7)+(week-1)*7);
-  return {...quest,week:key,startsAt:start.toISOString(),endsAt:new Date(start.getTime()+7*86400000).toISOString(),selectedByAdmin:db.weeklyQuest.source==='admin'};
+  if(!db.weeklyLevel||db.weeklyLevel.week!==key){const n=Number(key.split('-W')[1])%WEEKLY_LEVELS.length;db.weeklyLevel={week:key,levelId:WEEKLY_LEVELS[n].id,source:'rotation',updatedAt:Date.now()};persist();}
+  const item=WEEKLY_LEVELS.find(x=>x.id===db.weeklyLevel.levelId)||WEEKLY_LEVELS[0];
+  const m=key.match(/^(\d+)-W(\d+)$/),year=Number(m[1]),week=Number(m[2]),jan4=new Date(Date.UTC(year,0,4)),start=new Date(jan4);start.setUTCDate(jan4.getUTCDate()-((jan4.getUTCDay()+6)%7)+(week-1)*7);
+  return {...item,week:key,startsAt:start.toISOString(),endsAt:new Date(start.getTime()+7*86400000).toISOString(),rewardCredits:5000,rewardTitle:'Vainqueur de la Faille',selectedByAdmin:db.weeklyLevel.source==='admin'};
 }
 function leaderboard(category = 'overall') {
   const rows = [];
@@ -386,25 +401,30 @@ function audit(action, actor='admin', target='', detail={}) {
   persist();
 }
 
-app.get('/api/weekly-quest', (req,res) => res.json({ok:true,quest:activeWeeklyQuest()}));
-app.get('/api/admin/weekly-quest', (req,res) => {
-  if(!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  res.json({ok:true,quest:activeWeeklyQuest(),quests:WEEKLY_QUESTS});
-});
-app.post('/api/admin/weekly-quest', express.json({limit:'2kb'}), (req,res) => {
-  if(!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const quest=WEEKLY_QUESTS.find(q=>q.id===String(req.body?.questId||''));
-  if(!quest) return res.status(400).json({ok:false,error:'Choisis une quête dans la liste.'});
-  const key=weekKey(); db.weeklyQuest={week:key,questId:quest.id,source:'admin',updatedAt:Date.now()};
-  audit('weekly-quest','admin','all',{week:key,questId:quest.id});
-  res.json({ok:true,quest:activeWeeklyQuest()});
-});
+app.get('/api/daily-quest', (req,res) => res.json({ok:true,quest:activeDailyQuest()}));
+app.get('/api/admin/daily-quest', (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,quest:activeDailyQuest(),quests:DAILY_QUESTS}); });
+app.post('/api/admin/daily-quest', express.json({limit:'2kb'}), (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const quest=DAILY_QUESTS.find(q=>q.id===String(req.body?.questId||''));if(!quest)return res.status(400).json({ok:false,error:'Choisis une quête dans la liste.'});const day=dayKey();db.dailyQuest={day,questId:quest.id,source:'admin',updatedAt:Date.now()};audit('daily-quest','admin','all',{day,questId:quest.id});res.json({ok:true,quest:activeDailyQuest()}); });
+app.get('/api/weekly-level', (req,res) => res.json({ok:true,level:activeWeeklyLevel()}));
+app.get('/api/admin/weekly-level', (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,level:activeWeeklyLevel(),levels:WEEKLY_LEVELS.map(x=>({...x,rewardCredits:5000,rewardTitle:'Vainqueur de la Faille'}))}); });
+app.post('/api/admin/weekly-level', express.json({limit:'2kb'}), (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const level=WEEKLY_LEVELS.find(x=>x.id===String(req.body?.levelId||''));if(!level)return res.status(400).json({ok:false,error:'Choisis un niveau dans la liste.'});const week=weekKey();db.weeklyLevel={week,levelId:level.id,source:'admin',updatedAt:Date.now()};audit('weekly-level','admin','all',{week,levelId:level.id});res.json({ok:true,level:activeWeeklyLevel()}); });
+
 app.get('/api/announcement', (req,res) => res.json({ok:true, announcement: db.announcements || {text:'',updatedAt:0}}));
 app.post('/api/admin/announcement', express.json({limit:'4kb'}), (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
   const text = String(req.body?.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g,'').trim().slice(0,1000);
   db.announcements = { text, updatedAt: Date.now() }; audit('announcement','admin','all',{text}); res.json({ok:true,announcement:db.announcements});
 });
+app.post('/api/admin/message/:id', express.json({limit:'3kb'}), (req,res) => {
+  if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});
+  const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});
+  const text=String(req.body?.text||'').replace(/[\u0000-\u0008\u000b-\u001f]/g,'').trim().slice(0,1000);if(text.length<2)return res.status(400).json({ok:false,error:'Le message doit contenir au moins 2 caractères.'});
+  const notice={id:crypto.randomBytes(10).toString('hex'),text,at:Date.now()};db.moderationNotices[id]=[notice];persist();for(const sock of socketsOf(id))sock.emit('admin:notice',notice);audit('moderation-message','admin',id,{noticeId:notice.id});res.json({ok:true,online:socketsOf(id).length>0});
+});
+app.get('/api/admin/live-frames', (req,res) => {
+  if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const cutoff=Date.now()-8000,frames=[];for(const [id,frame] of liveFrames){if(frame.at<cutoff){liveFrames.delete(id);continue;}frames.push(frame);}res.json({ok:true,frames});
+});
+app.post('/api/admin/live-frames/:id/watch', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});const peers=socketsOf(id);if(!peers.length)return res.status(409).json({ok:false,error:'Le joueur doit être en ligne pour partager son écran de jeu.'});for(const sock of peers)sock.emit('admin:screen-watch',{enabled:true});res.json({ok:true});});
+app.post('/api/admin/live-frames/:id/stop', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});for(const sock of socketsOf(id))sock.emit('admin:screen-watch',{enabled:false});liveFrames.delete(id);res.json({ok:true});});
 app.get('/api/admin/chats', (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
   const conversations = Object.entries(db.chats || {}).map(([key, messages]) => {
@@ -521,6 +541,7 @@ function leaveRoom(socket, notify = true) {
 
 // ===================== PRÉSENCE / AMIS =====================
 const online = new Map(); // visitorId -> Set(socketId)
+const liveFrames = new Map();
 function socketsOf(vid) { return [...(online.get(vid) || [])].map(id => io.sockets.sockets.get(id)).filter(Boolean); }
 function emitTo(vid, ev, data) { for (const s of socketsOf(vid)) s.emit(ev, data); }
 function isBusy(vid) {
@@ -566,7 +587,11 @@ io.on('connection', (socket) => {
   if (db.bans && db.bans[vid]) { socket.emit('account:banned',{reason:db.bans[vid].reason||'Compte suspendu'}); return socket.disconnect(true); }
   socket.data.room = null;
   socket.data.activity = 'Connecté au jeu'; socket.data.location = 'Menu principal'; socket.data.lastActivityAt = Date.now();
-  socket.data.chatTimes = [];
+  socket.data.chatTimes = []; socket.data.screenWatch=false; socket.data.lastFrameAt=0;
+  for(const notice of (db.moderationNotices[vid]||[])) socket.emit('admin:notice',notice);
+  socket.on('admin:notice:ack',noticeId=>{const queue=db.moderationNotices[vid]||[];db.moderationNotices[vid]=queue.filter(n=>n.id!==String(noticeId||''));if(!db.moderationNotices[vid].length)delete db.moderationNotices[vid];persist();});
+  socket.on('screen:frame',payload=>{const now=Date.now();if(!socket.data.screenWatch||now-socket.data.lastFrameAt<1700||typeof payload!=='string'||payload.length>150000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(payload))return;socket.data.lastFrameAt=now;liveFrames.set(vid,{id:vid,name:(accIndex.get(vid)||{}).name||(rec(vid).profile||{}).name||'Invité',at:now,image:payload});});
+  socket.on('admin:screen-watch',d=>{socket.data.screenWatch=!!d?.enabled;if(!socket.data.screenWatch)liveFrames.delete(vid);});
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
   online.get(vid).add(socket.id);
