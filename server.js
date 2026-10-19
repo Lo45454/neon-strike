@@ -204,7 +204,8 @@ function leaderboard(category = 'overall') {
   for (const [id, record] of Object.entries(db.ranked || {})) {
     const score = Number(record[category] || 0);
     if (score <= 0 || !accIndex.has(id)) continue;
-    rows.push({ id, name: accIndex.get(id).name, score, stats: record.stats || {}, titles: record.titles || [] });
+    const save = db.saves[id] || {};
+    rows.push({ id, name: accIndex.get(id).name, avatar: (save.profile && save.profile.avatar) || '🚀', score, stats: record.stats || {}, titles: record.titles || [] });
   }
   return rows.sort((a,b) => b.score - a.score || a.name.localeCompare(b.name)).map((p,i) => ({ ...p, rank: i + 1, reward: i === 0 ? 'Couronne du champion' : i < 3 ? 'Effet du top 3' : i < 10 ? 'Badge du top 10' : '' }));
 }
@@ -223,7 +224,9 @@ function currentTournament() {
   const prev = db.activeTournamentWeek;
   if (prev && prev < key) finalizeWeek(prev);
   if (prev !== key) { db.activeTournamentWeek=key; persist(); }
-  return { id:key, name:'Tournoi hebdomadaire — Abysse infini', mode:'endless', type:'survie', startsAt:new Date(bounds.start).toISOString(), endsAt:new Date(bounds.end).toISOString(), rules:'100 points par seconde de partie chronométrée côté serveur; une meilleure performance par compte.', rewards:['1er : 1 000 crédits + titre historique','2e : 600 crédits + titre historique','3e : 350 crédits + titre historique'] };
+  const cycle=Number(key.split('-W')[1])%4;
+  const variants=[{name:'Abysse infini — Survie',mode:'endless',type:'survie',rules:'Meilleure durée active cumulée sur une tentative; 100 points par seconde active côté serveur.'},{name:'Campagne — Endurance',mode:'campaign',type:'campagne',rules:'Meilleure performance de campagne; les points sont calculés à partir du temps de jeu actif chronométré par le serveur.'},{name:'Campagne — Escarmouche',mode:'campaign',type:'score',rules:'Défi asynchrone de campagne; 100 points par seconde active, mesurés par le serveur.'},{name:'Abysse infini — Secteur dangereux',mode:'endless',type:'spécial',rules:'Survie asynchrone dans l’Abysse infini; meilleure durée active, 100 points par seconde active.'}];
+  const v=variants[cycle]; return { id:key, name:`Tournoi hebdomadaire — ${v.name}`, mode:v.mode, type:v.type, startsAt:new Date(bounds.start).toISOString(), endsAt:new Date(bounds.end).toISOString(), rules:v.rules, rewards:['1er : 1 000 crédits + titre historique','2e : 600 crédits + titre historique','3e : 350 crédits + titre historique'] };
 }
 function rankPayload(id) {
   const top = leaderboard('overall');
@@ -231,7 +234,7 @@ function rankPayload(id) {
   const ranked = db.ranked[id] || {};
   const week = currentTournament();
   const weekly = Object.values(db.ranked).map(r=>({id:r.id,name:(accIndex.get(r.id)||{}).name,score:Number((r.weeks||{})[week.id])||0})).filter(r=>r.name&&r.score>0).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name)).map((r,i)=>({...r,rank:i+1}));
-  return { ok:true, account: accIndex.get(id)?.name || null, rankings:{overall:top.slice(0,100),endless:leaderboard('endless').slice(0,100),campaign:leaderboard('campaign').slice(0,100),me:mine,personal:ranked}, tournament:{...week,standings:weekly.slice(0,100),me:weekly.find(p=>p.id===id)||null}, history:Object.entries(db.tournamentHistory||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12).map(([id,rows])=>({id,rows})) };
+  return { ok:true, account: accIndex.get(id)?.name || null, historicalTitles:(db.saves[id]?.data?.tournamentTitles)||[], rankings:{overall:top.slice(0,100),endless:leaderboard('endless').slice(0,100),campaign:leaderboard('campaign').slice(0,100),me:mine,personal:ranked}, tournament:{...week,standings:weekly.slice(0,100),me:weekly.find(p=>p.id===id)||null}, history:Object.entries(db.tournamentHistory||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12).map(([id,rows])=>({id,rows})) };
 }
 // ===================== HTTP =====================
 function visitor(req) { return String(req.headers['x-visitor-id'] || 'local').slice(0, 100); }
@@ -594,6 +597,13 @@ io.on('connection', (socket) => {
 
   socket.on('auth:status', (ack) => { if (typeof ack === 'function') ack(authState()); });
   socket.on('rank:get', (ack) => { if (typeof ack === 'function') ack(rankPayload(vid)); });
+  socket.on('rank:find', (query, ack) => {
+    if (typeof ack !== 'function') return; const q=String(query||'').trim().slice(0,16).toLocaleLowerCase();
+    if(q.length<2)return ack({ok:true,items:[]});
+    const items=['overall','endless','campaign'].flatMap(category=>leaderboard(category).filter(p=>p.name.toLocaleLowerCase().includes(q)).slice(0,20).map(p=>({...p,category})));
+    ack({ok:true,items:items.slice(0,30)});
+  });
+
   socket.on('rank:start', (d, ack) => {
     if (typeof ack !== 'function') return;
     if (!accIndex.has(vid)) return ack({ok:false,error:'Connecte-toi à un compte pour participer au classement.'});
@@ -622,7 +632,7 @@ io.on('connection', (socket) => {
     const key=weekKey(), r=db.ranked[vid]||(db.ranked[vid]={id:vid,overall:0,endless:0,campaign:0,weeks:{},stats:{runs:0,bestTime:0},titles:[]});
     const improved=score>Number(r[t.mode]||0);
     r[t.mode]=Math.max(Number(r[t.mode]||0),score); r.overall=Math.max(Number(r.overall)||0,r.endless+r.campaign);
-    if(t.mode==='endless') r.weeks[key]=Math.max(Number(r.weeks[key])||0,score); r.stats.runs=(Number(r.stats.runs)||0)+1; r.stats.bestTime=Math.max(Number(r.stats.bestTime)||0,Math.floor(activeMs/1000)); r.updatedAt=Date.now();
+    const activeEvent=currentTournament(); if(t.mode===activeEvent.mode) r.weeks[key]=Math.max(Number(r.weeks[key])||0,score); r.stats.runs=(Number(r.stats.runs)||0)+1; r.stats.bestTime=Math.max(Number(r.stats.bestTime)||0,Math.floor(activeMs/1000)); r.updatedAt=Date.now();
     const evict=Object.keys(r.weeks).sort().slice(0,-12); evict.forEach(k=>delete r.weeks[k]);
     persist(); ack({ok:true,improved,score,rank:rankPayload(vid)});
   });
@@ -734,6 +744,7 @@ io.on('connection', (socket) => {
           ownedUpgrades: Array.from(new Set([...(Array.isArray(data.ownedUpgrades) ? data.ownedUpgrades : []), ...(Array.isArray(r.data.ownedUpgrades) ? r.data.ownedUpgrades : []), 'speed1','fire1','life1','dmg1','speed2','fire2','life2','dmg2'])),
           chestLast6h: 0, chestLast24h: 0, chest6hAt: 0, chest24hAt: 0 };
       }
+      if (r.data && Array.isArray(r.data.tournamentTitles)) data.tournamentTitles = r.data.tournamentTitles;
       r.data = data; r.t = Date.now(); persist();
     }
     if (typeof ack === 'function') ack({ ok });
