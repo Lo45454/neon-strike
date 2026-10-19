@@ -270,8 +270,8 @@ app.get('/api/admin/feedback', (req,res) => {
   res.json({ok:true,items:[...db.feedback].reverse()});
 });
 
-// Les images de jeu ne sont transmises qu'après activation volontaire du partage.
-// Elles restent en mémoire vive, expirent rapidement et ne sont jamais archivées.
+// Les images réduites et annoncées du jeu restent en mémoire vive, expirent rapidement
+// et ne sont jamais archivées. Le client ne transmet que le canevas du jeu.
 const liveFrames = new Map();
 app.get('/api/admin/live-frames', (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
@@ -302,6 +302,8 @@ app.get('/api/admin/dashboard', (req, res) => {
       equippedShip: data.equippedShip || 'default',
       bestScores: data.bestScores || {},
       online: liveSockets.length > 0, connections: liveSockets.length,
+      lastOnlineAt: r.lastOnlineAt || null,
+      lastSessionSeconds: Number(r.lastSessionSeconds) || 0,
       activity: liveSockets.length ? (liveSockets.map(s => s.data.activity || (s.data.room ? 'En partie multijoueur' : 'Connecté au jeu')).join(' · ')) : 'Hors ligne',
       location: liveSockets.map(s => s.data.location || (s.data.room ? 'Salle multijoueur' : 'Menu / activité inconnue')).join(' · '),
       room: liveSockets.map(s => s.data.room || '').filter(Boolean).join(', '),
@@ -309,12 +311,24 @@ app.get('/api/admin/dashboard', (req, res) => {
       lastSave: r.t || null,
     };
   }).sort((a,b) => Number(b.online)-Number(a.online) || a.name.localeCompare(b.name));
-  const guests = Object.entries(db.saves).filter(([id,r]) => !accIndex.has(id) && !r.claimedBy && r.data).map(([id,r]) => ({
-    id, name: (r.profile && r.profile.name) || 'Invité', credits: Number((r.data||{}).credits)||0,
-    level: Math.max(0, Number((r.data||{}).unlockedLevel)||0)+1,
-    online: !!(online.get(id) && online.get(id).size), activity: (online.get(id)&&online.get(id).size) ? [...(online.get(id)||[])].map(sid=>{const s=io.sockets.sockets.get(sid);return s?(s.data.activity||'Connecté au jeu'):''}).filter(Boolean).join(' · ') : 'Hors ligne', location: (online.get(id)&&online.get(id).size) ? [...(online.get(id)||[])].map(sid=>{const s=io.sockets.sockets.get(sid);return s?(s.data.location||'Menu / activité inconnue'):''}).filter(Boolean).join(' · ') : '—',
-    ships: Array.isArray((r.data||{}).ownedShips) ? r.data.ownedShips : ['default'], lastSave:r.t||null,
-  }));
+  const guestIds = new Set([...Object.keys(db.saves), ...online.keys()]);
+  const guests = [...guestIds].filter(id => {
+    const save = db.saves[id] || {};
+    return !accIndex.has(id) && !save.claimedBy && (save.data || (online.get(id) && online.get(id).size));
+  }).map(id => {
+    const r = db.saves[id] || {}, savedData = r.data || {};
+    const sockets = online.get(id), liveSockets = sockets ? [...sockets].map(sid => io.sockets.sockets.get(sid)).filter(Boolean) : [];
+    return {
+      id, name: (r.profile && r.profile.name) || 'Invité', credits: Number(savedData.credits)||0,
+      level: Math.max(0, Number(savedData.unlockedLevel)||0)+1,
+      online: liveSockets.length > 0,
+      activity: liveSockets.map(socket => socket.data.activity || 'Connecté au jeu').join(' · ') || 'Hors ligne',
+      location: liveSockets.map(socket => socket.data.location || 'Menu / activité inconnue').join(' · ') || '—',
+      ships: Array.isArray(savedData.ownedShips) ? savedData.ownedShips : ['default'],
+      equippedShip: savedData.equippedShip || 'default', lastSave: r.t || null,
+      lastOnlineAt: r.lastOnlineAt || null, lastSessionSeconds: Number(r.lastSessionSeconds)||0,
+    };
+  });
   res.json({ ok:true, accounts, guests, onlineCount:[...online.values()].reduce((n,set)=>n+(set.size?1:0),0), totalAccounts:accounts.length });
 });
 app.post('/api/admin/credits/:id', express.json({limit:'2kb'}), (req,res) => {
