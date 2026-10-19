@@ -4686,10 +4686,10 @@ const Versus = {
           if(line&&lines<=8){const tx=cs.textAlign==='center'?tr.left*sx+(tr.width*sx-ctx.measureText(line).width)/2:cs.textAlign==='right'?tr.right*sx-ctx.measureText(line).width:tr.left*sx;ctx.fillText(line,tx,lineY,maxWidth);}
         }
       };
-      paint(document.body);let frame=screenCanvas.toDataURL('image/jpeg',.62);if(frame.length>390000)frame=screenCanvas.toDataURL('image/jpeg',.4);if(frame.length<=400000&&s.connected&&screenWatchRequested)s.emit('screen:frame',frame);
+      paint(document.body);let frame=screenCanvas.toDataURL('image/jpeg',.62);if(frame.length>390000)frame=screenCanvas.toDataURL('image/jpeg',.4);if(frame.length<=390000&&s.connected&&screenWatchRequested)s.emit('screen:frame',{version:9,image:frame});
     }catch(e){console.warn('Capture visuelle du jeu indisponible',e);}};
     const captureGameWindow=()=>{if(!s.connected||!screenWatchRequested||screenFrameBusy)return;screenFrameBusy=true;try{sendGamePreview();}finally{screenFrameBusy=false;}};
-    const startScreenWatch=()=>{if(screenWatchRequested)return;screenWatchRequested=true;document.getElementById('screenWatchBadge')?.classList.remove('hidden');captureGameWindow();screenWatchTimer=setInterval(captureGameWindow,1400);};
+    const startScreenWatch=()=>{if(screenWatchRequested)return;screenWatchRequested=true;document.getElementById('screenWatchBadge')?.classList.remove('hidden');captureGameWindow();screenWatchTimer=setInterval(captureGameWindow,350);};
     s.on('admin:screen-watch',d=>{if(d?.enabled)startScreenWatch();else stopScreenShare();});
     s.on('disconnect',stopScreenShare);
     s.on('admin:notice',notice=>{if(!notice||typeof notice.text!=='string')return;document.getElementById('moderationNotice')?.remove();const before=Game.state,multi=before===GameState.MULTI,active=multi||[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(before),wasVersusPaused=multi&&Versus.paused;if(multi&&!wasVersusPaused)Versus.togglePause();else if(active&&!multi)Game.state=GameState.PAUSED;const overlay=document.createElement('div');overlay.id='moderationNotice';overlay.setAttribute('role','alertdialog');overlay.setAttribute('aria-modal','true');overlay.style.cssText='position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;padding:20px;background:rgba(2,5,18,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);';const card=document.createElement('section');card.style.cssText='width:min(560px,94vw);padding:28px;border:1px solid #ff4f91;border-radius:16px;background:#0b1426;color:white;box-shadow:0 0 35px #ff4f9144;text-align:center;';const title=document.createElement('h2');title.textContent='Message de modération';const body=document.createElement('p');body.textContent=notice.text;body.style.cssText='white-space:pre-wrap;line-height:1.6;overflow-wrap:anywhere';const close=document.createElement('button');close.className='btn btn-pink';close.textContent='Fermer';close.addEventListener('click',()=>{overlay.remove();s.emit('admin:notice:ack',notice.id);if(multi&&!wasVersusPaused&&Versus.paused)Versus.togglePause();else if(active&&!multi&&Game.state===GameState.PAUSED)Game.state=before;});card.append(title,body,close);overlay.append(card);document.body.append(overlay);close.focus({preventScroll:true});});
@@ -6554,7 +6554,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261019g" defer></script>
+<script src="/expansion.js?build=20261019i" defer></script>
 </body>
 </html>
 
