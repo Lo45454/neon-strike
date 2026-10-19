@@ -4666,24 +4666,29 @@ const Versus = {
     s.on('m', (d) => this.onMsg(d));
     let screenWatchTimer=null,screenCanvas=null,screenWatchRequested=false,screenFrameBusy=false;
     const stopScreenShare=()=>{clearInterval(screenWatchTimer);screenWatchTimer=null;screenCanvas=null;screenWatchRequested=false;screenFrameBusy=false;document.getElementById('screenWatchBadge')?.classList.add('hidden');};
-    const sendGamePreview=()=>{try{const width=800,height=450;screenCanvas=screenCanvas||document.createElement('canvas');screenCanvas.width=width;screenCanvas.height=height;const ctx=screenCanvas.getContext('2d',{alpha:false});ctx.fillStyle='#050816';ctx.fillRect(0,0,width,height);const gameCanvas=document.getElementById('gameCanvas');if(gameCanvas?.width&&gameCanvas?.height){const scale=Math.min(width/gameCanvas.width,height/gameCanvas.height),w=gameCanvas.width*scale,h=gameCanvas.height*scale;ctx.drawImage(gameCanvas,(width-w)/2,(height-h)/2,w,h);}const active=[...document.querySelectorAll('.overlay.active:not(.hidden)')].filter(el=>!['chatScreen','accountScreen','friendsScreen'].includes(el.id)),chest=document.getElementById('chestReveal');if(chest&&!chest.classList.contains('hidden')&&getComputedStyle(chest).display!=='none')active.push(chest);if(active.length){const screen=active[active.length-1],lines=[...screen.querySelectorAll('h1,h2,.subtitle,p,small,button,[role="status"]')].filter(el=>{const cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'&&el.getClientRects().length>0}).map(el=>(el.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean).filter((line,i,all)=>all.indexOf(line)===i).slice(0,13);ctx.fillStyle='rgba(3,8,22,.94)';ctx.fillRect(16,16,width-32,Math.min(height-32,30+lines.length*28));ctx.fillStyle='#00f0ff';ctx.font='bold 16px system-ui';ctx.textBaseline='top';lines.forEach((line,i)=>{ctx.fillStyle=i===0?'#ffffff':'#a8f4ff';ctx.fillText(line.slice(0,88),30,29+i*28,width-60);});}let frame=screenCanvas.toDataURL('image/jpeg',.45);if(frame.length>390000)frame=screenCanvas.toDataURL('image/jpeg',.28);if(frame.length<=400000&&s.connected&&screenWatchRequested)s.emit('screen:frame',frame);}catch(e){console.warn('Aperçu du jeu indisponible',e);}};
-    const captureGameWindow=async()=>{
-      if(!s.connected||!screenWatchRequested||screenFrameBusy)return;screenFrameBusy=true;let imageUrl='';
-      try{
-        const width=Math.min(800,Math.max(1,window.innerWidth)),height=Math.min(450,Math.max(1,window.innerHeight)),clone=document.documentElement.cloneNode(true),sourceCanvases=Array.from(document.querySelectorAll('canvas'));
-        clone.querySelectorAll('script,noscript').forEach(n=>n.remove());
-        clone.querySelectorAll('link[rel="stylesheet"]').forEach(link=>{try{if(new URL(link.href,location.href).origin!==location.origin)link.remove();}catch{link.remove();}});
-        clone.querySelectorAll('canvas').forEach((canvas,index)=>{const original=sourceCanvases[index];if(!original)return;try{const replacement=document.createElement('img');replacement.id=canvas.id;replacement.className=canvas.className;replacement.src=original.toDataURL('image/png');replacement.style.cssText=original.getAttribute('style')||'';replacement.style.width=`${original.clientWidth}px`;replacement.style.height=`${original.clientHeight}px`;canvas.replaceWith(replacement);}catch{canvas.remove();}});
-        clone.querySelectorAll('img').forEach(img=>{try{if(new URL(img.src,location.href).origin!==location.origin&&!img.src.startsWith('data:'))img.remove();}catch{img.remove();}});
-        const css=[];for(const sheet of Array.from(document.styleSheets)){try{if(sheet.href&&new URL(sheet.href,location.href).origin!==location.origin)continue;css.push(Array.from(sheet.cssRules).map(rule=>rule.cssText).join('\n'));}catch{}}
-        const style=document.createElement('style');style.textContent=css.join('\n');clone.querySelector('head')?.append(style);
-        clone.style.cssText+=`;width:${width}px;height:${height}px;overflow:hidden`;
-        const clonedBody=clone.querySelector('body');if(clonedBody)clonedBody.style.cssText+=`;position:absolute;left:-${window.scrollX}px;top:-${window.scrollY}px;width:${document.documentElement.scrollWidth}px;min-height:${height}px;overflow:visible`;
-        const markup=new XMLSerializer().serializeToString(clone),svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="100%" height="100%">${markup}</foreignObject></svg>`;
-        imageUrl=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error('Capture de la fenêtre impossible'));img.src=imageUrl;});
-        screenCanvas=screenCanvas||document.createElement('canvas');screenCanvas.width=width;screenCanvas.height=height;const ctx=screenCanvas.getContext('2d',{alpha:false});ctx.fillStyle='#050510';ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);let frame=screenCanvas.toDataURL('image/jpeg',.42);if(frame.length>390000)frame=screenCanvas.toDataURL('image/jpeg',.25);if(frame.length<=400000&&screenWatchRequested)s.emit('screen:frame',frame);else sendGamePreview();
-      }catch(e){console.warn('Capture complète de la fenêtre Neon Strike indisponible, aperçu de secours envoyé.',e);sendGamePreview();}finally{if(imageUrl)URL.revokeObjectURL(imageUrl);screenFrameBusy=false;}
-    };
+    const sendGamePreview=()=>{try{
+      const width=800,height=450,viewWidth=Math.max(1,window.innerWidth),viewHeight=Math.max(1,window.innerHeight),sx=width/viewWidth,sy=height/viewHeight;
+      screenCanvas=screenCanvas||document.createElement('canvas');screenCanvas.width=width;screenCanvas.height=height;
+      const ctx=screenCanvas.getContext('2d',{alpha:false});ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#050816';ctx.fillRect(0,0,width,height);
+      const paint=(el)=>{
+        if(!(el instanceof Element))return;const cs=getComputedStyle(el),r=el.getBoundingClientRect();
+        if(cs.display==='none'||cs.visibility==='hidden'||Number(cs.opacity)===0||r.width<=0||r.height<=0||r.right<=0||r.bottom<=0||r.left>=viewWidth||r.top>=viewHeight)return;
+        const x=r.left*sx,y=r.top*sy,w=r.width*sx,h=r.height*sy;
+        if(cs.backgroundColor&&cs.backgroundColor!=='rgba(0, 0, 0, 0)'&&cs.backgroundColor!=='transparent'){ctx.fillStyle=cs.backgroundColor;ctx.fillRect(x,y,w,h);}
+        if(el instanceof HTMLCanvasElement){try{ctx.drawImage(el,x,y,w,h)}catch{}}
+        else if(el instanceof HTMLImageElement&&el.complete&&el.naturalWidth){try{ctx.drawImage(el,x,y,w,h)}catch{}}
+        for(const child of el.children)paint(child);
+        const borderWidth=parseFloat(cs.borderTopWidth)||0;if(borderWidth>0&&cs.borderTopStyle!=='none'){ctx.strokeStyle=cs.borderTopColor;ctx.lineWidth=Math.max(1,borderWidth*sx);ctx.strokeRect(x,y,w,h);}
+        for(const node of el.childNodes){if(node.nodeType!==Node.TEXT_NODE)continue;const text=(node.nodeValue||'').replace(/\s+/g,' ').trim();if(!text)continue;const range=document.createRange();range.selectNodeContents(node);const tr=range.getBoundingClientRect();if(!tr.width||!tr.height)continue;
+          const fontSize=Math.max(7,(parseFloat(cs.fontSize)||14)*sy),lineHeight=Math.max(fontSize*1.15,(parseFloat(cs.lineHeight)||fontSize*1.35)*sy),padX=(parseFloat(cs.paddingLeft)||0)*sx;ctx.font=`${cs.fontStyle} ${cs.fontWeight} ${fontSize}px ${cs.fontFamily}`;ctx.fillStyle=cs.color;ctx.textBaseline='top';
+          const maxWidth=Math.max(8,Math.min(tr.width*sx+4,(r.right-tr.left)*sx-padX)),words=text.split(/\s+/);let line='',lineY=tr.top*sy,lines=0;
+          for(const word of words){const candidate=line?line+' '+word:word;if(ctx.measureText(candidate).width>maxWidth&&line){const tx=cs.textAlign==='center'?tr.left*sx+(tr.width*sx-ctx.measureText(line).width)/2:cs.textAlign==='right'?tr.right*sx-ctx.measureText(line).width:tr.left*sx;ctx.fillText(line,tx,lineY,maxWidth);line='';lineY+=lineHeight;if(++lines>8)break;}line=line?line+' '+word:word;}
+          if(line&&lines<=8){const tx=cs.textAlign==='center'?tr.left*sx+(tr.width*sx-ctx.measureText(line).width)/2:cs.textAlign==='right'?tr.right*sx-ctx.measureText(line).width:tr.left*sx;ctx.fillText(line,tx,lineY,maxWidth);}
+        }
+      };
+      paint(document.body);let frame=screenCanvas.toDataURL('image/jpeg',.62);if(frame.length>390000)frame=screenCanvas.toDataURL('image/jpeg',.4);if(frame.length<=400000&&s.connected&&screenWatchRequested)s.emit('screen:frame',frame);
+    }catch(e){console.warn('Capture visuelle du jeu indisponible',e);}};
+    const captureGameWindow=()=>{if(!s.connected||!screenWatchRequested||screenFrameBusy)return;screenFrameBusy=true;try{sendGamePreview();}finally{screenFrameBusy=false;}};
     const startScreenWatch=()=>{if(screenWatchRequested)return;screenWatchRequested=true;document.getElementById('screenWatchBadge')?.classList.remove('hidden');captureGameWindow();screenWatchTimer=setInterval(captureGameWindow,1400);};
     s.on('admin:screen-watch',d=>{if(d?.enabled)startScreenWatch();else stopScreenShare();});
     s.on('disconnect',stopScreenShare);
@@ -6549,7 +6554,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261019f" defer></script>
+<script src="/expansion.js?build=20261019g" defer></script>
 </body>
 </html>
 
