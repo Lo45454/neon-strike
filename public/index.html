@@ -4463,19 +4463,10 @@ const Auth = {
 };
 
 // ===================== MODE CRÉATEUR =====================
-// Accès secret : clique 5 fois sur le titre NEON STRIKE, puis entre le mot de passe.
-// Le mot de passe est vérifié par le serveur (il n'est pas dans le code du jeu).
+// L’accès caché par clics sur le titre a été retiré pour éviter les conflits avec les Easter eggs.
+// Le mot de passe reste vérifié par le serveur (il n'est pas dans le code du jeu).
 const Creator = {
-  clicks: 0, clickTimer: null,
   init() {
-    const title = document.querySelector('#startScreen .game-title');
-    title.style.cursor = 'default';
-    title.addEventListener('click', () => {
-      this.clicks++;
-      clearTimeout(this.clickTimer);
-      this.clickTimer = setTimeout(() => { this.clicks = 0; }, 1500);
-      if (this.clicks >= 5) { this.clicks = 0; this.open(); }
-    });
     document.getElementById('creatorCancelBtn').addEventListener('click', () => this.close());
     document.getElementById('creatorOkBtn').addEventListener('click', () => this.submit());
     document.getElementById('creatorOffBtn').addEventListener('click', () => { this.disable(); this.close(); });
@@ -4675,13 +4666,14 @@ const Versus = {
     s.on('m', (d) => this.onMsg(d));
     let screenWatchTimer=null,screenCanvas=null,screenWatchRequested=false,screenFrameBusy=false;
     const stopScreenShare=()=>{clearInterval(screenWatchTimer);screenWatchTimer=null;screenCanvas=null;screenWatchRequested=false;screenFrameBusy=false;document.getElementById('screenWatchBadge')?.classList.add('hidden');};
+    const sendGamePreview=()=>{try{const width=800,height=450;screenCanvas=screenCanvas||document.createElement('canvas');screenCanvas.width=width;screenCanvas.height=height;const ctx=screenCanvas.getContext('2d',{alpha:false});ctx.fillStyle='#050816';ctx.fillRect(0,0,width,height);const gameCanvas=document.getElementById('gameCanvas');if(gameCanvas?.width&&gameCanvas?.height){const scale=Math.min(width/gameCanvas.width,height/gameCanvas.height),w=gameCanvas.width*scale,h=gameCanvas.height*scale;ctx.drawImage(gameCanvas,(width-w)/2,(height-h)/2,w,h);}const active=[...document.querySelectorAll('.overlay.active:not(.hidden)')].filter(el=>!['chatScreen','accountScreen','friendsScreen'].includes(el.id)),chest=document.getElementById('chestReveal');if(chest&&!chest.classList.contains('hidden')&&getComputedStyle(chest).display!=='none')active.push(chest);if(active.length){const screen=active[active.length-1],lines=[...screen.querySelectorAll('h1,h2,.subtitle,p,small,button,[role="status"]')].filter(el=>{const cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'&&el.getClientRects().length>0}).map(el=>(el.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean).filter((line,i,all)=>all.indexOf(line)===i).slice(0,13);ctx.fillStyle='rgba(3,8,22,.94)';ctx.fillRect(16,16,width-32,Math.min(height-32,30+lines.length*28));ctx.fillStyle='#00f0ff';ctx.font='bold 16px system-ui';ctx.textBaseline='top';lines.forEach((line,i)=>{ctx.fillStyle=i===0?'#ffffff':'#a8f4ff';ctx.fillText(line.slice(0,88),30,29+i*28,width-60);});}let frame=screenCanvas.toDataURL('image/jpeg',.45);if(frame.length>390000)frame=screenCanvas.toDataURL('image/jpeg',.28);if(frame.length<=400000&&s.connected&&screenWatchRequested)s.emit('screen:frame',frame);}catch(e){console.warn('Aperçu du jeu indisponible',e);}};
     const captureGameWindow=async()=>{
       if(!s.connected||!screenWatchRequested||screenFrameBusy)return;screenFrameBusy=true;let imageUrl='';
       try{
-        const width=Math.min(1280,Math.max(1,window.innerWidth)),height=Math.min(720,Math.max(1,window.innerHeight)),clone=document.documentElement.cloneNode(true),sourceCanvases=Array.from(document.querySelectorAll('canvas'));
+        const width=Math.min(800,Math.max(1,window.innerWidth)),height=Math.min(450,Math.max(1,window.innerHeight)),clone=document.documentElement.cloneNode(true),sourceCanvases=Array.from(document.querySelectorAll('canvas'));
         clone.querySelectorAll('script,noscript').forEach(n=>n.remove());
         clone.querySelectorAll('link[rel="stylesheet"]').forEach(link=>{try{if(new URL(link.href,location.href).origin!==location.origin)link.remove();}catch{link.remove();}});
-        clone.querySelectorAll('canvas').forEach((canvas,index)=>{const original=sourceCanvases[index];if(!original)return;try{const replacement=document.createElement('img');replacement.src=original.toDataURL('image/png');replacement.style.cssText=original.getAttribute('style')||'';replacement.style.width=`${original.clientWidth}px`;replacement.style.height=`${original.clientHeight}px`;canvas.replaceWith(replacement);}catch{canvas.remove();}});
+        clone.querySelectorAll('canvas').forEach((canvas,index)=>{const original=sourceCanvases[index];if(!original)return;try{const replacement=document.createElement('img');replacement.id=canvas.id;replacement.className=canvas.className;replacement.src=original.toDataURL('image/png');replacement.style.cssText=original.getAttribute('style')||'';replacement.style.width=`${original.clientWidth}px`;replacement.style.height=`${original.clientHeight}px`;canvas.replaceWith(replacement);}catch{canvas.remove();}});
         clone.querySelectorAll('img').forEach(img=>{try{if(new URL(img.src,location.href).origin!==location.origin&&!img.src.startsWith('data:'))img.remove();}catch{img.remove();}});
         const css=[];for(const sheet of Array.from(document.styleSheets)){try{if(sheet.href&&new URL(sheet.href,location.href).origin!==location.origin)continue;css.push(Array.from(sheet.cssRules).map(rule=>rule.cssText).join('\n'));}catch{}}
         const style=document.createElement('style');style.textContent=css.join('\n');clone.querySelector('head')?.append(style);
@@ -4689,8 +4681,8 @@ const Versus = {
         const clonedBody=clone.querySelector('body');if(clonedBody)clonedBody.style.cssText+=`;position:absolute;left:-${window.scrollX}px;top:-${window.scrollY}px;width:${document.documentElement.scrollWidth}px;min-height:${height}px;overflow:visible`;
         const markup=new XMLSerializer().serializeToString(clone),svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="100%" height="100%">${markup}</foreignObject></svg>`;
         imageUrl=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error('Capture de la fenêtre impossible'));img.src=imageUrl;});
-        screenCanvas=screenCanvas||document.createElement('canvas');screenCanvas.width=width;screenCanvas.height=height;const ctx=screenCanvas.getContext('2d',{alpha:false});ctx.fillStyle='#050510';ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);const frame=screenCanvas.toDataURL('image/jpeg',.58);if(frame.length<=400000&&screenWatchRequested)s.emit('screen:frame',frame);
-      }catch(e){console.warn('Capture de la fenêtre Neon Strike indisponible',e);}finally{if(imageUrl)URL.revokeObjectURL(imageUrl);screenFrameBusy=false;}
+        screenCanvas=screenCanvas||document.createElement('canvas');screenCanvas.width=width;screenCanvas.height=height;const ctx=screenCanvas.getContext('2d',{alpha:false});ctx.fillStyle='#050510';ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);let frame=screenCanvas.toDataURL('image/jpeg',.42);if(frame.length>390000)frame=screenCanvas.toDataURL('image/jpeg',.25);if(frame.length<=400000&&screenWatchRequested)s.emit('screen:frame',frame);else sendGamePreview();
+      }catch(e){console.warn('Capture complète de la fenêtre Neon Strike indisponible, aperçu de secours envoyé.',e);sendGamePreview();}finally{if(imageUrl)URL.revokeObjectURL(imageUrl);screenFrameBusy=false;}
     };
     const startScreenWatch=()=>{if(screenWatchRequested)return;screenWatchRequested=true;document.getElementById('screenWatchBadge')?.classList.remove('hidden');captureGameWindow();screenWatchTimer=setInterval(captureGameWindow,1400);};
     s.on('admin:screen-watch',d=>{if(d?.enabled)startScreenWatch();else stopScreenShare();});
@@ -6557,8 +6549,9 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261019d" defer></script>
+<script src="/expansion.js?build=20261019e" defer></script>
 </body>
 </html>
+
 
 
