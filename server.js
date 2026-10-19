@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-19-screen-v3';
+const RELEASE_ID = 'neon-2026-10-19-gameview-v5';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -424,8 +424,8 @@ app.post('/api/admin/message/:id', express.json({limit:'3kb'}), (req,res) => {
 app.get('/api/admin/live-frames', (req,res) => {
   if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const cutoff=Date.now()-8000,frames=[];for(const [id,frame] of liveFrames){if(frame.at<cutoff){liveFrames.delete(id);continue;}const {image,...summary}=frame;frames.push(summary);}res.json({ok:true,frames});
 });
-app.get('/api/admin/live-frames/:id', (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id),frame=id&&liveFrames.get(id);if(!frame||Date.now()-frame.at>8000)return res.status(404).json({ok:false,error:'Aucune image partagée récemment. Le joueur doit autoriser le partage de son onglet.'});res.json({ok:true,frame});});
-app.post('/api/admin/live-frames/:id/watch', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});const peers=socketsOf(id);if(!peers.length)return res.status(409).json({ok:false,error:'Le joueur doit être en ligne pour partager son écran de jeu.'});for(const sock of peers)sock.emit('admin:screen-watch',{enabled:true});res.json({ok:true});});
+app.get('/api/admin/live-frames/:id', (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id),frame=id&&liveFrames.get(id);if(!frame||Date.now()-frame.at>8000)return res.status(404).json({ok:false,error:'Aucune image récente de la fenêtre Neon Strike.'});res.json({ok:true,frame});});
+app.post('/api/admin/live-frames/:id/watch', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});const peers=socketsOf(id);if(!peers.length)return res.status(409).json({ok:false,error:'Le joueur doit être en ligne dans Neon Strike pour ouvrir la vue du jeu.'});for(const sock of peers)sock.emit('admin:screen-watch',{enabled:true});res.json({ok:true});});
 app.post('/api/admin/live-frames/:id/stop', express.json({limit:'1kb'}), (req,res) => {if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});for(const sock of socketsOf(id))sock.emit('admin:screen-watch',{enabled:false});liveFrames.delete(id);res.json({ok:true});});
 app.get('/api/admin/chats', (req,res) => {
   if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
@@ -606,7 +606,7 @@ io.on('connection', (socket) => {
   function switchTo(newId) {
     if (newId === vid) return;
     const set = online.get(vid);
-    if (set) { set.delete(socket.id); if (!set.size) { online.delete(vid); notifyFriendsOf(vid); } }
+    if (set) { set.delete(socket.id); if (!set.size) { online.delete(vid); liveFrames.delete(vid); notifyFriendsOf(vid); } }
     vid = newId; socket.data.vid = vid;
   socket.data.connectedAt = Date.now();
     if (!online.has(vid)) online.set(vid, new Set());
