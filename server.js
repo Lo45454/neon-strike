@@ -47,7 +47,7 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 } };
+  const base = { v: 3, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 }, ranked: {}, tournamentHistory: {}, tournamentAwards: {} };
   if (!raw || typeof raw !== 'object') return base;
   if (raw.v === 2 || raw.v === 3) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
@@ -183,6 +183,56 @@ function cleanName(n) {
 function cleanCode(c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); }
 function chatKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
 
+// ===================== CLASSEMENTS & TOURNOIS =====================
+const rankTickets = new Map();
+const rankLastSubmit = new Map();
+function weekKey(at = new Date()) {
+  const d = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+function weekBounds(key = weekKey()) {
+  const [year, w] = key.split('-W').map(Number);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const start = new Date(jan4); start.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7) + (w - 1) * 7);
+  return { start: start.getTime(), end: start.getTime() + 7 * 86400000 };
+}
+function leaderboard(category = 'overall') {
+  const rows = [];
+  for (const [id, record] of Object.entries(db.ranked || {})) {
+    const score = Number(record[category] || 0);
+    if (score <= 0 || !accIndex.has(id)) continue;
+    rows.push({ id, name: accIndex.get(id).name, score, stats: record.stats || {}, titles: record.titles || [] });
+  }
+  return rows.sort((a,b) => b.score - a.score || a.name.localeCompare(b.name)).map((p,i) => ({ ...p, rank: i + 1, reward: i === 0 ? 'Couronne du champion' : i < 3 ? 'Effet du top 3' : i < 10 ? 'Badge du top 10' : '' }));
+}
+function finalizeWeek(key) {
+  if (!key || db.tournamentAwards[key]) return;
+  const rows = Object.values(db.ranked || {}).map(r => ({ id:r.id, name:(accIndex.get(r.id)||{}).name, score:Number((r.weeks||{})[key])||0 })).filter(r => r.name && r.score > 0).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+  db.tournamentHistory[key] = rows.slice(0,100).map((r,i)=>({...r,rank:i+1}));
+  const prizes = [1000,600,350];
+  rows.slice(0,3).forEach((row,i)=>{ const save=rec(row.id); save.data=save.data||{}; save.data.credits=Math.min(2147483647,(Number(save.data.credits)||0)+prizes[i]); save.data.tournamentTitles=Array.isArray(save.data.tournamentTitles)?save.data.tournamentTitles:[]; save.data.tournamentTitles.push({week:key,rank:i+1,title:`Champion du tournoi ${key}`}); save.data.tournamentTitles=save.data.tournamentTitles.slice(-20); for(const socket of socketsOf(row.id)) socket.emit('admin:credits-updated',{credits:save.data.credits}); });
+  db.tournamentAwards[key] = Date.now();
+  const historyKeys=Object.keys(db.tournamentAwards).sort(); for(const old of historyKeys.slice(0,-52)){delete db.tournamentAwards[old];delete db.tournamentHistory[old];}
+  persist();
+}
+function currentTournament() {
+  const key = weekKey(), bounds = weekBounds(key);
+  const prev = db.activeTournamentWeek;
+  if (prev && prev < key) finalizeWeek(prev);
+  if (prev !== key) { db.activeTournamentWeek=key; persist(); }
+  return { id:key, name:'Tournoi hebdomadaire — Abysse infini', mode:'endless', type:'survie', startsAt:new Date(bounds.start).toISOString(), endsAt:new Date(bounds.end).toISOString(), rules:'100 points par seconde de partie chronométrée côté serveur; une meilleure performance par compte.', rewards:['1er : 1 000 crédits + titre historique','2e : 600 crédits + titre historique','3e : 350 crédits + titre historique'] };
+}
+function rankPayload(id) {
+  const top = leaderboard('overall');
+  const mine = top.find(p => p.id === id) || null;
+  const ranked = db.ranked[id] || {};
+  const week = currentTournament();
+  const weekly = Object.values(db.ranked).map(r=>({id:r.id,name:(accIndex.get(r.id)||{}).name,score:Number((r.weeks||{})[week.id])||0})).filter(r=>r.name&&r.score>0).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name)).map((r,i)=>({...r,rank:i+1}));
+  return { ok:true, account: accIndex.get(id)?.name || null, rankings:{overall:top.slice(0,100),endless:leaderboard('endless').slice(0,100),campaign:leaderboard('campaign').slice(0,100),me:mine,personal:ranked}, tournament:{...week,standings:weekly.slice(0,100),me:weekly.find(p=>p.id===id)||null}, history:Object.entries(db.tournamentHistory||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12).map(([id,rows])=>({id,rows})) };
+}
 // ===================== HTTP =====================
 function visitor(req) { return String(req.headers['x-visitor-id'] || 'local').slice(0, 100); }
 
@@ -268,22 +318,6 @@ app.get('/api/admin/feedback', (req,res) => {
   const tok = req.headers['x-admin-token'] || req.query.token || '';
   if (!ADMIN_TOKEN || !safeEqual(tok, ADMIN_TOKEN)) return res.status(403).json({ok:false});
   res.json({ok:true,items:[...db.feedback].reverse()});
-});
-
-// Les images réduites et annoncées du jeu restent en mémoire vive, expirent rapidement
-// et ne sont jamais archivées. Le client ne transmet que le canevas du jeu.
-const liveFrames = new Map();
-app.get('/api/admin/live-frames', (req,res) => {
-  if (!adminAllowed(req)) return res.status(403).json({ok:false,error:'Accès refusé.'});
-  const now = Date.now();
-  const frames = [];
-  for (const [id, frame] of liveFrames) {
-    if (now - frame.at > 5000 || !online.has(id) || !online.get(id).size) { liveFrames.delete(id); continue; }
-    const account = accIndex.get(id);
-    const save = db.saves[id];
-    frames.push({id, name:account?.name || save?.profile?.name || 'Invité', at:frame.at, image:frame.image});
-  }
-  res.json({ok:true,frames});
 });
 
 app.get('/api/admin/dashboard', (req, res) => {
@@ -559,6 +593,40 @@ io.on('connection', (socket) => {
   const fails = (k) => { const now = Date.now(); const a = attempts.get(k) || { n: 0, t: now }; if (now - a.t > 10 * 60 * 1000) { a.n = 0; a.t = now; } attempts.set(k, a); return a; };
 
   socket.on('auth:status', (ack) => { if (typeof ack === 'function') ack(authState()); });
+  socket.on('rank:get', (ack) => { if (typeof ack === 'function') ack(rankPayload(vid)); });
+  socket.on('rank:start', (d, ack) => {
+    if (typeof ack !== 'function') return;
+    if (!accIndex.has(vid)) return ack({ok:false,error:'Connecte-toi à un compte pour participer au classement.'});
+    const mode = d && d.mode === 'endless' ? 'endless' : d && d.mode === 'campaign' ? 'campaign' : null;
+    if (!mode) return ack({ok:false,error:'Mode classé inconnu.'});
+    const ticket = crypto.randomBytes(18).toString('hex');
+    rankTickets.set(ticket,{id:vid,mode,started:Date.now(),lastPulse:Date.now(),activeMs:0});
+    for (const [k,v] of rankTickets) if (Date.now()-v.started > 3*3600000) rankTickets.delete(k);
+    ack({ok:true,ticket});
+  });
+  socket.on('rank:pulse', (d) => {
+    const t=d&&rankTickets.get(String(d.ticket||'')); if(!t||t.id!==vid)return;
+    const now=Date.now(),delta=Math.max(0,Math.min(3000,now-t.lastPulse));
+    if(d.active===true)t.activeMs+=delta; t.lastPulse=now;
+  });
+  socket.on('rank:submit', (d, ack) => {
+    if (typeof ack !== 'function') return;
+    const t = d && rankTickets.get(String(d.ticket||''));
+    if (!t || t.id !== vid) return ack({ok:false,error:'Cette partie ne peut pas être validée.'});
+    rankTickets.delete(String(d.ticket));
+    const elapsed = Date.now()-t.started, activeMs=Number(t.activeMs)||0, now=Date.now(), last=rankLastSubmit.get(vid)||0;
+    if (!accIndex.has(vid) || activeMs < 12000 || elapsed > 3*3600000 || now-last < 5000) return ack({ok:false,error:'Résultat invalide ou durée de partie insuffisante.'});
+    rankLastSubmit.set(vid,now);
+    // Le score classé est calculé par le serveur à partir du temps écoulé; aucun score client n'est accepté.
+    const score = Math.floor(activeMs/1000)*100;
+    const key=weekKey(), r=db.ranked[vid]||(db.ranked[vid]={id:vid,overall:0,endless:0,campaign:0,weeks:{},stats:{runs:0,bestTime:0},titles:[]});
+    const improved=score>Number(r[t.mode]||0);
+    r[t.mode]=Math.max(Number(r[t.mode]||0),score); r.overall=Math.max(Number(r.overall)||0,r.endless+r.campaign);
+    if(t.mode==='endless') r.weeks[key]=Math.max(Number(r.weeks[key])||0,score); r.stats.runs=(Number(r.stats.runs)||0)+1; r.stats.bestTime=Math.max(Number(r.stats.bestTime)||0,Math.floor(activeMs/1000)); r.updatedAt=Date.now();
+    const evict=Object.keys(r.weeks).sort().slice(0,-12); evict.forEach(k=>delete r.weeks[k]);
+    persist(); ack({ok:true,improved,score,rank:rankPayload(vid)});
+  });
+
 
   socket.on('auth:register', (d, ack) => {
     if (typeof ack !== 'function' || !d) return;
@@ -873,17 +941,7 @@ io.on('connection', (socket) => {
 
   socket.on('m', (data) => {
     if (data && typeof data === 'object') {
-      if (data.t === 'spectate-consent') {
-        // Kept for compatibility with older clients; monitoring is automatic and disclosed in-game.
-        return;
-      }
-      if (data.t === 'spectate-frame') {
-        const image = String(data.image || '');
-        if (/^data:image\/jpeg;base64,/.test(image) && image.length <= 45000) {
-          liveFrames.set(vid, {image, at:Date.now(), socketId:socket.id});
-        }
-        return;
-      }
+      if (data.t === 'spectate-consent' || data.t === 'spectate-frame') return;
       socket.data.lastActivityAt = Date.now();
       if (data.t === 'hello' || data.t === 'start') { socket.data.activity = 'Préparation / lancement de partie'; socket.data.location = 'Salle multijoueur'; }
       else if (data.t === 'coop-state') { socket.data.activity = data.alive ? 'En mission coop' : 'Éliminé en coop'; socket.data.location = `Coop · niveau ${(Number(data.level)||0)+1}, vague ${Number(data.wave)||1}`; }
@@ -900,8 +958,6 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const sessionRec = rec(vid); sessionRec.lastOnlineAt = Date.now(); sessionRec.lastSessionSeconds = Math.max(0, Math.round((Date.now() - (socket.data.connectedAt || Date.now())) / 1000)); persist();
     leaveRoom(socket);
-    const currentFrame = liveFrames.get(vid);
-    if (currentFrame && currentFrame.socketId === socket.id) liveFrames.delete(vid);
     const set = online.get(vid);
     if (set) { set.delete(socket.id); if (!set.size) { online.delete(vid); notifyFriendsOf(vid); } }
   });
@@ -925,3 +981,4 @@ setInterval(() => {
   migrateLegacyFeedback();
   server.listen(PORT, '0.0.0.0', () => console.log(`NEON STRIKE serveur sur le port ${PORT}${useSupabase ? ' (Supabase)' : ''}`));
 })();
+
