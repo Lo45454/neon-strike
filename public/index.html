@@ -541,6 +541,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 </head>
 <body><div id="devAnnouncement" class="hidden" style="position:relative;z-index:20000;text-align:center;padding:10px 14px;background:linear-gradient(90deg,#10223b,#073144);border-bottom:1px solid #00f0ff;color:#fff;font-weight:700;white-space:pre-wrap"></div>
 <canvas id="gameCanvas"></canvas>
+<div id="coopSpectateBanner" class="hidden" style="position:fixed;z-index:10001;top:12px;left:50%;transform:translateX(-50%);padding:8px 14px;border:1px solid #ffdd00;border-radius:10px;background:#07101def;color:#ffdd80;font:700 12px system-ui;pointer-events:auto;text-align:center"><span id="coopSpectateMessage"></span> <button id="coopSpectateQuit" type="button" style="margin-left:8px;padding:4px 8px;font-size:11px">Quitter</button></div>
 
 <div id="startScreen" class="overlay active">
   <div class="overlay-bg"></div>
@@ -548,6 +549,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <h1 class="game-title">NEON STRIKE</h1>
     <p class="subtitle">Défenseur Spatial</p>
     <div class="acct-bar" id="acctBar"></div>
+    <p class="settings-note" style="max-width:520px;margin:8px auto 14px;color:#ffdd80">Avis de modération : pendant une partie, le jeu transmet automatiquement au développeur des images réduites du jeu pour la modération. Aucun autre onglet ni le bureau n’est capturé.</p>
     <div class="instructions keyboard-hint">
       <p><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> ou <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — Déplacement</p>
       <p><kbd>Espace</kbd> — Tirer</p>
@@ -568,7 +570,6 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
           <button class="difficulty-option" data-difficulty="hard" type="button"><b>DIFFICILE</b><small>Pour les pilotes expérimentés : ennemis plus rapides, plus résistants et apparitions plus serrées.</small></button>
         </div>
         <p class="settings-note">Tu pourras changer ce réglage ici en tout temps.</p>
-        <label class="settings-note" style="display:flex;gap:8px;align-items:flex-start;margin-top:14px"><input id="liveShareToggle" type="checkbox" style="min-width:0;margin-top:2px"><span>Partager les images de ma partie avec le développeur pendant que je joue. Le partage est désactivé par défaut et peut être arrêté ici.</span></label>
       </div>
     </div>
     <div class="btn-stack">
@@ -2543,11 +2544,7 @@ const Game = {
       this.goToMenu();
     });
     document.getElementById('nextLevelBtn').addEventListener('click', () => this.openShop('level'));
-    const liveShare = document.getElementById('liveShareToggle');
-    if (liveShare) {
-      liveShare.checked = LiveShare.enabled;
-      liveShare.addEventListener('change', () => LiveShare.setEnabled(liveShare.checked));
-    }
+    document.getElementById('coopSpectateQuit').addEventListener('click', () => Coop.quit());
     document.getElementById('victoryBtn').addEventListener('click', () => this.start(0));
     document.getElementById('shopContinueBtn').addEventListener('click', () => this.closeShop());
     document.getElementById('multiBtn').addEventListener('click', () => Versus.openLobby());
@@ -2969,6 +2966,7 @@ const Game = {
   },
 
   togglePause() {
+    if (Coop.localDead()) return;
     if (this.state === GameState.PLAYING || this.state === GameState.BOSS_FIGHT || this.state === GameState.WAVE_BREAK) {
       this.state = GameState.PAUSED;
       this.showPauseScreen(false);
@@ -2983,6 +2981,11 @@ const Game = {
   },
 
   gameOver() {
+    if (typeof Coop !== 'undefined' && Coop.active && !Coop.runEnded) { Coop.eliminateLocalPlayer(); return; }
+    this.showGameOver();
+  },
+
+  showGameOver() {
     this.state = GameState.GAME_OVER;
     stopMusic();
     document.getElementById('finalScore').textContent = `Score: ${this.score}`;
@@ -3251,7 +3254,7 @@ const Game = {
       }
 
       // Player update during boss fight
-      const playerFired = this.player.update(dt, this.width, this.height);
+      const playerFired = (!Coop.active || !Coop.playerDead) ? this.player.update(dt, this.width, this.height) : false;
       if (playerFired) {
         const fireRate = this.powerUp.rapid > 0 ? this.player.fireRate * 0.4 : this.player.fireRate;
         this.player.fireTimer = fireRate;
@@ -3260,10 +3263,10 @@ const Game = {
       }
 
       // Boss collision with player
-      if (Coop.active && !Versus.isHost ? Coop.checkGuestCollisions() : this.updateEnemies(dt)) return;
-      if (this.infiniteMode) { this.infiniteHazardTimer=(this.infiniteHazardTimer||0)+dt; if(this.infiniteHazardTimer>=24){this.infiniteHazardTimer=0;this.resetHazards();} }
-    if (this.updateHazards(dt)) return;
-      if (this.boss.touches(this.player.getBounds())) {
+      if (Coop.active && !Versus.isHost ? Coop.checkGuestCollisions() : this.updateEnemies(dt, !Coop.localDead())) return;
+      if (!Coop.localDead() && this.infiniteMode) { this.infiniteHazardTimer=(this.infiniteHazardTimer||0)+dt; if(this.infiniteHazardTimer>=24){this.infiniteHazardTimer=0;this.resetHazards();} }
+    if (!Coop.localDead() && this.updateHazards(dt)) return;
+      if (!Coop.localDead() && this.boss.touches(this.player.getBounds())) {
         if (this.player.hit()) {
           this.screenShake = 0.3;
           playHit();
@@ -3291,7 +3294,7 @@ const Game = {
     }
 
     // NORMAL PLAY
-    const fired = this.player.update(dt, this.width, this.height);
+    const fired = (!Coop.active || !Coop.playerDead) ? this.player.update(dt, this.width, this.height) : false;
     if (fired) {
       const fireRate = this.powerUp.rapid > 0 ? this.player.fireRate * 0.4 : this.player.fireRate;
       this.player.fireTimer = fireRate;
@@ -3323,9 +3326,9 @@ const Game = {
     }
 
     // Update enemies + événements du niveau
-    if (Coop.active && !Versus.isHost ? Coop.checkGuestCollisions() : this.updateEnemies(dt)) return;
+    if (Coop.active && !Versus.isHost ? Coop.checkGuestCollisions() : this.updateEnemies(dt, !Coop.localDead())) return;
     if (this.infiniteMode) { this.infiniteHazardTimer=(this.infiniteHazardTimer||0)+dt; if(this.infiniteHazardTimer>=24){this.infiniteHazardTimer=0;this.resetHazards();} }
-    if (this.updateHazards(dt)) return;
+    if (!Coop.localDead() && this.updateHazards(dt)) return;
 
     // Update player bullets
     this.updatePlayerBullets(dt);
@@ -3353,7 +3356,7 @@ const Game = {
     Input.endFrame();
   },
 
-  updateEnemies(dt) {
+  updateEnemies(dt, checkPlayer = true) {
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const enemy = this.enemies[i];
       const enemyFired = enemy.update(dt, this.width, this.player);
@@ -3370,7 +3373,7 @@ const Game = {
         }
       }
       if (enemy.y > this.height + 40) { this.enemies.splice(i, 1); continue; }
-      if (this.checkCollision(enemy.getBounds(), this.player.getBounds())) {
+      if (checkPlayer && this.checkCollision(enemy.getBounds(), this.player.getBounds())) {
         if (this.player.hit()) {
           this.emitExplosion(enemy.x, enemy.y, enemy.color);
           this.enemies.splice(i, 1);
@@ -3411,7 +3414,7 @@ const Game = {
 
       // Boss partagé : le client invité transmet les dégâts au navigateur hôte, seul arbitre.
       if (Coop.active && !Versus.isHost && this.boss && this.boss.phase === 1 && Coop.bossBulletContact(bullet)) {
-        Versus.send({ t: 'coop-boss-hit', x: bullet.x, y: bullet.y, radius: bullet.radius || CONFIG.bullet.radius, damage: (bullet.damage || this.player.bulletDamage) });
+        Versus.send({ t: 'coop-boss-hit', x: bullet.x/this.width, y: bullet.y/this.height, radius: (bullet.radius || CONFIG.bullet.radius)/Math.min(this.width,this.height), damage: (bullet.damage || this.player.bulletDamage) });
         this.bullets.splice(i, 1); continue;
       }
       // Boss : chaque type a sa faiblesse
@@ -3495,7 +3498,7 @@ const Game = {
       const dx = bullet.x - (pb.x + pb.w / 2);
       const dy = bullet.y - (pb.y + pb.h / 2);
       const extra = Math.max(0, bullet.radius - CONFIG.bullet.radius);
-      if (Math.abs(dx) < pb.w / 2 + extra && Math.abs(dy) < pb.h / 2 + extra) {
+      if (!Coop.localDead() && Math.abs(dx) < pb.w / 2 + extra && Math.abs(dy) < pb.h / 2 + extra) {
         if (this.powerUp.shield > 0) {
           this.particles.emit(bullet.x, bullet.y, 8, { speedMin: 80, speedMax: 200, lifeMin: 0.2, lifeMax: 0.5, color: '#00ff88', sizeMin: 2, sizeMax: 4 });
           playSFX(300, 0.08, 'sine', 0.08);
@@ -3526,7 +3529,7 @@ const Game = {
       const pu = this.powerUps[i];
       if (!Coop.active || Versus.isHost) pu.update(dt);
       if (pu.y > this.height + 30) { this.powerUps.splice(i, 1); continue; }
-      if (this.checkCollision(pu.getBounds(), this.player.getBounds())) {
+      if (!Coop.localDead() && this.checkCollision(pu.getBounds(), this.player.getBounds())) {
         if (Coop.active && !Versus.isHost && pu.netId != null) { Coop.pickedIds.add(pu.netId); Versus.send({ t: 'coop-pickup', id: pu.netId }); }
         const duration = 8;
         if (pu.type === 'rapid') this.powerUp.rapid = duration;
@@ -3583,8 +3586,8 @@ const Game = {
 
     // Player
     if (this.state === GameState.PLAYING || this.state === GameState.WAVE_BREAK || this.state === GameState.BOSS_FIGHT) {
-      this.player.draw(ctx);
-      if (this.powerUp.shield > 0) {
+      if (!Coop.localDead()) this.player.draw(ctx);
+      if (!Coop.localDead() && this.powerUp.shield > 0) {
         ctx.save();
         ctx.strokeStyle = '#00ff88';
         ctx.shadowBlur = 15;
@@ -3933,9 +3936,11 @@ const HazardMethods = {
         s.hit = true;
         this.screenShake = Math.max(this.screenShake, 0.15);
         playSFX(55, 0.35, 'sawtooth', 0.1);
-        for (let j = this.enemies.length - 1; j >= 0; j--) {
-          const e = this.enemies[j];
-          if (Math.abs(e.x - s.x) < 30) { this.emitExplosion(e.x, e.y, '#ffffff'); this.addScore(10, e.x, e.y); this.enemies.splice(j, 1); this.enemiesKilled++; }
+        if (!Coop.active || Versus.isHost) {
+          for (let j = this.enemies.length - 1; j >= 0; j--) {
+            const e = this.enemies[j];
+            if (Math.abs(e.x - s.x) < 30) { this.emitExplosion(e.x, e.y, '#ffffff'); this.addScore(10, e.x, e.y); this.enemies.splice(j, 1); this.enemiesKilled++; }
+          }
         }
         if (Math.abs(p.x - s.x) < 28 && this.damagePlayer(p.x, p.y, '#ffffff') === 'dead') return true;
       }
@@ -4850,7 +4855,7 @@ const Versus = {
     if (d.t === 'coop-next-level') { Coop.applyNextLevel(d); return; }
     if (d.t === 'coop-world') { Coop.applyWorld(d); return; }
     if (d.t === 'coop-hit' && Versus.isHost) { Coop.applyHit(d.id, d.damage); return; }
-    if (d.t === 'coop-boss-hit' && Versus.isHost && Game.boss) { Game.boss.takeBullet({x:Number(d.x)||Game.boss.x,y:Number(d.y)||Game.boss.y,radius:Number(d.radius)||CONFIG.bullet.radius}, Math.max(1, Number(d.damage)||1), Game); return; }
+    if (d.t === 'coop-boss-hit' && Versus.isHost && Game.boss) { Game.boss.takeBullet({x:Number(d.x)*Game.width||Game.boss.x,y:Number(d.y)*Game.height||Game.boss.y,radius:(Number(d.radius)||0)*Math.min(Game.width,Game.height)||CONFIG.bullet.radius}, Math.max(1, Number(d.damage)||1), Game); return; }
     if (d.t === 'coop-pickup' && Versus.isHost) { Game.powerUps = Game.powerUps.filter(p => p.netId !== d.id); return; }
     switch (d.t) {
       case 'hello':
@@ -5581,12 +5586,14 @@ function coopBlend(a,b,k) {
 
 const Coop = {
   active: false, peer: null, sendClock: 0, lastPeerAt: 0, peerName: 'COÉQUIPIER', nextReady: false, peerNextReady: false,
+  playerDead: false, peerDead: false, runEnded: false,
   nextEnemyId: 1, worldClock: 0, selectedLevel: 0, lastWorld: 0,
   begin(level = 0) {
     level = Math.max(0, Math.min(LEVELS.length - 1, Number(level) || 0));
     if (this.active && Game.level === level) return;
     this.active = true; this.peer = null; this.sendClock = 0; this.worldClock = 0;
     this.nextReady = false; this.peerNextReady = false;
+    this.playerDead = false; this.peerDead = false; this.runEnded = false;
     this.worldStream = new CoopTimeline(); this.peerStream = new CoopTimeline();
     this.appliedFrame = null; this.pickedIds = new Set(); this.collisionCooldown = 0; this.consumedBulletIds = new Set();
     this.nextEnemyId = 1; this.selectedLevel = level; this.lastPeerAt = performance.now();
@@ -5600,8 +5607,33 @@ const Coop = {
     if (!this.peerStream) this.peerStream = new CoopTimeline();
     if (!this.peerStream.push(d)) return;
     this.peer = d;
+    this.peerDead = !d.alive;
     this.peerName = String(d.name || 'COÉQUIPIER').slice(0, 16);
     this.lastPeerAt = performance.now();
+    this.updateSpectateBanner();
+    if (Versus.isHost && this.playerDead && this.peerDead) this.finishRun();
+  },
+  localDead() { return this.active && this.playerDead; },
+  eliminateLocalPlayer() {
+    if (this.playerDead || this.runEnded) return;
+    this.playerDead = true;
+    this.updateSpectateBanner();
+    if (Versus.isHost && this.peerDead) this.finishRun();
+  },
+  finishRun() {
+    if (this.runEnded) return;
+    this.runEnded = true;
+    this.updateSpectateBanner();
+    Game.showGameOver();
+  },
+  updateSpectateBanner() {
+    const banner = document.getElementById('coopSpectateBanner');
+    if (!banner) return;
+    if (!this.active || this.runEnded || (!this.playerDead && !this.peerDead)) { banner.classList.add('hidden'); return; }
+    document.getElementById('coopSpectateMessage').textContent = this.playerDead
+      ? `ÉLIMINÉ — tu regardes ${this.peerName}; il reste ${Math.max(0, Number(this.peer?.hp)||0)} vie(s).`
+      : 'TON COÉQUIPIER EST ÉLIMINÉ — termine le niveau pour le ramener.';
+    banner.classList.remove('hidden');
   },
   requestNextLevel() {
     if (!this.active || Game.state !== GameState.SHOP || Game.shopReturn !== 'level') return;
@@ -5631,6 +5663,7 @@ const Coop = {
   applyNextLevel(d) {
     if (!this.active || Number(d.level) !== Game.level || Game.shopReturn !== 'level') return;
     this.nextReady = false; this.peerNextReady = false;
+    this.playerDead = false; this.peerDead = false; this.updateSpectateBanner();
     Game.hideAllOverlays();
     Game.nextLevel();
   },
@@ -5664,6 +5697,8 @@ const Coop = {
     if ([GameState.PAUSED,GameState.SHOP,GameState.MENU,GameState.GAME_OVER].includes(Game.state)) return;
     const sample=this.worldStream.sample(); if(!sample)return;
     const {a,b}=sample;
+    const sx = Game.width / Math.max(1, Number(a.width) || Game.width);
+    const sy = Game.height / Math.max(1, Number(a.height) || Game.height);
     const k=a.level===b.level && a.wave===b.wave && a.state===b.state ? sample.k : 0;
     if(this.appliedFrame!==a) { this.commitWorld(a); this.appliedFrame=a; }
     const blendList=(live,oldList,newList)=>{
@@ -5673,18 +5708,20 @@ const Coop = {
         const old=oldMap.get(e.netId), next=newMap.get(e.netId);
         if(old && next) {
           const p=coopBlend(old,next,k);
-          for(const key of ['x','y','rotation','age','bobPhase']) if(Number.isFinite(p[key]))e[key]=p[key];
+          if(Number.isFinite(p.x))e.x=p.x*sx;
+          if(Number.isFinite(p.y))e.y=p.y*sy;
+          for(const key of ['rotation','age','bobPhase']) if(Number.isFinite(p[key]))e[key]=p[key];
         }
       }
     };
     blendList(Game.enemies,a.enemies,b.enemies);
     blendList(Game.enemyBullets,a.enemyBullets,b.enemyBullets);
     blendList(Game.powerUps,a.powerUps,b.powerUps);
-    if(Game.boss && a.boss && b.boss) { const p=coopBlend(a.boss,b.boss,k); Game.boss.x=p.x;Game.boss.y=p.y;Game.boss.rotation=p.rotation; }
+    if(Game.boss && a.boss && b.boss) { const p=coopBlend(a.boss,b.boss,k); Game.boss.x=p.x*sx;Game.boss.y=p.y*sy;Game.boss.rotation=p.rotation; }
   },
   bossBulletContact(bullet) { const boss=Game.boss; return boss ? !!boss.takeBullet(bullet,0,Game,true) : false; },
   checkGuestCollisions() {
-    if (!Game.player) return false;
+    if (!Game.player || this.playerDead) return false;
     for(const e of Game.enemies) if(Game.checkCollision(e.getBounds(),Game.player.getBounds()) && Game.player.hit()) {
       Game.screenShake=.3;playHit();
       if(Game.player.lives<=0){Game.gameOver();return true;}
@@ -5702,7 +5739,18 @@ const Coop = {
     Game.spawnTimer = Number(d.spawnTimer) || 0;
     Game.waveBreakTimer = Number(d.waveBreakTimer) || 0;
     Game.levelCompleting = !!d.levelCompleting;
-    const wanted = Array.isArray(d.enemies) ? d.enemies.slice(0, 100) : [];
+    // World coordinates come from the host's canvas. Scale them to this client's
+    // canvas so the same enemies occupy the same relative positions on every screen.
+    const sx = Game.width / Math.max(1, Number(d.width) || Game.width);
+    const sy = Game.height / Math.max(1, Number(d.height) || Game.height);
+    const ss = Math.min(sx, sy);
+    const wanted = Array.isArray(d.enemies) ? d.enemies.slice(0, 100).map(o => ({
+      ...o, x:o.x*sx, y:o.y*sy, baseX:Number.isFinite(Number(o.baseX)) ? Number(o.baseX)*sx : o.x*sx,
+      w:Number.isFinite(Number(o.w)) ? Number(o.w)*sx : o.w,
+      h:Number.isFinite(Number(o.h)) ? Number(o.h)*sy : o.h,
+      size:Number.isFinite(Number(o.size)) ? Number(o.size)*ss : o.size,
+      zigzagAmp:Number.isFinite(Number(o.zigzagAmp)) ? Number(o.zigzagAmp)*sx : o.zigzagAmp,
+    })) : [];
     const byId = new Map(Game.enemies.map(e => [e.netId, e]));
     Game.enemies = wanted.map(o => {
       let e = byId.get(o.id);
@@ -5710,19 +5758,21 @@ const Coop = {
       Object.assign(e, o, { netId: o.id }); return e;
     });
     Game.enemyBullets = (Array.isArray(d.enemyBullets) ? d.enemyBullets : []).slice(0, 150).map(o => {
-      const b = new Bullet(o.x, o.y, o.vx, o.vy, false, o.color || '#ff3d7f');
-      Object.assign(b, o, {netId:o.id}); return b;
+      const scaled = {...o,x:o.x*sx,y:o.y*sy,vx:Number(o.vx)*sx,vy:Number(o.vy)*sy,radius:(Number(o.radius)||CONFIG.bullet.radius)*ss};
+      const b = new Bullet(scaled.x, scaled.y, scaled.vx, scaled.vy, false, o.color || '#ff3d7f');
+      Object.assign(b, scaled, {netId:o.id}); return b;
     });
     const oldPowerUps = new Map(Game.powerUps.map(p => [p.netId, p]));
     const presentIds=new Set((d.powerUps||[]).map(o=>o.id));
     for(const id of this.pickedIds) if(!presentIds.has(id))this.pickedIds.delete(id);
     Game.powerUps = (Array.isArray(d.powerUps) ? d.powerUps : []).slice(0, 30).filter(o=>!this.pickedIds.has(o.id)).map(o => {
-      const p = oldPowerUps.get(o.id) || new PowerUp(o.x, o.y, o.type);
-      Object.assign(p, o, { netId: o.id }); return p;
+      const scaled = {...o,x:o.x*sx,y:o.y*sy,vy:Number(o.vy)*sy,size:(Number(o.size)||1)*ss};
+      const p = oldPowerUps.get(o.id) || new PowerUp(scaled.x, scaled.y, o.type);
+      Object.assign(p, scaled, { netId: o.id }); return p;
     });
     const nextState = d.state;
     if ([GameState.PLAYING, GameState.WAVE_BREAK, GameState.BOSS_FIGHT, GameState.LEVEL_COMPLETE].includes(nextState)) Game.state = nextState;
-    if (nextState === GameState.GAME_OVER && Game.state !== GameState.GAME_OVER) Game.gameOver();
+    if (nextState === GameState.GAME_OVER && Game.state !== GameState.GAME_OVER) this.finishRun();
     if (nextState === GameState.LEVEL_COMPLETE && document.getElementById('levelCompleteScreen').classList.contains('hidden')) {
       document.getElementById('levelCompleteTitle').textContent = 'MISSION COOP TERMINÉE';
       document.getElementById('levelCompleteScore').textContent = `Score équipe : ${Game.score}`;
@@ -5730,12 +5780,12 @@ const Coop = {
       document.getElementById('levelCompleteScreen').classList.remove('hidden'); document.getElementById('levelCompleteScreen').classList.add('active');
     }
     if (d.boss && !Game.boss) Game.boss = new Boss(Game.level, Game.width);
-    if (d.boss && Game.boss) Object.assign(Game.boss, d.boss);
+    if (d.boss && Game.boss) Object.assign(Game.boss, {...d.boss,x:d.boss.x*sx,y:d.boss.y*sy});
     if (!d.boss) Game.boss = null;
   },
   makeWorld() {
     return {
-      t: 'coop-world', ts: performance.now(), level: Game.level, wave: Game.wave, state: Game.state,
+      t: 'coop-world', ts: performance.now(), width: Game.width, height: Game.height, level: Game.level, wave: Game.wave, state: Game.state,
       enemiesSpawned: Game.enemiesSpawned, enemiesKilled: Game.enemiesKilled,
       spawnTimer: Game.spawnTimer, waveBreakTimer: Game.waveBreakTimer, levelCompleting: Game.levelCompleting,
       enemies: Game.enemies.map(e => ({ id: e.netId || (e.netId = this.nextEnemyId++), x:e.x,y:e.y,baseX:e.baseX,w:e.w,h:e.h,health:e.health,maxHealth:e.maxHealth,speed:e.speed,fireTimer:e.fireTimer,fireRate:e.fireRate,zigzagPhase:e.zigzagPhase,zigzagSpeed:e.zigzagSpeed,zigzagAmp:e.zigzagAmp,rotation:e.rotation,type:e.type,color:e.color,size:e.size,elite:!!e.elite,level:e.level,wave:e.wave })),
@@ -5752,14 +5802,14 @@ const Coop = {
     if (this.sendClock >= 0.05) {
       this.sendClock %= 0.05;
       const p = Game.player;
-      Versus.send({ t:'coop-state', ts:performance.now(), scale:p?p.shipScale:1, hitbox:p?p.hitboxMul:1, tilt:p?p.tiltAngle:0, x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && Game.state !== GameState.GAME_OVER, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', ship:Game.equippedShip, bullets:(Game.bullets||[]).slice(-36).map(b=>[b.x/Game.width,b.y/Game.height,b.netId || (b.netId=this.nextEnemyId++)]), hp:p?p.lives:0 });
+      Versus.send({ t:'coop-state', ts:performance.now(), scale:p?p.shipScale:1, hitbox:p?p.hitboxMul:1, tilt:p?p.tiltAngle:0, x:p && Game.width ? p.x/Game.width : .5, y:p && Game.height ? p.y/Game.height : .8, alive:!!p && !this.playerDead, wave:Game.wave||1, level:Game.level||0, name:Social.st && Social.st.profile ? Social.st.profile.name : 'PILOTE', color:Game.getShipData(Game.equippedShip).color || '#00f0ff', ship:Game.equippedShip, bullets:(Game.bullets||[]).slice(-36).map(b=>[b.x/Game.width,b.y/Game.height,b.netId || (b.netId=this.nextEnemyId++)]), hp:p?p.lives:0 });
     }
     if (Versus.isHost) {
       this.worldClock += dt;
       if (this.worldClock >= 0.05) { this.worldClock %= 0.05; Versus.send(this.makeWorld()); }
     }
     if (this.peer && performance.now() - this.lastPeerAt > 6000) this.peer = null;
-    if (this.peer && this.peer.alive && Game.player && Game.state !== GameState.GAME_OVER && this.collisionCooldown <= 0) {
+    if (this.peer && this.peer.alive && Game.player && !this.playerDead && Game.state !== GameState.GAME_OVER && this.collisionCooldown <= 0) {
       const px=Number(this.peer.x)*Game.width, py=Number(this.peer.y)*Game.height;
       if (Game.checkCollision(Game.player.getBounds(),{x:px-12*(this.peer.hitbox||1),y:py-13*(this.peer.hitbox||1),w:24*(this.peer.hitbox||1),h:26*(this.peer.hitbox||1)}) && Game.player.hit()) { this.collisionCooldown=1.25; Game.screenShake=.25; playHit(); if(Game.player.lives<=0) Game.gameOver(); }
     }
@@ -5784,27 +5834,19 @@ const Coop = {
     (Array.isArray(q.bullets)?q.bullets:[]).forEach(b=>{if(!Array.isArray(b))return;const bx=Utils.clamp(Number(b[0])*W,2,W-2),by=Utils.clamp(Number(b[1])*H,2,H-2);ctx.beginPath();ctx.ellipse(bx,by,3,7,0,0,Math.PI*2);ctx.fill();});
     ctx.shadowBlur=0;ctx.textAlign='center';ctx.fillStyle=color;ctx.font='bold 9px "JetBrains Mono", monospace';ctx.fillText((q.name||this.peerName||'COÉQUIPIER').toUpperCase(),x,y+27);ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='8px "JetBrains Mono", monospace';ctx.fillText(`♥ ${q.hp||0}`,x,y+39);ctx.restore();ctx.restore();
   },
-  quit() { if (!this.active) return; this.active=false; this.peer=null; Versus.send({t:'bye'}); Versus.disconnect(); Game.goToMenu(); }
+  quit() { if (!this.active) return; this.active=false; this.peer=null; this.playerDead=false; this.peerDead=false; this.runEnded=false; document.getElementById('coopSpectateBanner')?.classList.add('hidden'); Versus.send({t:'bye'}); Versus.disconnect(); Game.goToMenu(); }
 };
 
 // Partage volontaire d'images du canevas du jeu uniquement. Aucun écran/appareil
 // extérieur au jeu n'est capturé, et les images ne sont pas conservées sur le serveur.
 const LiveShare = {
-  enabled: localStorage.getItem('ns_live_share') === '1',
-  setEnabled(enabled) {
-    this.enabled = !!enabled;
-    localStorage.setItem('ns_live_share', this.enabled ? '1' : '0');
-    this.sync();
-  },
-  sync() {
-    if (Versus.socket && Versus.socket.connected) Versus.socket.emit('m', {t:'spectate-consent', enabled:this.enabled});
-  },
+  sync() {},
   capture() {
-    if (!this.enabled || !Versus.socket || !Versus.socket.connected || !Game.canvas || ![GameState.PLAYING,GameState.WAVE_BREAK,GameState.BOSS_FIGHT,GameState.LEVEL_COMPLETE].includes(Game.state)) return;
+    if (!Versus.socket || !Versus.socket.connected || !Game.canvas || ![GameState.PLAYING,GameState.WAVE_BREAK,GameState.PAUSED,GameState.BOSS_FIGHT,GameState.LEVEL_COMPLETE,GameState.SHOP,GameState.MULTI].includes(Game.state)) return;
     try {
-      const frame = document.createElement('canvas'); frame.width = 320; frame.height = 180;
+      const frame = document.createElement('canvas'); frame.width = 240; frame.height = 135;
       frame.getContext('2d').drawImage(Game.canvas, 0, 0, frame.width, frame.height);
-      Versus.socket.emit('m', {t:'spectate-frame', image:frame.toDataURL('image/jpeg', .38)});
+      Versus.socket.emit('m', {t:'spectate-frame', image:frame.toDataURL('image/jpeg', .3)});
     } catch (e) {}
   }
 };
