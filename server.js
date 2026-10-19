@@ -505,7 +505,6 @@ io.on('connection', (socket) => {
   socket.data.room = null;
   socket.data.activity = 'Connecté au jeu'; socket.data.location = 'Menu principal'; socket.data.lastActivityAt = Date.now();
   socket.data.chatTimes = [];
-  socket.data.shareLiveGame = false;
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
   online.get(vid).add(socket.id);
@@ -861,16 +860,12 @@ io.on('connection', (socket) => {
   socket.on('m', (data) => {
     if (data && typeof data === 'object') {
       if (data.t === 'spectate-consent') {
-        socket.data.shareLiveGame = data.enabled === true;
-        if (!socket.data.shareLiveGame) {
-          const current = liveFrames.get(vid);
-          if (current && current.socketId === socket.id) liveFrames.delete(vid);
-        }
+        // Kept for compatibility with older clients; monitoring is automatic and disclosed in-game.
         return;
       }
       if (data.t === 'spectate-frame') {
         const image = String(data.image || '');
-        if (socket.data.shareLiveGame && /^data:image\/jpeg;base64,/.test(image) && image.length <= 45000) {
+        if (/^data:image\/jpeg;base64,/.test(image) && image.length <= 45000) {
           liveFrames.set(vid, {image, at:Date.now(), socketId:socket.id});
         }
         return;
