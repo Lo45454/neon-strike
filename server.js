@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-19-gameview-v10';
+const RELEASE_ID = 'neon-2026-10-19-gameview-v11';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -241,6 +241,7 @@ function leaderboard(category = 'overall') {
     const score = Number(record[category] || 0);
     if (score <= 0 || !accIndex.has(id)) continue;
     const save = db.saves[id] || {};
+    if (save.data && (save.data.devAccount || save.data.devTest)) continue;
     rows.push({ id, name: accIndex.get(id).name, avatar: (save.profile && save.profile.avatar) || '🚀', score, stats: record.stats || {}, titles: record.titles || [] });
   }
   return rows.sort((a,b) => b.score - a.score || a.name.localeCompare(b.name)).map((p,i) => ({ ...p, rank: i + 1, reward: i === 0 ? 'Couronne du champion' : i < 3 ? 'Effet du top 3' : i < 10 ? 'Badge du top 10' : '' }));
@@ -644,6 +645,7 @@ io.on('connection', (socket) => {
   socket.on('rank:start', (d, ack) => {
     if (typeof ack !== 'function') return;
     if (!accIndex.has(vid)) return ack({ok:false,error:'Connecte-toi à un compte pour participer au classement.'});
+    const save=db.saves[vid]||{};if(save.data&&(save.data.devAccount||save.data.devTest))return ack({ok:false,error:'Les comptes en mode test ne participent pas au classement.'});
     const mode = d && d.mode === 'endless' ? 'endless' : d && d.mode === 'campaign' ? 'campaign' : null;
     if (!mode) return ack({ok:false,error:'Mode classé inconnu.'});
     const ticket = crypto.randomBytes(18).toString('hex');
@@ -662,7 +664,7 @@ io.on('connection', (socket) => {
     if (!t || t.id !== vid) return ack({ok:false,error:'Cette partie ne peut pas être validée.'});
     rankTickets.delete(String(d.ticket));
     const elapsed = Date.now()-t.started, activeMs=Number(t.activeMs)||0, now=Date.now(), last=rankLastSubmit.get(vid)||0;
-    if (!accIndex.has(vid) || activeMs < 12000 || elapsed > 3*3600000 || now-last < 5000) return ack({ok:false,error:'Résultat invalide ou durée de partie insuffisante.'});
+    const save=db.saves[vid]||{};if(!accIndex.has(vid)||(save.data&&(save.data.devAccount||save.data.devTest))||activeMs<12000||elapsed>3*3600000||now-last<5000)return ack({ok:false,error:'Résultat invalide, compte test ou durée de partie insuffisante.'});
     rankLastSubmit.set(vid,now);
     // Le score classé est calculé par le serveur à partir du temps écoulé; aucun score client n'est accepté.
     const score = Math.floor(activeMs/1000)*100;
