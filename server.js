@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-19-gameview-v11';
+const RELEASE_ID = 'neon-2026-10-20-content-v12';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -208,6 +208,10 @@ const DAILY_QUESTS = [
   {id:'hard',name:'À l’épreuve du vide',description:'Termine un niveau en difficulté difficile.',metric:'hardLevels',target:1,reward:225},
   {id:'mystery',name:'Signaux mystérieux',description:'Découvre un indice NEON MYSTERY.',metric:'clues',target:1,reward:175},
 ];
+const DAILY_QUEST_POOL = [
+  ['seconds','Veille orbitale','Cumule {n} secondes de vol.',180,160],['points','Collecte de données','Gagne {n} points pendant tes parties.',2500,165],['levels','Exploration guidée','Termine {n} niveau(x) de campagne.',2,190],['bosses','Chasseur de colosses','Vaincs {n} boss.',1,210],['abyssSeconds','Plongée dans l’Abysse','Survis {n} secondes dans l’Abysse infini.',150,190],['kills','Nettoyage du secteur','Détruis {n} ennemis.',35,165],['ships','Essai de flotte','Joue avec {n} vaisseaux différents.',2,185],['coopLevels','Escadron en mission','Termine {n} niveau(x) en coop.',1,210],['hardLevels','Pilote intrépide','Termine {n} niveau(x) en difficulté difficile.',1,230],['clues','Chasse aux signaux','Découvre {n} indice(s) mystérieux.',1,190]
+];
+for(let i=0;i<30;i++){const [metric,name,description,target,reward]=DAILY_QUEST_POOL[i%DAILY_QUEST_POOL.length];const cycle=Math.floor(i/DAILY_QUEST_POOL.length);DAILY_QUESTS.push({id:`daily-${String(i+11).padStart(2,'0')}`,name:cycle?`${name} ${['II','III'][cycle-1]}`:name,description:description.replace('{n}',String(target+cycle)),metric,target:target+cycle,reward:reward+cycle*10});}
 function dayKey(at=new Date()) { return at.toISOString().slice(0,10); }
 function activeDailyQuest() {
   const key=dayKey();
@@ -228,6 +232,10 @@ const WEEKLY_LEVELS = [
   {id:'rift-09',name:'Cœur en rotation',description:'Combine gravité et ennemis renforcés.',levelIndex:18,mods:['gravity','elite'],cosmetic:'aura-singularity'},
   {id:'rift-10',name:'Dernier signal',description:'Une épreuve complète avec vagues serrées et tempête.',levelIndex:19,mods:['storm','swarm','elite'],cosmetic:'aura-crown'},
 ];
+const WEEKLY_LEVEL_POOL = [
+ ['Nécropole orbitale','Survis aux vagues de l’ancien cimetière.', ['fog','mines']],['Glacier de minuit','Garde le contrôle sous les rafales glacées.', ['ice','drift']],['Forge des comètes','Esquive les roches et la chaleur du réacteur.', ['asteroids','storm']],['Portail cramoisi','Affronte un essaim agressif dans la faille.', ['swarm','speed']],['Jardin des pulsars','Évite les impulsions et les ennemis d’élite.', ['storm','elite']],['Prison stellaire','Les mines bloquent chaque sortie.', ['mines','gravity']],['Récif quantique','Traverse un champ d’astéroïdes instable.', ['asteroids','gravity']],['Courant solaire','La tempête accélère les vagues.', ['storm','speed']],['Forteresse d’obsidienne','Un secteur défendu par des unités blindées.', ['elite','fog']],['Voie des spectres','Des apparitions rapides masquent les tirs.', ['fog','swarm']],['Arsenal fantôme','Les projectiles ennemis quadrillent la zone.', ['mines','storm']],['Anneau de Saturne','Les roches et la dérive réduisent l’espace sûr.', ['asteroids','drift']],['Noyau instable','La gravité change au milieu des vagues.', ['gravity','elite']],['Éclipse éternelle','Combat dans une obscurité chargée de mines.', ['fog','mines']],['Cratère des anciens','Une pluie de roches accompagne le boss.', ['asteroids','elite']],['Balise perdue','Reste mobile dans le brouillard ionique.', ['fog','speed']],['Mer de particules','Esquive les formations rapides et denses.', ['swarm','drift']],['Cité des machines','La station active ses défenses automatiques.', ['station','mines']],['Couloir des mirages','Le brouillard cache des vagues renforcées.', ['fog','elite']],['Frontière zéro','Dernière traversée : tempête, gravité et élites.', ['storm','gravity','elite']]
+];
+for(let i=0;i<20;i++){const [name,description,mods]=WEEKLY_LEVEL_POOL[i];WEEKLY_LEVELS.push({id:`rift-${String(i+11).padStart(2,'0')}`,name,description,levelIndex:30+i*3,mods,cosmetic:`aura-weekly-${i+11}`});}
 function activeWeeklyLevel(){
   const key=weekKey();
   if(!db.weeklyLevel||db.weeklyLevel.week!==key){const n=Number(key.split('-W')[1])%WEEKLY_LEVELS.length;db.weeklyLevel={week:key,levelId:WEEKLY_LEVELS[n].id,source:'rotation',updatedAt:Date.now()};persist();}
@@ -420,7 +428,7 @@ app.post('/api/admin/message/:id', express.json({limit:'3kb'}), (req,res) => {
   if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});
   const id=adminResolvePlayer(req.params.id);if(!id)return res.status(404).json({ok:false,error:'Joueur introuvable.'});
   const text=String(req.body?.text||'').replace(/[\u0000-\u0008\u000b-\u001f]/g,'').trim().slice(0,1000);if(text.length<2)return res.status(400).json({ok:false,error:'Le message doit contenir au moins 2 caractères.'});
-  const notice={id:crypto.randomBytes(10).toString('hex'),text,at:Date.now()};db.moderationNotices[id]=[notice];persist();for(const sock of socketsOf(id))sock.emit('admin:notice',notice);audit('moderation-message','admin',id,{noticeId:notice.id});res.json({ok:true,online:socketsOf(id).length>0});
+  const waitSeconds=req.body?.waitTenSeconds===true?10:0,notice={id:crypto.randomBytes(10).toString('hex'),text,at:Date.now(),waitSeconds};db.moderationNotices[id]=[notice];persist();for(const sock of socketsOf(id))sock.emit('admin:notice',notice);audit('moderation-message','admin',id,{noticeId:notice.id,waitSeconds});res.json({ok:true,online:socketsOf(id).length>0});
 });
 app.get('/api/admin/live-frames', (req,res) => {
   if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const cutoff=Date.now()-8000,frames=[];for(const [id,frame] of liveFrames){if(frame.at<cutoff){liveFrames.delete(id);continue;}const {image,...summary}=frame;frames.push(summary);}res.json({ok:true,frames});
