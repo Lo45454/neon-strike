@@ -977,7 +977,7 @@ const LEVELS = [
       enemyMix: { normal: Math.max(0.05, 1 - fast - tank - splitter - shooter), fast, tank, splitter, shooter },
       wavesCount: 4 + Math.floor(t * 3), enemiesPerWave: 10 + Math.floor(t * 8), waveIncrement: 3 + Math.floor(t * 2),
       spawnInterval: Math.max(0.42, 0.7 - t * 0.28), enemySpeed: 125 + Math.round(t * 55),
-      bossColor: th.accent, bossName: k >= 25 ? EXTRA_NAMES[k - 25].toLocaleUpperCase('fr-CA') : BOSSES[k], mods: MODS[k % MODS.length], bossType: k >= 85 ? ['abyssal','leviathan','oracle','reaper','hydra_prime','colossus','eclipse','maw','architect','omega'][k-85] : BTYPES[k % BTYPES.length],
+      bossColor: th.accent, bossName: k >= 25 ? EXTRA_NAMES[k - 25].toLocaleUpperCase('fr-CA') : BOSSES[k], mods: MODS[k % MODS.length], bossType: BTYPES[k % BTYPES.length],
     });
   });
 })();
@@ -1013,6 +1013,12 @@ const SHIPS = [
   {id:'seraph',name:'Séraphin',desc:'Répare la coque et recharge une protection · pouvoir E',price:138000,color:'#ffd6f3',speed:400,fireRate:.21,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:85,specialAbility:'repair',specialUses:2},
   {id:'comet',name:'Comète',desc:'Accélération de phase pour éviter les attaques · pouvoir E',price:144000,color:'#ff8b45',speed:465,fireRate:.24,bulletSpeed:920,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:88,specialAbility:'phase',specialUses:3},
   {id:'omega_ship',name:'Omega-9',desc:'Onde de choc et rafale d’appoint · pouvoir E',price:150000,color:'#f0f4ff',speed:375,fireRate:.2,bulletSpeed:940,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:90,specialAbility:'barrage',specialUses:3},
+  {id:'gravemaker',name:'Gravemaker',desc:'Onde gravitationnelle lourde · pouvoir E',price:156000,color:'#a78bfa',speed:320,fireRate:.25,bulletSpeed:820,maxLives:6,multishot:1,bulletDamage:5,unlockLevel:92,specialAbility:'gravity',specialUses:3},
+  {id:'needle_x',name:'Aiguille X',desc:'Rayon perforant contre les boss · pouvoir E',price:162000,color:'#fff2a6',speed:420,fireRate:.29,bulletSpeed:1200,maxLives:3,multishot:0,bulletDamage:8,unlockLevel:94,specialAbility:'beam',specialUses:3},
+  {id:'corsair',name:'Corsaire',desc:'Drone d’attaque et salve latérale · pouvoir E',price:168000,color:'#76f7b2',speed:390,fireRate:.22,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:5,unlockLevel:96,specialAbility:'drone',specialUses:3},
+  {id:'frostbite',name:'Morsure Cryo',desc:'Onde défensive qui nettoie les tirs hostiles · pouvoir E',price:174000,color:'#9be7ff',speed:355,fireRate:.2,bulletSpeed:960,maxLives:5,multishot:1,bulletDamage:5,unlockLevel:97,specialAbility:'pulse',specialUses:3},
+  {id:'empress',name:'Impératrice',desc:'Barrage radial de précision · pouvoir E',price:180000,color:'#ff75d8',speed:365,fireRate:.23,bulletSpeed:930,maxLives:4,multishot:3,bulletDamage:4,unlockLevel:98,specialAbility:'barrage',specialUses:3},
+  {id:'phoenix_prime',name:'Phénix Prime',desc:'Réacteur de réparation avec réserve supplémentaire · pouvoir E',price:186000,color:'#ff9c66',speed:400,fireRate:.21,bulletSpeed:980,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:99,specialAbility:'repair',specialUses:3},
 ];
 
 // ===================== AMÉLIORATIONS =====================
@@ -1030,7 +1036,11 @@ const UPGRADES = [
  {id:'pilot_solis',name:'Solis Nyx — Surchauffe',portrait:'🧑🏽‍🚀',desc:'Surcharge offensive cyclique et dégâts supplémentaires.',price:15000,apply:s=>{s.novaCycle=7;s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.94;}},
  {id:'pilot_rune',name:'Rune Calder — Phaseur',portrait:'👩🏻‍🚀',desc:'Déphasage plus fréquent et vitesse accrue.',price:16400,apply:s=>{s.phaseCycle=5;s.speedMul=(s.speedMul||1)*1.1;s.hitboxMul=(s.hitboxMul||1)*.9;}},
  {id:'pilot_tess',name:'Tess Ardent — Gardienne',portrait:'👩🏽‍🚀',desc:'Bouclier rechargé plus vite et coque renforcée.',price:17800,apply:s=>{s.shieldCycle=8;s.extraLives=(s.extraLives||0)+1;s.speedMul=(s.speedMul||1)*.9;}},
- {id:'pilot_jae',name:'Jae Orion — Tireur d’élite',portrait:'🧑🏼‍🚀',desc:'Tirs chargés, dégâts accrus et cadence plus lente.',price:19200,apply:s=>{s.chargedPilot=true;s.extraDamage=(s.extraDamage||0)+3;s.fireRateMul=(s.fireRateMul||1)*.86;s.speedMul=(s.speedMul||1)*.94;}}
+ {id:'pilot_jae',name:'Jae Orion — Tireur d’élite',portrait:'🧑🏼‍🚀',desc:'Tirs chargés, dégâts accrus et cadence plus lente.',price:19200,apply:s=>{s.chargedPilot=true;s.extraDamage=(s.extraDamage||0)+3;s.fireRateMul=(s.fireRateMul||1)*.86;s.speedMul=(s.speedMul||1)*.94;}},
+ {id:'pilot_sable',name:'Sable Korr — Traqueuse',portrait:'👩🏽‍🚀',desc:'Projectiles guidés, cadence rapide et coque légère.',price:21000,apply:s=>{s.guidedPilot=true;s.fireRateMul=(s.fireRateMul||1)*.9;s.hitboxMul=(s.hitboxMul||1)*.92;}},
+ {id:'pilot_oryx',name:'Oryx Dane — Bastion',portrait:'🧑🏽‍🚀',desc:'Absorbe un impact sur deux cycles, mais manœuvre plus lentement.',price:22500,apply:s=>{s.armorEvery=3;s.extraLives=(s.extraLives||0)+2;s.speedMul=(s.speedMul||1)*.84;}},
+ {id:'pilot_yuna',name:'Yuna Vale — Voltigeuse',portrait:'👩🏻‍🚀',desc:'Déphasage fréquent et hitbox réduite.',price:24000,apply:s=>{s.phaseCycle=5;s.hitboxMul=(s.hitboxMul||1)*.78;s.speedMul=(s.speedMul||1)*1.07;}},
+ {id:'pilot_dax',name:'Dax Ren — Artilleur',portrait:'🧑🏻‍🚀',desc:'Salve chargée et dégâts élevés, avec vitesse modérée.',price:25500,apply:s=>{s.chargedPilot=true;s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.9;}}
 ];
 
 
@@ -1080,7 +1090,7 @@ const PILOT_SIGNATURES = {
   pilot_vega: {shieldCycle:10},
   pilot_zen: {chargedPilot:true},
   pilot_echo: {phaseCycle:6},
-  pilot_ion: {guidedPilot:true},pilot_kaori:{phaseCycle:7},pilot_mako:{armorEvery:4},pilot_solis:{novaCycle:7},pilot_rune:{phaseCycle:5},pilot_tess:{shieldCycle:8},pilot_jae:{chargedPilot:true}
+  pilot_ion: {guidedPilot:true},pilot_kaori:{phaseCycle:7},pilot_mako:{armorEvery:4},pilot_solis:{novaCycle:7},pilot_rune:{phaseCycle:5},pilot_tess:{shieldCycle:8},pilot_jae:{chargedPilot:true},pilot_sable:{guidedPilot:true},pilot_oryx:{armorEvery:3},pilot_yuna:{phaseCycle:5},pilot_dax:{chargedPilot:true}
 };
 
 // ===================== CONFIGURATION =====================
@@ -1458,7 +1468,7 @@ const SHIP_MODELS = {
   medic: { hull:[[0,-26],[12,-10],[20,-8],[17,7],[23,18],[7,13],[0,20],[-7,13],[-23,18],[-17,7],[-20,-8],[-12,-10]], inner:[[0,-17],[8,-2],[0,12],[-8,-2]], engines:[[-10,15,6],[10,15,6]], guns:[[-14,-14,4,9],[14,-14,4,9]], cockpit:[0,-3,5] },
 };
 // Coques dédiées pour les appareils de la nouvelle escadrille.
-['vortex','lumen','tempest','wraith','bastion_mk2','sunlance','singularity','striker_x','halo','seraph','comet','omega_ship'].forEach((id,i)=>{const r=18+(i%3)*3,wing=15+(i%4)*4,shape=i%4;const hull=shape===0?[[0,-29],[8,-8],[wing,0],[10,9],[7,20],[-7,20],[-10,9],[-wing,0],[-8,-8]]:shape===1?[[0,-31],[5,-10],[wing,8],[12,16],[0,11],[-12,16],[-wing,8],[-5,-10]]:shape===2?[[0,-25],[r,-14],[wing,2],[r,18],[0,13],[-r,18],[-wing,2],[-r,-14]]:[[0,-32],[7,-15],[wing,-19],[12,-2],[wing,16],[4,12],[0,22],[-4,12],[-wing,16],[-12,-2],[-wing,-19],[-7,-15]];SHIP_MODELS[id]={hull,inner:[[0,-17],[8,1],[0,13],[-8,1]],engines:shape===2?[[-10,15,5],[10,15,5]]:[[0,18,6]],guns:shape===1?[[0,-28,4,14]]:[[-wing*.65,-14,4,10],[wing*.65,-14,4,10]],cockpit:[0,-4,4],longFlame:shape===0,spikes:shape===3};});
+['vortex','lumen','tempest','wraith','bastion_mk2','sunlance','singularity','striker_x','halo','seraph','comet','omega_ship','gravemaker','needle_x','corsair','frostbite','empress','phoenix_prime'].forEach((id,i)=>{const r=18+(i%3)*3,wing=15+(i%4)*4,shape=i%4;const hull=shape===0?[[0,-29],[8,-8],[wing,0],[10,9],[7,20],[-7,20],[-10,9],[-wing,0],[-8,-8]]:shape===1?[[0,-31],[5,-10],[wing,8],[12,16],[0,11],[-12,16],[-wing,8],[-5,-10]]:shape===2?[[0,-25],[r,-14],[wing,2],[r,18],[0,13],[-r,18],[-wing,2],[-r,-14]]:[[0,-32],[7,-15],[wing,-19],[12,-2],[wing,16],[4,12],[0,22],[-4,12],[-wing,16],[-12,-2],[-wing,-19],[-7,-15]];SHIP_MODELS[id]={hull,inner:[[0,-17],[8,1],[0,13],[-8,1]],engines:shape===2?[[-10,15,5],[10,15,5]]:[[0,18,6]],guns:shape===1?[[0,-28,4,14]]:[[-wing*.65,-14,4,10],[wing*.65,-14,4,10]],cockpit:[0,-4,4],longFlame:shape===0,spikes:shape===3};});
 
 function drawShipModel(ctx, id, color, flickerPhase = 0) {
   const m = SHIP_MODELS[id] || SHIP_MODELS.default;
@@ -1781,7 +1791,7 @@ class Enemy {
 }
 
 // ===================== BOSS =====================
-// 8 archétypes : apparence, déplacements, attaques et faiblesse propres.
+// 50 archétypes : apparence, déplacements, attaques et faiblesse propres.
 const BOSS_TYPES = {
   sentinel:    { label: 'Sentinelle',  weak: 'Vise le noyau blanc au centre : dégâts x2,5' },
   weaver:      { label: 'Tisseuse',    weak: 'Étourdie après chaque saut : dégâts x2' },
@@ -1802,6 +1812,21 @@ const BOSS_TYPES = {
   architect:   { label: 'Architecte', weak: 'Trouve l’ouverture dans ses murs de tirs', pattern:'walls' },
   omega:       { label: 'Omega', weak: 'Survis aux trois salves de sa phase finale', pattern:'omega' },
 };
+// 32 archétypes supplémentaires : 16 motifs d'attaque, chacun avec sa silhouette,
+// sa mobilité, ses seuils de vie et son identité propres.
+const CUSTOM_BOSS_ARCHETYPES=[
+ ['iron_matriarch','Matriarche d’Acier','Ses plaques latérales s’ouvrent après la double salve.'],['void_manta','Raie du Néant','Reste hors de son balayage en croissant.'],['crystal_regent','Régent de Cristal','Vise les facettes lorsqu’elles clignotent.'],['storm_engine','Moteur de Tempête','La turbine centrale se découvre entre les impulsions.'],
+ ['blood_comet','Comète Carmin','Évite ses trajectoires croisées avant de riposter.'],['frost_archon','Archonte Cryo','Ses tirs ralentissent; contourne les éventails glacés.'],['swarm_queen','Reine des Nuées','Élimine ses drones pour ouvrir la carapace.'],['chrono_wyrm','Wyrm Chronique','Le noyau est vulnérable après la boucle temporelle.'],
+ ['plasma_bishop','Évêque Plasma','Ses colonnes laissent une fenêtre au centre.'],['mirror_knight','Chevalier-Miroir','Les tirs frontaux sont bloqués pendant son reflet.'],['ion_hydra','Hydre Ionique','Les têtes alternent leurs lignes de feu.'],['dread_monk','Moine du Vide','Ses anneaux se resserrent avant l’attaque.'],
+ ['nebula_witch','Sorcière Nébulaire','Le brouillard disparaît juste avant ses projectiles visés.'],['star_eater','Dévoreur d’Étoiles','Éloigne-toi de l’aspiration puis frappe son cœur.'],['rail_sentinel','Sentinelle Rail','Ses rails chargent sur des lignes annoncées.'],['rift_mimic','Mimique de Faille','Change de côté après chaque salve.'],
+ ['nova_behemoth','Béhémoth Nova','Son noyau chauffe avant une explosion radiale.'],['graviton','Graviton','La spirale gravitationnelle annonce son centre d’impact.'],['prism_judge','Juge Prismatique','Les rayons dessinent des zones sûres temporaires.'],['ash_phoenix','Phénix de Cendres','Rejaillit en trois salves après sa plongée.'],
+ ['orbital_mauler','Broyeur Orbital','Ses bras balayent en alternance les deux côtés.'],['signal_ghost','Fantôme du Signal','Ses leurres s’effacent avant que le vrai noyau apparaisse.'],['shard_emperor','Empereur d’Éclats','Les fragments se séparent en éventail.'],['eclipse_hound','Chien d’Éclipse','Ses bonds visent ta position; change de voie.'],
+ ['quantum_corsair','Corsaire Quantique','Les salves de flanc laissent un couloir sûr.'],['red_giant','Géante Rouge','Le disque brûlant alterne entre rayon et pluie.'],['cryo_seraph','Séraphin Cryo','Ses ailes projettent des rangées décalées.'],['magnetar','Magnétar','Les tirs courbes se concentrent autour du noyau.'],
+ ['hollow_king','Roi Creux','Seule la couronne lumineuse encaisse les dégâts.'],['static_crown','Couronne Statique','Déplace-toi entre les arcs électriques télégraphiés.'],['comet_duke','Duc des Comètes','Ses charges laissent une traînée de projectiles.'],['null_speaker','Oracle du Silence','Chaque phase ajoute un motif à sa combinaison.']
+].map((entry,i)=>{const id=entry[0];BOSS_TYPES[id]={label:entry[1],weak:entry[2],custom:true,attack:i,movement:i%8,shape:i,healthMul:.88+i*.012,damageMul:.88+i*.008};return id;});
+const BOSS_ROSTER=Object.keys(BOSS_TYPES);
+if(BOSS_ROSTER.length!==50||LEVELS.length!==100)throw new Error('Catalogue de boss Neon Strike incohérent');
+LEVELS.forEach((level,i)=>{level.bossType=BOSS_ROSTER[Math.floor(i/2)];});
 
 function bossShoot(game, x, y, angle, speed, color, opts = {}) {
   const b = new Bullet(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed, false, color);
@@ -1824,7 +1849,7 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * 1.18);
+    this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * 1.18 * (this.info.healthMul||1));
     if(level>=90)this.maxHealth=Math.round(this.maxHealth*1.12);
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
@@ -1860,6 +1885,7 @@ class Boss {
         st.slamCd = 3; break;
       case 'abyssal': case 'leviathan': case 'oracle': case 'reaper': case 'hydra_prime': case 'colossus': case 'eclipse': case 'maw': case 'architect': case 'omega':
         this.w=220;this.h=168;this.size=184;this.targetY=120;st.open=0;st.timer=2.4;st.charge=0;st.heads=3;st.angle=0;st.lane=0;break;
+      default: if(this.info.custom){this.w=190;this.h=150;this.size=160;this.targetY=116;st.open=0;st.timer=1.2;st.angle=0;st.phaseT=0;st.step=0;}
     }
     if (this.type === 'serpent') { this.x = -60; this.y = 120; }
   }
@@ -1887,7 +1913,7 @@ class Boss {
     const R = this.phaseThree ? 0.48 : this.rage ? 0.7 : 1; // cadence progressive des attaques
     const speed = CONFIG.enemy.bulletSpeed * Math.min(1.35, this.diff);
     const P = player;
-    this['tick_' + this.type](dt, canvasW, P, game, R, speed);
+    const tick=this['tick_'+this.type]||this.tick_custom;tick.call(this,dt,canvasW,P,game,R,speed);
     return false;
   }
 
@@ -2126,6 +2152,55 @@ class Boss {
     if(this.fire<=0&&['abyssal','leviathan','oracle','eclipse','maw'].includes(pattern)){bossShoot(game,this.x,this.y+35,Utils.angle(this.x,this.y,P.x,P.y),sp*.88,this.color);this.fire=.8*R;}
   }
 
+  tick_custom(dt,W,P,game,R,sp){
+    const st=this.st,a=this.info.attack,m=this.info.movement;st.phaseT+=dt;st.timer-=dt;st.open=Math.max(0,st.open-dt);st.angle+=dt*(this.rage?2.5:1.45);const cx=W/2,span=Math.max(70,W*.32);
+    const mv=.08*Math.floor(this.info.attack/8);if(m===0){this.x=cx+Math.sin(this.t*(.72+mv))*span;this.y=this.targetY+Math.sin(this.t*1.7)*17;}
+    else if(m===1){this.x=cx+Math.sin(this.t*(1.2+mv))*span;this.y=this.targetY+Math.cos(this.t*.8)*35;}
+    else if(m===2){this.x=Utils.lerp(this.x,Utils.clamp(P.x+(this.rage?0:120),70,W-70),dt*(.36+mv*.1));this.y=this.targetY+Math.sin(this.t*2)*18;}
+    else if(m===3){this.x=cx+Math.sin(this.t*(.46+mv))*span;this.y=this.targetY+Math.sin(this.t*2.4)*27;}
+    else if(m===4){const k=(this.t*(.32+mv*.05))%2;this.x=Utils.lerp(65,W-65,k<1?k:2-k);this.y=this.targetY+Math.sin(this.t*1.3)*22;}
+    else if(m===5){this.x=cx+Math.sin(this.t*(1.6+mv))*span*.7;this.y=this.targetY+Math.sin(this.t*1.1)*40;}
+    else if(m===6){this.x=cx+Math.cos(this.t*(.65+mv))*span*.65;this.y=this.targetY+Math.sin(this.t*.65)*28;}
+    else{this.x=cx+Math.sin(this.t*(.9+mv)+(a%3))*span;this.y=this.targetY+Math.sin(this.t*2.7)*20;}
+    if(st.timer>0)return;const speed=sp*(this.info.damageMul||1),aim=Utils.angle(this.x,this.y,P.x,P.y),count=this.rage?1.2:1;
+    const shot=(x,y,ang,v=speed,color=this.color,r=4,opts={})=>bossShoot(game,x,y,ang,v,color,{radius:r,...opts});
+    switch(a){
+      case 0:for(let i=-3;i<=3;i++)shot(this.x,this.y+28,Math.PI/2+i*.2);break;
+      case 1:for(let i=0;i<14;i++)shot(this.x,this.y,(i/14)*Math.PI*2+st.angle,speed*.72,this.color,5);break;
+      case 2:{const gap=Math.floor(Math.random()*9);for(let i=0;i<10;i++)if(i!==gap)shot(30+i*(W-60)/9,this.y+25,Math.PI/2,speed*.62,this.color,5);break;}
+      case 3:for(let i=0;i<5;i++){shot(this.x,this.y,aim+(i-2)*.12);shot(this.x,this.y,aim+Math.PI+(i-2)*.12,speed*.72,'#ffffff',4);}break;
+      case 4:for(let side of [-1,1])for(let i=-1;i<=1;i++)shot(this.x+side*48,this.y+14,Math.PI/2+i*.24,speed*.86);break;
+      case 5:for(let i=0;i<4;i++)shot(this.x,this.y,st.angle+i*Math.PI/2,speed*.64,this.color,5);break;
+      case 6:for(let side of [-1,1])for(let i=0;i<5;i++)shot(this.x+side*55,this.y,Math.PI/2+side*(i-2)*.17,speed*.92);break;
+      case 7:for(let i=-2;i<=2;i++)shot(this.x+i*15,this.y+20,Math.PI/2+i*.08,speed*.7,this.color,7,{split:1.4});break;
+      case 8:for(let i=-1;i<=1;i++)shot(this.x+i*26,this.y,aim+i*.12,speed*.74,'#c7b8ff',7,{homing:1.4});break;
+      case 9:for(let i=0;i<7;i++)shot(i%2?20:W-20,this.y+((i%3)-1)*20,i%2?0:Math.PI,speed*.75,this.color,6);break;
+      case 10:for(let ring=0;ring<2;ring++)for(let i=0;i<8;i++)shot(this.x,this.y,(i/8)*Math.PI*2+st.angle+ring*.2,speed*(ring?.9:.58),ring?'#fff':this.color,5);break;
+      case 11:{const x=Utils.clamp(P.x+Utils.randRange(-90,90),40,W-40);for(let i=0;i<7;i++)shot(x,this.y+20,Math.PI/2+(i-3)*.11,speed*.9,this.color,5);break;}
+      case 12:for(let lane=-2;lane<=2;lane++){const x=Utils.clamp(P.x+lane*55,25,W-25);shot(x,this.y+20,Math.PI/2,speed*.85,lane%2?'#fff':this.color,6,{split:lane===0?1.2:0});}break;
+      case 13:for(let i=0;i<12;i++)shot(this.x,this.y,(i/12)*Math.PI*2+st.angle,speed*.56,this.color,6);st.open=.85;break;
+      case 14:for(let i=-2;i<=2;i++)shot(this.x,this.y,aim+i*.1,speed*(i===0?1.12:.82),i===0?'#fff':this.color,5);break;
+      case 15:for(let side of [-1,1])for(let i=0;i<4;i++)shot(this.x+side*54,this.y+8,aim+side*(i-1.5)*.25,speed*.8,'#fff',5,{homing:1.1});break;
+      case 16:for(let i=0;i<9;i++)shot(this.x,this.y,(i/9)*Math.PI*2+st.angle,speed*.58,this.color,7,{split:i%3===0?1.25:0});break;
+      case 17:for(let ring=0;ring<3;ring++)for(let i=0;i<6;i++)shot(this.x,this.y,(i/6)*Math.PI*2+st.angle+ring*.14,speed*(.5+ring*.2),ring===1?'#fff':this.color,4+ring);break;
+      case 18:for(let i=0;i<8;i++)shot(25+i*(W-50)/7,this.y+20,Math.PI/2+(i%2?-.1:.1),speed*.9,i%2?'#fff':this.color,5);break;
+      case 19:for(let side of [-1,1])for(let i=0;i<6;i++)shot(side<0?20:W-20,this.y+i*5,side<0?.22:Math.PI-.22,speed*.72,this.color,5);break;
+      case 20:for(let side of [-1,1])for(let i=-2;i<=2;i++)shot(this.x+side*42,this.y,Math.PI/2+i*.16+side*.24,speed*.76,side<0?'#fff':this.color,5);break;
+      case 21:for(let i=0;i<7;i++){const ang=st.angle+i*.2;shot(this.x,this.y,ang,speed*.68,this.color,5,{homing:i%2?1.3:0});}break;
+      case 22:for(let i=-2;i<=2;i++)shot(this.x+i*22,this.y,aim+i*.075,speed*(i===0?1.25:.7),'#fff',6);st.open=.65;break;
+      case 23:for(let wave=0;wave<2;wave++)for(let i=-3;i<=3;i++)shot(this.x,this.y,Math.PI/2+i*.19+wave*.1,speed*(wave?.78:1),wave?'#fff':this.color,5);break;
+      case 24:for(let i=0;i<10;i++)shot(this.x,this.y,aim+Math.sin(i*1.7)*.48,speed*(.65+(i%3)*.17),this.color,4);break;
+      case 25:for(let i=0;i<5;i++)shot(Utils.clamp(P.x+(i-2)*36,25,W-25),this.y+20,Math.PI/2+(i-2)*.06,speed*.92,'#ffdd88',6);break;
+      case 26:for(let i=0;i<12;i++)shot(i%2?this.x-span*.6:this.x+span*.6,this.y,(i%2?0:Math.PI)+Math.sin(this.t+i)*.25,speed*.7,this.color,5);break;
+      case 27:for(let i=0;i<4;i++){const x=this.x+(i-1.5)*40;for(let j=-1;j<=1;j++)shot(x,this.y,Math.PI/2+j*.14,speed*(j===0?1:.7),i%2?'#fff':this.color,5);}break;
+      case 28:for(let i=0;i<8;i++)shot(this.x,this.y,(i/8)*Math.PI*2+st.angle,speed*.78,this.color,5);st.open=.8;break;
+      case 29:{const gap=Math.floor((P.x/W)*12);for(let i=0;i<12;i++)if(i!==gap)shot(25+i*(W-50)/11,this.y+18,Math.PI/2,speed*.7,'#ff9b66',6);break;}
+      case 30:for(let i=0;i<9;i++)shot(this.x,this.y,aim+(i-4)*.08,speed*(i%2?.8:1.05),i%2?'#fff':this.color,4+i%3,{split:i===4?1.5:0});break;
+      default:for(let i=0;i<16;i++)shot(this.x,this.y,(i/16)*Math.PI*2+st.angle,speed*(.48+(i%4)*.13),i%3===0?'#fff':this.color,4+i%3,{homing:i%5===0?1.25:0,split:i%7===0?1.3:0});st.open=.55;break;
+    }
+    if(st.step++%2===0)st.open=Math.max(st.open,.55);st.timer=(1.55-(this.rage?.32:0))*R*(.88+(a%4)*.08)/count;this.cycle++;
+  }
+
   // ---------- Dégâts reçus ----------
   // Renvoie null si la balle ne touche pas le boss, sinon { mult, blocked }.
   takeBullet(b, dmg, game, probe = false) {
@@ -2183,6 +2258,9 @@ class Boss {
       }
       case 'abyssal':case 'leviathan':case 'oracle':case 'reaper':case 'hydra_prime':case 'colossus':case 'eclipse':case 'maw':case 'architect':case 'omega':
         if(!inBox(this.x,this.y,this.w,this.h))return null;mult=this.info.pattern==='oracle'&&st.open>0?2.2:this.info.pattern==='abyssal'&&st.open>0?2.4:this.info.pattern==='eclipse'&&st.open>0?2.3:this.info.pattern==='hydra_prime'?1.35:.9;break;
+      default:
+        if(!this.info.custom||!inBox(this.x,this.y,this.w,this.h))return null;
+        if(inCircle(this.x,this.y,this.size*.18))mult=st.open>0?2.1:1.15;else mult=st.open>0?1.45:.72;break;
     }
     const res = { mult };
     if (mult > 0 && !probe) this.applyDamage(dmg * mult, game);
@@ -2217,7 +2295,7 @@ class Boss {
     ctx.save();
     if (this.phase === 2) ctx.globalAlpha = Math.cos((1 - this.deathTimer / 2) * Math.PI * 5) * 0.5 + 0.5;
     const col = this.flash > 0 ? '#ffffff' : this.color;
-    this['draw_' + this.type](ctx, col);
+    const draw=this['draw_'+this.type]||this.draw_custom;draw.call(this,ctx,col);
     ctx.restore();
     if (this.phase === 1) this.drawBar(ctx);
   }
@@ -2412,6 +2490,7 @@ class Boss {
   draw_architect(ctx,col){this.draw_frontier(ctx,col);}
   draw_omega(ctx,col){this.draw_frontier(ctx,col);}
   draw_frontier(ctx,col){const pattern=this.info.pattern,s=this.size*.52;ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rotation*.35);this.glow(ctx,this.color,32);ctx.strokeStyle=col;ctx.fillStyle='#080d20';ctx.lineWidth=4;ctx.beginPath();const n=pattern==='leviathan'?12:pattern==='hydra_prime'?9:pattern==='architect'?4:pattern==='maw'?7:pattern==='colossus'?6:pattern==='reaper'?3:pattern==='oracle'?8:pattern==='eclipse'?10:pattern==='omega'?12:5;for(let i=0;i<n;i++){const a=i*Math.PI*2/n,r=s*(i%2?.72:1.05);i?ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r):ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.stroke();ctx.rotate(-this.rotation*.7);if(pattern==='leviathan'||pattern==='hydra_prime'){for(let i=-1;i<=1;i++){ctx.beginPath();ctx.ellipse(i*s*.38,-s*.5,13,s*.55,i*.22,0,Math.PI*2);ctx.stroke();ctx.fillStyle=col;ctx.fillRect(i*s*.38-4,-s*.5-3,8,6);}}else if(pattern==='architect'){ctx.strokeRect(-s*.55,-s*.55,s*1.1,s*1.1);ctx.strokeRect(-s*.3,-s*.3,s*.6,s*.6);}else if(pattern==='colossus'){ctx.fillRect(-s*.95,-s*.2,s*.35,s*.85);ctx.fillRect(s*.6,-s*.2,s*.35,s*.85);}else{for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.beginPath();ctx.moveTo(0,-s*.22);ctx.lineTo(s*.7,0);ctx.lineTo(0,s*.22);ctx.stroke();}}ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,0,s*(pattern==='oracle'?.22:.16)*(1+Math.sin(this.t*5)*.12),0,Math.PI*2);ctx.fill();ctx.restore();}
+  draw_custom(ctx,col){const shape=this.info.shape,s=this.size*.52,n=5+(shape%11),cut=shape%4;ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rotation*(shape%2?.45:-.35));this.glow(ctx,this.color,24+shape);ctx.fillStyle=`rgba(5,12,28,${.84-(shape%4)*.06})`;ctx.strokeStyle=col;ctx.lineWidth=2.5+(shape%3);ctx.beginPath();for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2-Math.PI/2,spike=i%2===cut%2?(1.05+(shape%5)*.09):(.62+(shape%3)*.06),x=Math.cos(a)*s*spike,y=Math.sin(a)*s*spike;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();ctx.rotate(-this.rotation*.9);if(shape%4===0){for(let side of [-1,1]){ctx.beginPath();ctx.moveTo(side*s*.22,-s*.18);ctx.lineTo(side*s*.9,-s*.7);ctx.lineTo(side*s*.66,s*.12);ctx.closePath();ctx.stroke();}}else if(shape%4===1){for(let i=0;i<3;i++){ctx.strokeRect(-s*.22+i*s*.22,-s*.42,s*.18,s*.84);}}else if(shape%4===2){ctx.beginPath();ctx.ellipse(0,0,s*.82,s*.27,this.t*.25,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(0,0,s*.27,s*.82,-this.t*.25,0,Math.PI*2);ctx.stroke();}else{for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.beginPath();ctx.moveTo(0,-s*.18);ctx.lineTo(s*.83,0);ctx.lineTo(0,s*.18);ctx.stroke();}}ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,0,s*(.13+(shape%3)*.025)*(1+Math.sin(this.t*5)*.16),0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';for(let i=0;i<1+(shape%3);i++){const x=(i-(shape%3)/2)*10;ctx.fillRect(x-2,-s*.12,4,4);}ctx.restore();}
 
   drawBar(ctx) {
     const W = this.canvasW, barW = Math.min(300, W - 40), barH = 6;
@@ -6680,7 +6759,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261020b" defer></script>
+<script src="/expansion.js?build=20261020c" defer></script>
 </body>
 </html>
 
