@@ -952,7 +952,7 @@ const LEVELS = [
     'Horizon Écarlate', 'Nébuleuse Fantôme', 'Désert Stellaire', 'Labyrinthe Quantique', 'Forge Ardente',
     'Océan de Plasma', 'Jardin Chromatique', 'Station Abandonnée', "Cimetière d'Étoiles", 'Mer de Glace',
     'Tunnel Hyperspatial', 'Ruche Métallique', 'Trou Noir', 'Aurore Boréale', 'Singularité Finale'];
-  const EXTRA_NAMES = ['Nécropole Orbitale','Glacier de Minuit','Forge des Comètes','Portail Cramoisi','Jardin des Pulsars','Prison Stellaire','Récif Quantique','Courant Solaire','Forteresse d’Obsidienne','Voie des Spectres','Arsenal Fantôme','Anneau de Saturne','Noyau Instable','Éclipse Éternelle','Cratère des Anciens','Balise Perdue','Mer de Particules','Cité des Machines','Couloir des Mirages','Frontière Zéro','Pluie de Météores','Sanctuaire Cryo','Royaume Magnétique','Nébuleuse Pourpre','Dôme de Plasma','Lisière de l’Abysse','Canyon Ionique','Puits des Étoiles','Citadelle du Vide','Nœud Temporel','Fosse des Titans','Halo Brisé','Voile Spectral','Temple Quantique','Sillage Ardant','Épine Galactique','Prisme Obscur','Chambre des Échos','Étoile Déchue','Couronne de Cendres','Faille du Gardien','Matrice Stellaire','Champ de Distorsion','Vaisseau-Monde','Porte de l’Infini','Labyrinthe des Ombres','Cœur Polaire','Route des Anciens','Dernier Rempart','Singularité Rouge','Abysses de Verre','Tempête des Titans','Sanctuaire Néon','Rift des Deux Soleils','Dédale Magnétique','Station du Crépuscule','Orbite du Colosse','Cimetière Quantique','Horizon Inversé','Dernière Frontière'];
+  const EXTRA_NAMES = ['Nécropole Orbitale','Glacier de Minuit','Forge des Comètes','Portail Cramoisi','Jardin des Pulsars','Prison Stellaire','Récif Quantique','Courant Solaire','Forteresse d’Obsidienne','Voie des Spectres','Arsenal Fantôme','Anneau de Saturne','Noyau Instable','Éclipse Éternelle','Cratère des Anciens','Balise Perdue','Mer de Particules','Cité des Machines','Couloir des Mirages','Frontière Zéro','Pluie de Météores','Sanctuaire Cryo','Royaume Magnétique','Nébuleuse Pourpre','Dôme de Plasma','Lisière de l’Abysse','Canyon Ionique','Puits des Étoiles','Citadelle du Vide','Nœud Temporel','Fosse des Titans','Halo Brisé','Voile Spectral','Temple Quantique','Sillage Ardant','Épine Galactique','Prisme Obscur','Chambre des Échos','Étoile Déchue','Couronne de Cendres','Faille du Gardien','Matrice Stellaire','Champ de Distorsion','Vaisseau-Monde','Porte de l’Infini','Labyrinthe des Ombres','Cœur Polaire','Route des Anciens','Dernier Rempart','Singularité Rouge','Abysses de Verre','Tempête des Titans','Sanctuaire Néon','Rift des Deux Soleils','Dédale Magnétique','Station du Crépuscule','Orbite du Colosse','Cimetière Quantique','Horizon Inversé','Dernière Frontière', 'Nécropole des Soleils','Citadelle des Marées','Cathédrale Quantique','Orbite du Dévoreur','Jardin des Lames','Dernier Signal','Miroir de l’Abysse','Mégastructure Oméga','Trône des Éclipses','Frontière du Néant'];
   NAMES.push(...EXTRA_NAMES);
   const BOSSES = ['HYDRE', 'GLACIER', 'BROYEUR', 'FRACTALE', 'SOLARIS', 'SPECTRE', 'SÉLÈNE', 'VOLTAGE', 'FORTERESSE',
     'MIASME', 'CARMIN', 'FANTÔME', 'MIRAGE', 'QUANTUM', 'ENCLUME', 'PLASMA', 'PRISME', 'SENTINELLE', 'FOSSOYEUR',
@@ -977,7 +977,7 @@ const LEVELS = [
       enemyMix: { normal: Math.max(0.05, 1 - fast - tank - splitter - shooter), fast, tank, splitter, shooter },
       wavesCount: 4 + Math.floor(t * 3), enemiesPerWave: 10 + Math.floor(t * 8), waveIncrement: 3 + Math.floor(t * 2),
       spawnInterval: Math.max(0.42, 0.7 - t * 0.28), enemySpeed: 125 + Math.round(t * 55),
-      bossColor: th.accent, bossName: k >= 25 ? EXTRA_NAMES[k - 25].toLocaleUpperCase('fr-CA') : BOSSES[k], mods: MODS[k % MODS.length], bossType: BTYPES[k % BTYPES.length],
+      bossColor: th.accent, bossName: k >= 25 ? EXTRA_NAMES[k - 25].toLocaleUpperCase('fr-CA') : BOSSES[k], mods: MODS[k % MODS.length], bossType: k >= 85 ? ['abyssal','leviathan','oracle','reaper','hydra_prime','colossus','eclipse','maw','architect','omega'][k-85] : BTYPES[k % BTYPES.length],
     });
   });
 })();
@@ -1001,6 +1001,18 @@ const SHIPS = [
   { id: 'bomber', name: 'Bombardier Nova', desc: 'Bombe à impulsion : touche les ennemis et le boss partout à l’écran · pouvoir E', price: 62000, color: '#ff8b45', speed: 315, fireRate: .27, bulletSpeed: 680, maxLives: 4, multishot: 1, bulletDamage: 2, unlockLevel: 35, specialAbility: 'bomb', specialUses: 1 },
   { id: 'aegis', name: 'Égide Spectrale', desc: 'Onde de défense : efface les tirs ennemis et protège brièvement · pouvoir E', price: 70000, color: '#55f6ff', speed: 360, fireRate: .24, bulletSpeed: 760, maxLives: 4, multishot: 1, bulletDamage: 3, unlockLevel: 45, specialAbility: 'pulse', specialUses: 1 },
   { id: 'medic', name: 'Phénix de Secours', desc: 'Réacteur médical : restaure une vie, une fois par niveau · pouvoir E', price: 78000, color: '#ff5fa2', speed: 345, fireRate: .25, bulletSpeed: 740, maxLives: 4, multishot: 1, bulletDamage: 3, unlockLevel: 55, specialAbility: 'repair', specialUses: 1 },
+  {id:'vortex',name:'Vortex',desc:'Onde gravitationnelle qui dissipe les tirs · pouvoir E',price:84000,color:'#a78bfa',speed:380,fireRate:.24,bulletSpeed:760,maxLives:4,multishot:2,bulletDamage:3,unlockLevel:60,specialAbility:'gravity',specialUses:2},
+  {id:'lumen',name:'Lumen',desc:'Rayon concentré qui frappe le boss · pouvoir E',price:90000,color:'#fff2a6',speed:355,fireRate:.25,bulletSpeed:820,maxLives:4,multishot:0,bulletDamage:5,unlockLevel:62,specialAbility:'beam',specialUses:2},
+  {id:'tempest',name:'Tempête',desc:'Déchaîne une rafale circulaire · pouvoir E',price:96000,color:'#42e8ff',speed:410,fireRate:.27,bulletSpeed:850,maxLives:3,multishot:2,bulletDamage:3,unlockLevel:65,specialAbility:'barrage',specialUses:2},
+  {id:'wraith',name:'Spectre noir',desc:'Saut de phase et invulnérabilité brève · pouvoir E',price:102000,color:'#c084fc',speed:430,fireRate:.23,bulletSpeed:900,maxLives:3,multishot:1,bulletDamage:4,unlockLevel:68,specialAbility:'phase',specialUses:2},
+  {id:'bastion_mk2',name:'Bastion MK-II',desc:'Déploie un drone qui neutralise les ennemis proches · pouvoir E',price:108000,color:'#76f7b2',speed:290,fireRate:.3,bulletSpeed:700,maxLives:6,multishot:1,bulletDamage:3,unlockLevel:70,specialAbility:'drone',specialUses:2},
+  {id:'sunlance',name:'Lance solaire',desc:'Tir chargé à trois projectiles et dissipation des tirs hostiles · pouvoir E',price:114000,color:'#ffb64d',speed:345,fireRate:.22,bulletSpeed:950,maxLives:4,multishot:0,bulletDamage:6,unlockLevel:73,specialAbility:'overdrive',specialUses:2},
+  {id:'singularity',name:'Singularité',desc:'Onde qui dissipe les tirs et endommage le boss · pouvoir E',price:120000,color:'#ec6bff',speed:370,fireRate:.26,bulletSpeed:780,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:76,specialAbility:'gravity',specialUses:3},
+  {id:'striker_x',name:'Striker X',desc:'Bombe tactique et salve de précision · pouvoir E',price:126000,color:'#ff6b6b',speed:390,fireRate:.2,bulletSpeed:880,maxLives:4,multishot:1,bulletDamage:5,unlockLevel:79,specialAbility:'bomb',specialUses:2},
+  {id:'halo',name:'Halo',desc:'Bouclier d’urgence et onde anti-projectiles · pouvoir E',price:132000,color:'#8be9fd',speed:360,fireRate:.23,bulletSpeed:800,maxLives:5,multishot:1,bulletDamage:4,unlockLevel:82,specialAbility:'pulse',specialUses:2},
+  {id:'seraph',name:'Séraphin',desc:'Répare la coque et recharge une protection · pouvoir E',price:138000,color:'#ffd6f3',speed:400,fireRate:.21,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:85,specialAbility:'repair',specialUses:2},
+  {id:'comet',name:'Comète',desc:'Accélération de phase pour éviter les attaques · pouvoir E',price:144000,color:'#ff8b45',speed:465,fireRate:.24,bulletSpeed:920,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:88,specialAbility:'phase',specialUses:3},
+  {id:'omega_ship',name:'Omega-9',desc:'Onde de choc et rafale d’appoint · pouvoir E',price:150000,color:'#f0f4ff',speed:375,fireRate:.2,bulletSpeed:940,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:90,specialAbility:'barrage',specialUses:3},
 ];
 
 // ===================== AMÉLIORATIONS =====================
@@ -1012,7 +1024,13 @@ const UPGRADES = [
  {id:'pilot_vega',name:'Vega Thorne — Égide',portrait:'👩🏽‍🚀',desc:'Égide : un bouclier absorbe un impact et se recharge en 10 s. +1 vie.',price:6400,apply:s=>{s.extraLives=(s.extraLives||0)+1;s.damageReduction=(s.damageReduction||0)+.12;}},
  {id:'pilot_zen',name:'Zhen Arclight — Percuteur',portrait:'🧑🏾‍🚀',desc:'Percuteur : chaque 4e salve est surchargée (+3 dégâts). +2 dégâts, vitesse −12 %.',price:7800,apply:s=>{s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.88;}},
  {id:'pilot_echo',name:'Echo Renn — Phaseur',portrait:'🧑🏼‍🚀',desc:'Déphasage : 1,2 s intouchable toutes les 6 s. Hitbox −8 %, vitesse +6 %.',price:9200,apply:s=>{s.speedMul=(s.speedMul||1)*1.06;s.damageReduction=(s.damageReduction||0)+.06;s.hitboxMul=(s.hitboxMul||1)*.92;}},
- {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Guidage ionique : les projectiles corrigent leur trajectoire vers une cible. +1 dégât.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}}
+ {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Guidage ionique : les projectiles corrigent leur trajectoire vers une cible. +1 dégât.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}},
+ {id:'pilot_kaori',name:'Kaori Venn — Éclaireuse',portrait:'👩🏽‍🚀',desc:'Vitesse +18 %, hitbox réduite et une vie bonus.',price:12500,apply:s=>{s.speedMul=(s.speedMul||1)*1.18;s.hitboxMul=(s.hitboxMul||1)*.82;s.extraLives=(s.extraLives||0)+1;}},
+ {id:'pilot_mako',name:'Mako Rhee — Rempart',portrait:'🧑🏻‍🚀',desc:'Absorbe un impact sur quatre et ajoute une vie.',price:13800,apply:s=>{s.armorEvery=4;s.extraLives=(s.extraLives||0)+1;s.speedMul=(s.speedMul||1)*.92;}},
+ {id:'pilot_solis',name:'Solis Nyx — Surchauffe',portrait:'🧑🏽‍🚀',desc:'Surcharge offensive cyclique et dégâts supplémentaires.',price:15000,apply:s=>{s.novaCycle=7;s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.94;}},
+ {id:'pilot_rune',name:'Rune Calder — Phaseur',portrait:'👩🏻‍🚀',desc:'Déphasage plus fréquent et vitesse accrue.',price:16400,apply:s=>{s.phaseCycle=5;s.speedMul=(s.speedMul||1)*1.1;s.hitboxMul=(s.hitboxMul||1)*.9;}},
+ {id:'pilot_tess',name:'Tess Ardent — Gardienne',portrait:'👩🏽‍🚀',desc:'Bouclier rechargé plus vite et coque renforcée.',price:17800,apply:s=>{s.shieldCycle=8;s.extraLives=(s.extraLives||0)+1;s.speedMul=(s.speedMul||1)*.9;}},
+ {id:'pilot_jae',name:'Jae Orion — Tireur d’élite',portrait:'🧑🏼‍🚀',desc:'Tirs chargés, dégâts accrus et cadence plus lente.',price:19200,apply:s=>{s.chargedPilot=true;s.extraDamage=(s.extraDamage||0)+3;s.fireRateMul=(s.fireRateMul||1)*.86;s.speedMul=(s.speedMul||1)*.94;}}
 ];
 
 
@@ -1037,19 +1055,19 @@ const PilotArt = {
     '<circle r="6"/><ellipse rx="16" ry="7" transform="rotate(-40)"/><ellipse rx="16" ry="7" transform="rotate(40)"/>'
   ],
   render(id) {
-    const i = Math.max(0, UPGRADES.findIndex(p => p.id === id)), c = this.colors[i];
-    const hair = ['M48 47L55 29L77 28L89 45L72 38Z','M49 43L56 30H80L88 43Z','M47 44L55 24L66 33L79 22L89 45Z','M45 55L50 29L78 27L91 44L88 78L80 45Z','M46 58L49 36L61 25L81 29L92 46L88 80L80 45Z','M49 42L56 29L80 29L88 42Z','M47 45L56 28L81 27L90 44L76 36L60 48Z','M46 49L51 29L77 25L90 41L86 74L77 40Z'][i];
+    const i = Math.max(0, UPGRADES.findIndex(p => p.id === id)), art=i%this.colors.length, c = this.colors[art];
+    const hair = ['M48 47L55 29L77 28L89 45L72 38Z','M49 43L56 30H80L88 43Z','M47 44L55 24L66 33L79 22L89 45Z','M45 55L50 29L78 27L91 44L88 78L80 45Z','M46 58L49 36L61 25L81 29L92 46L88 80L80 45Z','M49 42L56 29L80 29L88 42Z','M47 45L56 28L81 27L90 44L76 36L60 48Z','M46 49L51 29L77 25L90 41L86 74L77 40Z'][art];
     return `<svg class="pilot-art" viewBox="0 0 140 154" role="img" aria-label="Portrait ${UPGRADES[i].name}">
       <rect x="3" y="3" width="134" height="148" rx="9" fill="#060b1b" stroke="${c}"/>
       <path d="M10 30H130M10 122H130M25 10V142M115 10V142" stroke="${c}" opacity=".15"/>
       <circle cx="70" cy="62" r="43" fill="none" stroke="${c}" opacity=".4" stroke-dasharray="4 7"/>
       <path d="M20 143L26 112L53 96H87L114 112L120 143Z" fill="#142238" stroke="${c}" stroke-width="2"/>
       <path d="M39 46L48 25L70 18L92 25L101 46L97 82L83 98H57L43 82Z" fill="#101b30" stroke="${c}" stroke-width="2"/>
-      <path d="M49 47Q70 31 91 47L86 76L77 85H62L53 75Z" fill="${['#c18c72','#8b5b45','#e3af91','#d5a580','#a76f52','#87543e','#c89a81','#dfad96'][i]}"/>
+      <path d="M49 47Q70 31 91 47L86 76L77 85H62L53 75Z" fill="${['#c18c72','#8b5b45','#e3af91','#d5a580','#a76f52','#87543e','#c89a81','#dfad96'][art]}"/>
       <path d="${hair}" fill="#111427"/>
       <path d="M44 48L96 48L91 65L49 65Z" fill="#031726" stroke="${c}"/><path d="M53 56H66M75 56H87" stroke="${c}" stroke-width="3"/>
       <path d="M58 84L70 90L82 84M33 115L47 122V142M107 115L93 122V142" fill="none" stroke="${c}"/>
-      <g transform="translate(70 122)" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round">${this.icons[i]}</g>
+      <g transform="translate(70 122)" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round">${this.icons[art]}</g>
       <path d="M11 18V11H27M113 11H129V27M11 133V143H27" fill="none" stroke="${c}" stroke-width="2"/>
       <text x="10" y="148" fill="${c}" font-size="6" font-family="monospace">NS // ${String(i+1).padStart(2,'0')} // ${UPGRADES[i].name.split(' — ')[1].toUpperCase()}</text></svg>`;
   }
@@ -1062,7 +1080,7 @@ const PILOT_SIGNATURES = {
   pilot_vega: {shieldCycle:10},
   pilot_zen: {chargedPilot:true},
   pilot_echo: {phaseCycle:6},
-  pilot_ion: {guidedPilot:true}
+  pilot_ion: {guidedPilot:true},pilot_kaori:{phaseCycle:7},pilot_mako:{armorEvery:4},pilot_solis:{novaCycle:7},pilot_rune:{phaseCycle:5},pilot_tess:{shieldCycle:8},pilot_jae:{chargedPilot:true}
 };
 
 // ===================== CONFIGURATION =====================
@@ -1439,6 +1457,8 @@ const SHIP_MODELS = {
   aegis: { hull:[[0,-29],[7,-13],[24,-23],[18,-2],[26,13],[11,10],[0,22],[-11,10],[-26,13],[-18,-2],[-24,-23],[-7,-13]], inner:[[0,-19],[10,-2],[0,13],[-10,-2]], engines:[[-11,16,6],[11,16,6]], guns:[[-18,-17,4,11],[18,-17,4,11]], cockpit:[0,-4,4], spikes:true },
   medic: { hull:[[0,-26],[12,-10],[20,-8],[17,7],[23,18],[7,13],[0,20],[-7,13],[-23,18],[-17,7],[-20,-8],[-12,-10]], inner:[[0,-17],[8,-2],[0,12],[-8,-2]], engines:[[-10,15,6],[10,15,6]], guns:[[-14,-14,4,9],[14,-14,4,9]], cockpit:[0,-3,5] },
 };
+// Coques dédiées pour les appareils de la nouvelle escadrille.
+['vortex','lumen','tempest','wraith','bastion_mk2','sunlance','singularity','striker_x','halo','seraph','comet','omega_ship'].forEach((id,i)=>{const r=18+(i%3)*3,wing=15+(i%4)*4,shape=i%4;const hull=shape===0?[[0,-29],[8,-8],[wing,0],[10,9],[7,20],[-7,20],[-10,9],[-wing,0],[-8,-8]]:shape===1?[[0,-31],[5,-10],[wing,8],[12,16],[0,11],[-12,16],[-wing,8],[-5,-10]]:shape===2?[[0,-25],[r,-14],[wing,2],[r,18],[0,13],[-r,18],[-wing,2],[-r,-14]]:[[0,-32],[7,-15],[wing,-19],[12,-2],[wing,16],[4,12],[0,22],[-4,12],[-wing,16],[-12,-2],[-wing,-19],[-7,-15]];SHIP_MODELS[id]={hull,inner:[[0,-17],[8,1],[0,13],[-8,1]],engines:shape===2?[[-10,15,5],[10,15,5]]:[[0,18,6]],guns:shape===1?[[0,-28,4,14]]:[[-wing*.65,-14,4,10],[wing*.65,-14,4,10]],cockpit:[0,-4,4],longFlame:shape===0,spikes:shape===3};});
 
 function drawShipModel(ctx, id, color, flickerPhase = 0) {
   const m = SHIP_MODELS[id] || SHIP_MODELS.default;
@@ -1771,6 +1791,16 @@ const BOSS_TYPES = {
   hive:        { label: 'Ruche',       weak: "Frappe quand elle s'ouvre : cœur exposé, dégâts x3" },
   phantom:     { label: 'Fantôme',     weak: 'Invulnérable invisible, frappe-le quand il réapparaît : x2,5' },
   titan:       { label: 'Titan',       weak: 'Vise son œil : dégâts x3 (corps blindé)' },
+  abyssal:     { label: 'Abysse vivant', weak: 'Noyau exposé après sa vague de mines', pattern:'mine' },
+  leviathan:   { label: 'Léviathan', weak: 'Frappe les nageoires quand elles s’écartent', pattern:'lanes' },
+  oracle:      { label: 'Oracle', weak: 'Son noyau devient vulnérable après le rayon', pattern:'laser' },
+  reaper:      { label: 'Faucheuse', weak: 'Reste mobile pendant ses charges', pattern:'dash' },
+  hydra_prime: { label: 'Hydre primordiale', weak: 'Chaque salve révèle une tête', pattern:'heads' },
+  colossus:    { label: 'Colosse stellaire', weak: 'Esquive son marteau et frappe son cœur', pattern:'slam' },
+  eclipse:     { label: 'Éclipse', weak: 'Le noyau sombre s’ouvre après le barrage', pattern:'eclipse' },
+  maw:         { label: 'Gueule cosmique', weak: 'Le cœur aspire puis relâche une spirale', pattern:'vortex' },
+  architect:   { label: 'Architecte', weak: 'Trouve l’ouverture dans ses murs de tirs', pattern:'walls' },
+  omega:       { label: 'Omega', weak: 'Survis aux trois salves de sa phase finale', pattern:'omega' },
 };
 
 function bossShoot(game, x, y, angle, speed, color, opts = {}) {
@@ -1794,7 +1824,8 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = Math.round(level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4));
+    this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * 1.18);
+    if(level>=90)this.maxHealth=Math.round(this.maxHealth*1.12);
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
     this.t = 0; this.rotation = 0;
@@ -1827,6 +1858,8 @@ class Boss {
         this.w = 120; this.h = 90; this.size = 90; this.targetY = 95;
         st.hands = [{ side: -1, x: 0, y: 0, slam: 0, state: 'idle', tx: 0, ty: 0 }, { side: 1, x: 0, y: 0, slam: 0, state: 'idle', tx: 0, ty: 0 }];
         st.slamCd = 3; break;
+      case 'abyssal': case 'leviathan': case 'oracle': case 'reaper': case 'hydra_prime': case 'colossus': case 'eclipse': case 'maw': case 'architect': case 'omega':
+        this.w=220;this.h=168;this.size=184;this.targetY=120;st.open=0;st.timer=2.4;st.charge=0;st.heads=3;st.angle=0;st.lane=0;break;
     }
     if (this.type === 'serpent') { this.x = -60; this.y = 120; }
   }
@@ -2067,6 +2100,32 @@ class Boss {
     }
   }
 
+  // Dix derniers boss : dix silhouettes/noms et boucles d'attaque distinctes.
+  tick_abyssal(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_leviathan(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_oracle(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_reaper(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_hydra_prime(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_colossus(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_eclipse(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_maw(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_architect(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_omega(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
+  tick_frontier(dt,W,P,game,R,sp){
+    const st=this.st,pattern=this.info.pattern;this.x=W/2+Math.sin(this.t*(pattern==='leviathan'?.7:1.1))*(W*.29);this.y=this.targetY+Math.sin(this.t*1.7)*18;st.timer-=dt;st.angle+=dt*(this.rage?2.8:1.8);this.fire-=dt;
+    if(pattern==='reaper'){st.charge-=dt;if(st.charge<=0){this.x=Utils.clamp(P.x,50,W-50);for(let i=-2;i<=2;i++)bossShoot(game,this.x,this.y,Math.PI/2+i*.2,sp*1.1,this.color);st.charge=2.4*R;}}
+    if(pattern==='colossus'){if(st.timer<=0){for(let i=0;i<13;i++)bossShoot(game,(i/12)*(W-40)+20,this.y+25,Math.PI/2,sp*.65,'#ffbd55',{radius:6});game.screenShake=.28;st.timer=3.2*R;}}
+    if(pattern==='oracle'&&st.timer<=0){st.open=1.2;st.timer=3.4*R;for(let i=0;i<5;i++)bossShoot(game,this.x+(i-2)*24,this.y+25,Math.PI/2,sp*.75,this.color,{radius:5});}
+    if(pattern==='abyssal'&&st.timer<=0){for(let i=0;i<9;i++)bossShoot(game,this.x,this.y,(i/9)*Math.PI*2+st.angle,sp*.7,'#b77cff',{radius:7,split:1.3});st.open=1.1;st.timer=3.1*R;}
+    if(pattern==='leviathan'&&st.timer<=0){const gap=Utils.randRange(.18,.82);for(let i=0;i<18;i++){const f=i/17;if(Math.abs(f-gap)>.11)bossShoot(game,20+f*(W-40),this.y+25,Math.PI/2,sp*.8,this.color,{radius:5});}st.timer=2.5*R;}
+    if(pattern==='hydra_prime'&&st.timer<=0){st.heads=Math.max(1,3-(this.cycle%3));for(let h=0;h<st.heads;h++){const x=this.x+(h-(st.heads-1)/2)*36,a=Utils.angle(x,this.y,P.x,P.y);for(let j=-1;j<=1;j++)bossShoot(game,x,this.y,a+j*.16,sp,this.color,{radius:5});}this.cycle++;st.timer=2.2*R;}
+    if(pattern==='eclipse'&&st.timer<=0){for(let i=0;i<16;i++)bossShoot(game,this.x,this.y,(i/16)*Math.PI*2+st.angle,sp*.75,i%2?'#fff':'#7c3aed',{radius:5});st.open=1;st.timer=3*R;}
+    if(pattern==='maw'&&st.timer<=0){for(let i=0;i<11;i++)bossShoot(game,this.x,this.y,st.angle+i*.38,sp*(i%2?.65:.9),this.color,{radius:6,homing:i%3===0?1.5:0});st.timer=2.6*R;}
+    if(pattern==='architect'&&st.timer<=0){st.lane=(st.lane+1)%4;for(let i=0;i<12;i++){if(Math.floor(i/3)===st.lane)continue;bossShoot(game,30+i*(W-60)/11,this.y+25,Math.PI/2,sp*.72,'#46eaff',{radius:5});}st.timer=2.7*R;}
+    if(pattern==='omega'&&st.timer<=0){const phase=this.phaseThree?3:this.rage?2:1,n=8+phase*4;for(let i=0;i<n;i++)bossShoot(game,this.x,this.y,(i/n)*Math.PI*2+st.angle,sp*(.62+phase*.08),['#00f0ff','#ff00ea','#ffdd00'][phase-1],{radius:5+phase*.4});for(let j=-1;j<=1;j++)bossShoot(game,this.x,this.y,Utils.angle(this.x,this.y,P.x,P.y)+j*.13,sp*1.08,'#fff');st.timer=(3.1-phase*.35)*R;}
+    if(this.fire<=0&&['abyssal','leviathan','oracle','eclipse','maw'].includes(pattern)){bossShoot(game,this.x,this.y+35,Utils.angle(this.x,this.y,P.x,P.y),sp*.88,this.color);this.fire=.8*R;}
+  }
+
   // ---------- Dégâts reçus ----------
   // Renvoie null si la balle ne touche pas le boss, sinon { mult, blocked }.
   takeBullet(b, dmg, game, probe = false) {
@@ -2122,6 +2181,8 @@ class Boss {
         if (!inBox(this.x, this.y, this.w, this.h)) return null;
         mult = 0.5; break;
       }
+      case 'abyssal':case 'leviathan':case 'oracle':case 'reaper':case 'hydra_prime':case 'colossus':case 'eclipse':case 'maw':case 'architect':case 'omega':
+        if(!inBox(this.x,this.y,this.w,this.h))return null;mult=this.info.pattern==='oracle'&&st.open>0?2.2:this.info.pattern==='abyssal'&&st.open>0?2.4:this.info.pattern==='eclipse'&&st.open>0?2.3:this.info.pattern==='hydra_prime'?1.35:.9;break;
     }
     const res = { mult };
     if (mult > 0 && !probe) this.applyDamage(dmg * mult, game);
@@ -2339,6 +2400,18 @@ class Boss {
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, -6, 15, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = this.rage ? '#ff3d3d' : this.color; ctx.beginPath(); ctx.arc(look, -6, 7, 0, Math.PI * 2); ctx.fill();
   }
+
+  draw_abyssal(ctx,col){this.draw_frontier(ctx,col);}
+  draw_leviathan(ctx,col){this.draw_frontier(ctx,col);}
+  draw_oracle(ctx,col){this.draw_frontier(ctx,col);}
+  draw_reaper(ctx,col){this.draw_frontier(ctx,col);}
+  draw_hydra_prime(ctx,col){this.draw_frontier(ctx,col);}
+  draw_colossus(ctx,col){this.draw_frontier(ctx,col);}
+  draw_eclipse(ctx,col){this.draw_frontier(ctx,col);}
+  draw_maw(ctx,col){this.draw_frontier(ctx,col);}
+  draw_architect(ctx,col){this.draw_frontier(ctx,col);}
+  draw_omega(ctx,col){this.draw_frontier(ctx,col);}
+  draw_frontier(ctx,col){const pattern=this.info.pattern,s=this.size*.52;ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rotation*.35);this.glow(ctx,this.color,32);ctx.strokeStyle=col;ctx.fillStyle='#080d20';ctx.lineWidth=4;ctx.beginPath();const n=pattern==='leviathan'?12:pattern==='hydra_prime'?9:pattern==='architect'?4:pattern==='maw'?7:pattern==='colossus'?6:pattern==='reaper'?3:pattern==='oracle'?8:pattern==='eclipse'?10:pattern==='omega'?12:5;for(let i=0;i<n;i++){const a=i*Math.PI*2/n,r=s*(i%2?.72:1.05);i?ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r):ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.stroke();ctx.rotate(-this.rotation*.7);if(pattern==='leviathan'||pattern==='hydra_prime'){for(let i=-1;i<=1;i++){ctx.beginPath();ctx.ellipse(i*s*.38,-s*.5,13,s*.55,i*.22,0,Math.PI*2);ctx.stroke();ctx.fillStyle=col;ctx.fillRect(i*s*.38-4,-s*.5-3,8,6);}}else if(pattern==='architect'){ctx.strokeRect(-s*.55,-s*.55,s*1.1,s*1.1);ctx.strokeRect(-s*.3,-s*.3,s*.6,s*.6);}else if(pattern==='colossus'){ctx.fillRect(-s*.95,-s*.2,s*.35,s*.85);ctx.fillRect(s*.6,-s*.2,s*.35,s*.85);}else{for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.beginPath();ctx.moveTo(0,-s*.22);ctx.lineTo(s*.7,0);ctx.lineTo(0,s*.22);ctx.stroke();}}ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,0,s*(pattern==='oracle'?.22:.16)*(1+Math.sin(this.t*5)*.12),0,Math.PI*2);ctx.fill();ctx.restore();}
 
   drawBar(ctx) {
     const W = this.canvasW, barW = Math.min(300, W - 40), barH = 6;
@@ -2723,7 +2796,7 @@ const Game = {
     const button=document.getElementById('shipAbilityBtn');if(!button)return;
     const ship=this.player?.shipData,active=!!ship?.specialAbility&&[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(this.state);
     button.classList.toggle('hidden',!active);button.disabled=!active||this.player.specialUses<=0;
-    const label={bomb:'Bombe',pulse:'Onde',repair:'Soin'}[ship?.specialAbility]||'Pouvoir';
+    const label={bomb:'Bombe',pulse:'Onde',repair:'Soin',gravity:'Gravité',beam:'Rayon',barrage:'Rafale',phase:'Phase',drone:'Drone',overdrive:'Surcharge'}[ship?.specialAbility]||'Pouvoir';
     button.textContent=`${label} · ${this.player?.specialUses||0} · E`;
   },
 
@@ -2739,6 +2812,18 @@ const Game = {
       this.enemyBullets=[];p.invincibleTimer=Math.max(p.invincibleTimer,1.8);this.particles.emit(p.x,p.y,24,{speedMin:90,speedMax:300,lifeMin:.3,lifeMax:.8,color:p.shipData.color,sizeMin:2,sizeMax:6});
     }else if(type==='repair'){
       if(p.lives>=Math.min(8,p.maxLives+2))return false;p.lives++;this.particles.emit(p.x,p.y,18,{speedMin:35,speedMax:150,lifeMin:.3,lifeMax:.8,color:'#ff5fa2',sizeMin:2,sizeMax:5});
+    }else if(type==='beam'){
+      if(this.boss&&this.boss.phase===1){this.boss.applyDamage(Math.max(14,Math.round(this.boss.maxHealth*.16)),this);this.boss.flash=.3;}for(let i=this.enemies.length-1;i>=0;i--){const e=this.enemies[i];if(e.hit(4)){this.addScore(10,e.x,e.y);this.enemies.splice(i,1);this.enemiesKilled++;}}this.particles.emit(p.x,p.y,36,{speedMin:160,speedMax:520,lifeMin:.2,lifeMax:.7,color:'#fff2a6',sizeMin:3,sizeMax:8});
+    }else if(type==='barrage'){
+      for(let i=0;i<18;i++){const a=(i/18)*Math.PI*2,b=new Bullet(p.x,p.y,Math.cos(a)*p.shipData.bulletSpeed*.8,Math.sin(a)*p.shipData.bulletSpeed*.8,true,p.shipData.color);b.damage=Math.max(1,p.bulletDamage);this.bullets.push(b);}
+    }else if(type==='phase'){
+      p.invincibleTimer=Math.max(p.invincibleTimer,2.6);p.x=Utils.clamp(p.x+(Math.random()<.5?-1:1)*90,30,this.width-30);this.particles.emit(p.x,p.y,24,{speedMin:80,speedMax:260,lifeMin:.25,lifeMax:.65,color:p.shipData.color,sizeMin:2,sizeMax:6});
+    }else if(type==='gravity'){
+      this.enemyBullets=[];if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.max(8,Math.round(this.boss.maxHealth*.08)),this);this.particles.emit(p.x,p.y,32,{speedMin:50,speedMax:320,lifeMin:.3,lifeMax:.8,color:p.shipData.color,sizeMin:3,sizeMax:8});
+    }else if(type==='drone'){
+      const targets=[...this.enemies].sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,5);for(const e of targets){if(e.hit(4)){this.addScore(10,e.x,e.y);this.enemies.splice(this.enemies.indexOf(e),1);this.enemiesKilled++;}this.particles.emit(e.x,e.y,9,{speedMin:60,speedMax:180,lifeMin:.2,lifeMax:.5,color:'#76f7b2',sizeMin:2,sizeMax:5});}if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.max(7,Math.round(this.boss.maxHealth*.07)),this);
+    }else if(type==='overdrive'){
+      const old=p.bulletDamage;p.bulletDamage+=3;for(let i=0;i<3;i++){const b=new Bullet(p.x+(i-1)*8,p.y-20,0,-p.shipData.bulletSpeed,false,p.shipData.color);b.damage=p.bulletDamage;this.bullets.push(b);}p.bulletDamage=old;this.enemyBullets=this.enemyBullets.filter((_,i)=>i%2===0);
     }else return false;
     p.specialUses--;playPurchase();this.refreshShipAbilityButton();return true;
   },
@@ -6595,7 +6680,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261020a" defer></script>
+<script src="/expansion.js?build=20261020b" defer></script>
 </body>
 </html>
 
