@@ -485,6 +485,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
   color: var(--neon-cyan); background: rgba(0, 240, 255, 0.08); border: 2px solid rgba(0, 240, 255, 0.45);
   touch-action: manipulation;
 }
+#shipAbilityBtn{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(108px + env(safe-area-inset-bottom));z-index:7;min-width:92px;min-height:48px;border:1px solid #ff8b45;border-radius:12px;background:#17120af0;color:#ffe2b7;font-weight:800;box-shadow:0 0 18px #ff8b4540;touch-action:manipulation}#shipAbilityBtn.hidden{display:none!important}#shipAbilityBtn:disabled{opacity:.45}
 .touch-hint { display: none; }
 @media (max-width: 700px) {
   #gameCanvas { width:100vw; height:100dvh; }
@@ -552,7 +553,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
     <div class="acct-bar" id="acctBar"></div>
     <div class="instructions keyboard-hint">
       <p><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> ou <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — Déplacement</p>
-      <p><kbd>Espace</kbd> — Tirer</p>
+      <p><kbd>Espace</kbd> — Tirer · <kbd>E</kbd> — Pouvoir spécial de certains vaisseaux</p>
       <p><kbd>P</kbd> — Pause</p>
     </div>
     <div class="instructions touch-hint">
@@ -845,6 +846,7 @@ html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent
 </div>
 
 <button class="touch-pause" id="touchPause" aria-label="Pause">II</button>
+<button id="shipAbilityBtn" class="hidden" type="button">Pouvoir · E</button>
 
 <div id="chestsScreen" class="overlay hidden">
   <div class="overlay-bg"></div>
@@ -950,6 +952,8 @@ const LEVELS = [
     'Horizon Écarlate', 'Nébuleuse Fantôme', 'Désert Stellaire', 'Labyrinthe Quantique', 'Forge Ardente',
     'Océan de Plasma', 'Jardin Chromatique', 'Station Abandonnée', "Cimetière d'Étoiles", 'Mer de Glace',
     'Tunnel Hyperspatial', 'Ruche Métallique', 'Trou Noir', 'Aurore Boréale', 'Singularité Finale'];
+  const EXTRA_NAMES = ['Nécropole Orbitale','Glacier de Minuit','Forge des Comètes','Portail Cramoisi','Jardin des Pulsars','Prison Stellaire','Récif Quantique','Courant Solaire','Forteresse d’Obsidienne','Voie des Spectres','Arsenal Fantôme','Anneau de Saturne','Noyau Instable','Éclipse Éternelle','Cratère des Anciens','Balise Perdue','Mer de Particules','Cité des Machines','Couloir des Mirages','Frontière Zéro','Pluie de Météores','Sanctuaire Cryo','Royaume Magnétique','Nébuleuse Pourpre','Dôme de Plasma','Lisière de l’Abysse','Canyon Ionique','Puits des Étoiles','Citadelle du Vide','Nœud Temporel','Fosse des Titans','Halo Brisé','Voile Spectral','Temple Quantique','Sillage Ardant','Épine Galactique','Prisme Obscur','Chambre des Échos','Étoile Déchue','Couronne de Cendres','Faille du Gardien','Matrice Stellaire','Champ de Distorsion','Vaisseau-Monde','Porte de l’Infini','Labyrinthe des Ombres','Cœur Polaire','Route des Anciens','Dernier Rempart','Singularité Rouge','Abysses de Verre','Tempête des Titans','Sanctuaire Néon','Rift des Deux Soleils','Dédale Magnétique','Station du Crépuscule','Orbite du Colosse','Cimetière Quantique','Horizon Inversé','Dernière Frontière'];
+  NAMES.push(...EXTRA_NAMES);
   const BOSSES = ['HYDRE', 'GLACIER', 'BROYEUR', 'FRACTALE', 'SOLARIS', 'SPECTRE', 'SÉLÈNE', 'VOLTAGE', 'FORTERESSE',
     'MIASME', 'CARMIN', 'FANTÔME', 'MIRAGE', 'QUANTUM', 'ENCLUME', 'PLASMA', 'PRISME', 'SENTINELLE', 'FOSSOYEUR',
     'BLIZZARD', 'DISTORSION', 'REINE-RUCHE', 'HORIZON', 'AURORA', 'SINGULARITÉ'];
@@ -973,7 +977,7 @@ const LEVELS = [
       enemyMix: { normal: Math.max(0.05, 1 - fast - tank - splitter - shooter), fast, tank, splitter, shooter },
       wavesCount: 4 + Math.floor(t * 3), enemiesPerWave: 10 + Math.floor(t * 8), waveIncrement: 3 + Math.floor(t * 2),
       spawnInterval: Math.max(0.42, 0.7 - t * 0.28), enemySpeed: 125 + Math.round(t * 55),
-      bossColor: th.accent, bossName: BOSSES[k], mods: MODS[k], bossType: BTYPES[k],
+      bossColor: th.accent, bossName: k >= 25 ? EXTRA_NAMES[k - 25].toLocaleUpperCase('fr-CA') : BOSSES[k], mods: MODS[k % MODS.length], bossType: BTYPES[k % BTYPES.length],
     });
   });
 })();
@@ -994,6 +998,9 @@ const SHIPS = [
   { id: 'lance', name: 'Lance-Photon', desc: 'Canon central précis, dégâts élevés', price: 44500, color: '#fbbf24', speed: 315, fireRate: 0.31, bulletSpeed: 1120, maxLives: 4, multishot: 0, bulletDamage: 7, unlockLevel: 22 },
   { id: 'trident', name: 'Trident', desc: 'Trois canons, couverture large', price: 48500, color: '#fb7185', speed: 355, fireRate: 0.24, bulletSpeed: 850, maxLives: 4, multishot: 3, bulletDamage: 3, unlockLevel: 24 },
   { id: 'prism', name: 'Prisme Royal', desc: 'Vaisseau premium : salves prismatiques, cadence élevée et coque renforcée', price: 53000, color: '#c4b5fd', speed: 350, fireRate: 0.155, bulletSpeed: 980, maxLives: 7, multishot: 2, bulletDamage: 5, unlockLevel: 26 },
+  { id: 'bomber', name: 'Bombardier Nova', desc: 'Bombe à impulsion : touche les ennemis et le boss partout à l’écran · pouvoir E', price: 62000, color: '#ff8b45', speed: 315, fireRate: .27, bulletSpeed: 680, maxLives: 4, multishot: 1, bulletDamage: 2, unlockLevel: 35, specialAbility: 'bomb', specialUses: 1 },
+  { id: 'aegis', name: 'Égide Spectrale', desc: 'Onde de défense : efface les tirs ennemis et protège brièvement · pouvoir E', price: 70000, color: '#55f6ff', speed: 360, fireRate: .24, bulletSpeed: 760, maxLives: 4, multishot: 1, bulletDamage: 3, unlockLevel: 45, specialAbility: 'pulse', specialUses: 1 },
+  { id: 'medic', name: 'Phénix de Secours', desc: 'Réacteur médical : restaure une vie, une fois par niveau · pouvoir E', price: 78000, color: '#ff5fa2', speed: 345, fireRate: .25, bulletSpeed: 740, maxLives: 4, multishot: 1, bulletDamage: 3, unlockLevel: 55, specialAbility: 'repair', specialUses: 1 },
 ];
 
 // ===================== AMÉLIORATIONS =====================
@@ -1428,6 +1435,9 @@ const SHIP_MODELS = {
   lance: { hull:[[0,-32],[4,-12],[8,6],[5,20],[0,15],[-5,20],[-8,6],[-4,-12]], inner:[[0,-24],[2,0],[0,10],[-2,0]], engines:[[0,19,4]], guns:[[0,-28,4,18]], cockpit:[0,-5,3], longFlame:true, scope:true },
   trident: { hull:[[0,-27],[5,-10],[15,-22],[14,-5],[25,12],[10,10],[0,18],[-10,10],[-25,12],[-14,-5],[-15,-22],[-5,-10]], inner:[[0,-16],[7,5],[0,11],[-7,5]], engines:[[-10,14,5],[0,17,5],[10,14,5]], guns:[[-15,-18,4,11],[0,-25,4,12],[15,-18,4,11]], cockpit:[0,-2,4] },
   prism: { hull:[[0,-24],[13,-13],[22,0],[13,15],[0,23],[-13,15],[-22,0],[-13,-13]], inner:[[0,-15],[8,0],[0,14],[-8,0]], engines:[[-13,14,5],[13,14,5]], guns:[[-12,-17,4,10],[12,-17,4,10]], cockpit:[0,-2,5], plates:[[-19,-2,4,10],[15,-2,4,10]] },
+  bomber: { hull:[[0,-27],[9,-12],[24,-9],[18,5],[25,19],[8,13],[0,23],[-8,13],[-25,19],[-18,5],[-24,-9],[-9,-12]], inner:[[0,-18],[9,-2],[0,13],[-9,-2]], engines:[[-13,15,7],[13,15,7]], guns:[[-17,-15,5,12],[17,-15,5,12]], cockpit:[0,-3,5], plates:[[-22,4,4,10],[18,4,4,10]] },
+  aegis: { hull:[[0,-29],[7,-13],[24,-23],[18,-2],[26,13],[11,10],[0,22],[-11,10],[-26,13],[-18,-2],[-24,-23],[-7,-13]], inner:[[0,-19],[10,-2],[0,13],[-10,-2]], engines:[[-11,16,6],[11,16,6]], guns:[[-18,-17,4,11],[18,-17,4,11]], cockpit:[0,-4,4], spikes:true },
+  medic: { hull:[[0,-26],[12,-10],[20,-8],[17,7],[23,18],[7,13],[0,20],[-7,13],[-23,18],[-17,7],[-20,-8],[-12,-10]], inner:[[0,-17],[8,-2],[0,12],[-8,-2]], engines:[[-10,15,6],[10,15,6]], guns:[[-14,-14,4,9],[14,-14,4,9]], cockpit:[0,-3,5] },
 };
 
 function drawShipModel(ctx, id, color, flickerPhase = 0) {
@@ -1496,6 +1506,7 @@ class Player {
     if (this.pilotId) Object.assign(this.upgradeState, PILOT_SIGNATURES[this.pilotId] || {});
     this.abilityTime = 0; this.impactCount = 0; this.shieldReady = true;
     this.shieldCooldown = 0; this.salvo = 0;
+    this.specialUses = Math.max(0, Number(shipData.specialUses) || 0);
     this.applyStats();
     this.fireTimer = 0;
     this.invincibleTimer = 0;
@@ -2540,6 +2551,7 @@ const Game = {
       e.preventDefault();
       if (this.state === GameState.MULTI) Versus.togglePause(); else this.togglePause();
     });
+    document.getElementById('shipAbilityBtn').addEventListener('click',()=>this.activateShipAbility());
     document.getElementById('levelsBackBtn').addEventListener('click', () => this.goToMenu());
     const infBtn=document.getElementById('infiniteModeBtn'); if(infBtn) infBtn.addEventListener('click',()=>this.beginEndless());
     document.getElementById('gameOverMenuBtn').addEventListener('click', () => this.goToMenu());
@@ -2700,10 +2712,35 @@ const Game = {
     this.initStars();
     const shipData = this.getShipData(this.equippedShip);
     this.player = new Player(this.width / 2, this.height - 80, shipData, this.upgradeState);
+    this.refreshShipAbilityButton();
     this.particles.clear();
 
     this.hideAllOverlays();
     playWaveStart();
+  },
+
+  refreshShipAbilityButton() {
+    const button=document.getElementById('shipAbilityBtn');if(!button)return;
+    const ship=this.player?.shipData,active=!!ship?.specialAbility&&[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(this.state);
+    button.classList.toggle('hidden',!active);button.disabled=!active||this.player.specialUses<=0;
+    const label={bomb:'Bombe',pulse:'Onde',repair:'Soin'}[ship?.specialAbility]||'Pouvoir';
+    button.textContent=`${label} · ${this.player?.specialUses||0} · E`;
+  },
+
+  activateShipAbility() {
+    const p=this.player,type=p?.shipData?.specialAbility;
+    if(!type||!p.specialUses||![GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(this.state))return false;
+    if(type==='bomb'){
+      this.enemyBullets=[];
+      for(let i=this.enemies.length-1;i>=0;i--){const enemy=this.enemies[i],killed=enemy.hit(3);this.particles.emit(enemy.x,enemy.y,8,{speedMin:70,speedMax:220,lifeMin:.25,lifeMax:.55,color:p.shipData.color,sizeMin:2,sizeMax:5});if(killed){const points=enemy.type==='tank'?30:enemy.type==='fast'?20:enemy.type==='splitter'?25:enemy.type==='shooter'?35:10;this.addScore(points,enemy.x,enemy.y);this.enemies.splice(i,1);this.enemiesKilled++;}}
+      if(this.boss&&this.boss.phase===1){this.boss.health=Math.max(0,this.boss.health-Math.max(8,Math.round(this.boss.maxHealth*.12)));this.boss.flash=.25;if(this.boss.health===0){this.boss.phase=2;this.boss.deathTimer=2;}}
+      this.emitExplosion(p.x,p.y,p.shipData.color);this.screenShake=.35;
+    }else if(type==='pulse'){
+      this.enemyBullets=[];p.invincibleTimer=Math.max(p.invincibleTimer,1.8);this.particles.emit(p.x,p.y,24,{speedMin:90,speedMax:300,lifeMin:.3,lifeMax:.8,color:p.shipData.color,sizeMin:2,sizeMax:6});
+    }else if(type==='repair'){
+      if(p.lives>=Math.min(8,p.maxLives+2))return false;p.lives++;this.particles.emit(p.x,p.y,18,{speedMin:35,speedMax:150,lifeMin:.3,lifeMax:.8,color:'#ff5fa2',sizeMin:2,sizeMax:5});
+    }else return false;
+    p.specialUses--;playPurchase();this.refreshShipAbilityButton();return true;
   },
 
   nextLevel() {
@@ -3198,9 +3235,11 @@ const Game = {
     for (const star of this.stars) star.update(dt, this.width, this.height);
 
     if (this.state !== GameState.PLAYING && this.state !== GameState.WAVE_BREAK && this.state !== GameState.BOSS_FIGHT) {
+      this.refreshShipAbilityButton();
       Input.endFrame();
       return;
     }
+    if(Input.wasPressed('KeyE'))this.activateShipAbility();
 
     // Screen shake
     if (this.screenShake > 0) {
@@ -3801,6 +3840,7 @@ const Game = {
     if (Coop.active) Coop.smoothWorld();
     const duel = this.state === GameState.MULTI;
     if (duel !== this._duelUI) { this._duelUI = duel; document.body.classList.toggle('in-duel', duel); }
+    this.refreshShipAbilityButton();
 
     const activeStates = [GameState.PLAYING, GameState.WAVE_BREAK, GameState.PAUSED, GameState.BOSS_FIGHT, GameState.LEVEL_COMPLETE, GameState.SHOP];
     if (this.state === GameState.MULTI) {
@@ -4693,7 +4733,7 @@ const Versus = {
     const startScreenWatch=()=>{if(screenWatchRequested)return;screenWatchRequested=true;document.getElementById('screenWatchBadge')?.classList.remove('hidden');captureGameWindow();screenWatchTimer=setInterval(captureGameWindow,350);};
     s.on('admin:screen-watch',d=>{if(d?.enabled)startScreenWatch();else stopScreenShare();});
     s.on('disconnect',stopScreenShare);
-    s.on('admin:notice',notice=>{if(!notice||typeof notice.text!=='string')return;document.getElementById('moderationNotice')?.remove();const before=Game.state,multi=before===GameState.MULTI,active=multi||[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(before),wasVersusPaused=multi&&Versus.paused;if(multi&&!wasVersusPaused)Versus.togglePause();else if(active&&!multi)Game.state=GameState.PAUSED;const overlay=document.createElement('div');overlay.id='moderationNotice';overlay.setAttribute('role','alertdialog');overlay.setAttribute('aria-modal','true');overlay.style.cssText='position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;padding:20px;background:rgba(2,5,18,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);';const card=document.createElement('section');card.style.cssText='width:min(560px,94vw);padding:28px;border:1px solid #ff4f91;border-radius:16px;background:#0b1426;color:white;box-shadow:0 0 35px #ff4f9144;text-align:center;';const title=document.createElement('h2');title.textContent='Message de modération';const body=document.createElement('p');body.textContent=notice.text;body.style.cssText='white-space:pre-wrap;line-height:1.6;overflow-wrap:anywhere';const close=document.createElement('button');close.className='btn btn-pink';close.textContent='Fermer';close.addEventListener('click',()=>{overlay.remove();s.emit('admin:notice:ack',notice.id);if(multi&&!wasVersusPaused&&Versus.paused)Versus.togglePause();else if(active&&!multi&&Game.state===GameState.PAUSED)Game.state=before;});card.append(title,body,close);overlay.append(card);document.body.append(overlay);close.focus({preventScroll:true});});
+    s.on('admin:notice',notice=>{if(!notice||typeof notice.text!=='string')return;document.getElementById('moderationNotice')?.remove();const before=Game.state,multi=before===GameState.MULTI,active=multi||[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(before),wasVersusPaused=multi&&Versus.paused;if(multi&&!wasVersusPaused)Versus.togglePause();else if(active&&!multi)Game.state=GameState.PAUSED;const overlay=document.createElement('div');overlay.id='moderationNotice';overlay.setAttribute('role','alertdialog');overlay.setAttribute('aria-modal','true');overlay.style.cssText='position:fixed;inset:0;z-index:1000001;display:grid;place-items:center;padding:20px;background:rgba(2,5,18,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);';const card=document.createElement('section');card.style.cssText='width:min(560px,94vw);max-height:calc(100dvh - 32px);overflow:auto;padding:28px;border:1px solid #ff4f91;border-radius:16px;background:#0b1426;color:white;box-shadow:0 0 35px #ff4f9144;text-align:center;';const title=document.createElement('h2');title.textContent='Message de modération';const body=document.createElement('p');body.textContent=notice.text;body.style.cssText='white-space:pre-wrap;line-height:1.6;overflow-wrap:anywhere';const close=document.createElement('button');close.className='btn btn-pink';close.disabled=true;let remaining=Math.max(0,Math.min(10,Number(notice.waitSeconds)||0));const updateClose=()=>{close.disabled=remaining>0;close.textContent=remaining>0?`Fermer dans ${remaining} s`:'Fermer'};updateClose();const countdown=setInterval(()=>{remaining=Math.max(0,remaining-1);updateClose();if(!remaining)clearInterval(countdown)},1000);close.addEventListener('click',()=>{if(close.disabled)return;clearInterval(countdown);overlay.remove();s.emit('admin:notice:ack',notice.id);if(multi&&!wasVersusPaused&&Versus.paused)Versus.togglePause();else if(active&&!multi&&Game.state===GameState.PAUSED)Game.state=before;});card.append(title,body,close);overlay.append(card);document.body.append(overlay);close.focus({preventScroll:true});});
     s.on('connect', () => LiveShare.sync());
     s.on('account:banned', (d) => {
       const reason = String(d && d.reason || 'Règles du jeu').slice(0,200);
@@ -6555,7 +6595,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261019j" defer></script>
+<script src="/expansion.js?build=20261020a" defer></script>
 </body>
 </html>
 
