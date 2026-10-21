@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-20-content-v12';
+const RELEASE_ID = 'neon-2026-10-20-content-v13';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -235,7 +235,7 @@ const WEEKLY_LEVELS = [
 const WEEKLY_LEVEL_POOL = [
  ['Nécropole orbitale','Survis aux vagues de l’ancien cimetière.', ['fog','mines']],['Glacier de minuit','Garde le contrôle sous les rafales glacées.', ['ice','drift']],['Forge des comètes','Esquive les roches et la chaleur du réacteur.', ['asteroids','storm']],['Portail cramoisi','Affronte un essaim agressif dans la faille.', ['swarm','speed']],['Jardin des pulsars','Évite les impulsions et les ennemis d’élite.', ['storm','elite']],['Prison stellaire','Les mines bloquent chaque sortie.', ['mines','gravity']],['Récif quantique','Traverse un champ d’astéroïdes instable.', ['asteroids','gravity']],['Courant solaire','La tempête accélère les vagues.', ['storm','speed']],['Forteresse d’obsidienne','Un secteur défendu par des unités blindées.', ['elite','fog']],['Voie des spectres','Des apparitions rapides masquent les tirs.', ['fog','swarm']],['Arsenal fantôme','Les projectiles ennemis quadrillent la zone.', ['mines','storm']],['Anneau de Saturne','Les roches et la dérive réduisent l’espace sûr.', ['asteroids','drift']],['Noyau instable','La gravité change au milieu des vagues.', ['gravity','elite']],['Éclipse éternelle','Combat dans une obscurité chargée de mines.', ['fog','mines']],['Cratère des anciens','Une pluie de roches accompagne le boss.', ['asteroids','elite']],['Balise perdue','Reste mobile dans le brouillard ionique.', ['fog','speed']],['Mer de particules','Esquive les formations rapides et denses.', ['swarm','drift']],['Cité des machines','La station active ses défenses automatiques.', ['station','mines']],['Couloir des mirages','Le brouillard cache des vagues renforcées.', ['fog','elite']],['Frontière zéro','Dernière traversée : tempête, gravité et élites.', ['storm','gravity','elite']]
 ];
-for(let i=0;i<20;i++){const [name,description,mods]=WEEKLY_LEVEL_POOL[i];WEEKLY_LEVELS.push({id:`rift-${String(i+11).padStart(2,'0')}`,name,description,levelIndex:30+i*3,mods,cosmetic:`aura-weekly-${i+11}`});}
+for(let i=0;i<90;i++){const [baseName,baseDescription,baseMods]=WEEKLY_LEVEL_POOL[i%WEEKLY_LEVEL_POOL.length],cycle=Math.floor(i/WEEKLY_LEVEL_POOL.length),mods=[...baseMods];if(cycle>0&&!mods.includes(['gravity','elite','storm','mines'][cycle%4]))mods.push(['gravity','elite','storm','mines'][cycle%4]);WEEKLY_LEVELS.push({id:`rift-${String(i+11).padStart(2,'0')}`,name:cycle?`${baseName} · Cycle ${cycle+1}`:baseName,description:cycle?`${baseDescription} Variante ${cycle+1} : vagues plus denses et boss renforcé.`:baseDescription,levelIndex:(25+i*7)%100,mods,cosmetic:`aura-weekly-${i+11}`});}
 function activeWeeklyLevel(){
   const key=weekKey();
   if(!db.weeklyLevel||db.weeklyLevel.week!==key){const n=Number(key.split('-W')[1])%WEEKLY_LEVELS.length;db.weeklyLevel={week:key,levelId:WEEKLY_LEVELS[n].id,source:'rotation',updatedAt:Date.now()};persist();}
