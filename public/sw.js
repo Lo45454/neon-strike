@@ -1,4 +1,4 @@
-const CACHE='neon-strike-shell-v16';
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/','/admin.html','/expansion.js?build=20261021b','/socket.io/socket.io.min.js'])).then(()=>self.skipWaiting())));
+const CACHE='neon-strike-shell-v17';
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/','/admin.html','/expansion.js?build=20261022c','/socket.io/socket.io.min.js'])).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{const u=new URL(event.request.url);if(event.request.method!=='GET'||u.origin!==location.origin||u.pathname.startsWith('/api/'))return;if(u.pathname.startsWith('/socket.io/')){event.respondWith(fetch(event.request).catch(()=>caches.match(event.request)));return}event.respondWith(fetch(event.request).then(r=>{if(r.ok)caches.open(CACHE).then(c=>c.put(event.request,r.clone()));return r}).catch(()=>caches.match(event.request).then(r=>r||caches.match('/'))));});

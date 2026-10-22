@@ -990,23 +990,23 @@ const SHIPS = [
   { id: 'multi', name: 'Multi-Tir', desc: 'Triple tir par défaut', price: 1200, color: '#9d00ff', speed: 320, fireRate: 0.25, bulletSpeed: 640, maxLives: 3, multishot: 1, bulletDamage: 1 },
   { id: 'sniper', name: 'Sniper', desc: 'Tir puissant et rapide', price: 1800, color: '#00ff88', speed: 350, fireRate: 0.20, bulletSpeed: 800, maxLives: 3, multishot: 0, bulletDamage: 2 },
   { id: 'destroyer', name: 'Destructeur', desc: 'Quadruple tir, robuste', price: 4200, color: '#ff00ea', speed: 300, fireRate: 0.24, bulletSpeed: 700, maxLives: 4, multishot: 2, bulletDamage: 2 },
-  { id: 'phantom', name: 'Fantôme', desc: 'Agile et difficile à toucher', price: 6500, color: '#8be9fd', speed: 390, fireRate: 0.23, bulletSpeed: 760, maxLives: 3, multishot: 1, bulletDamage: 2, unlockLevel: 3 },
-  { id: 'nova', name: 'Nova', desc: 'Salves explosives', price: 9000, color: '#ff7ad9', speed: 330, fireRate: 0.22, bulletSpeed: 680, maxLives: 4, multishot: 2, bulletDamage: 3, unlockLevel: 5 },
-  { id: 'vanguard', name: 'Avant-garde', desc: 'Blindage lourd et tirs puissants', price: 13500, color: '#a3ff12', speed: 285, fireRate: 0.20, bulletSpeed: 820, maxLives: 6, multishot: 1, bulletDamage: 3, unlockLevel: 7 },
-  { id: 'eclipse', name: 'Éclipse', desc: 'Vaisseau d’élite polyvalent', price: 20000, color: '#b388ff', speed: 370, fireRate: 0.17, bulletSpeed: 900, maxLives: 5, multishot: 2, bulletDamage: 4, unlockLevel: 10 },
-  { id: 'manta', name: 'Manta', desc: 'Ailes larges, rapide et agile', price: 41000, color: '#22d3ee', speed: 425, fireRate: 0.22, bulletSpeed: 820, maxLives: 3, multishot: 1, bulletDamage: 3, unlockLevel: 20 },
-  { id: 'lance', name: 'Lance-Photon', desc: 'Canon central précis, dégâts élevés', price: 44500, color: '#fbbf24', speed: 315, fireRate: 0.31, bulletSpeed: 1120, maxLives: 4, multishot: 0, bulletDamage: 7, unlockLevel: 22 },
-  { id: 'trident', name: 'Trident', desc: 'Trois canons, couverture large', price: 48500, color: '#fb7185', speed: 355, fireRate: 0.24, bulletSpeed: 850, maxLives: 4, multishot: 3, bulletDamage: 3, unlockLevel: 24 },
-  { id: 'prism', name: 'Prisme Royal', desc: 'Vaisseau premium : salves prismatiques, cadence élevée et coque renforcée', price: 53000, color: '#c4b5fd', speed: 350, fireRate: 0.155, bulletSpeed: 980, maxLives: 7, multishot: 2, bulletDamage: 5, unlockLevel: 26 },
-  { id: 'bomber', name: 'Bombardier Nova', desc: 'Bombe à impulsion : touche les ennemis et le boss partout à l’écran · pouvoir E', price: 62000, color: '#ff8b45', speed: 315, fireRate: .27, bulletSpeed: 680, maxLives: 4, multishot: 1, bulletDamage: 2, unlockLevel: 35, specialAbility: 'bomb', specialUses: 1 },
-  { id: 'aegis', name: 'Égide Spectrale', desc: 'Onde de défense : efface les tirs ennemis et protège brièvement · pouvoir E', price: 70000, color: '#55f6ff', speed: 360, fireRate: .24, bulletSpeed: 760, maxLives: 4, multishot: 1, bulletDamage: 3, unlockLevel: 45, specialAbility: 'pulse', specialUses: 1 },
-  { id: 'medic', name: 'Phénix de Secours', desc: 'Réacteur médical : restaure une vie, une fois par niveau · pouvoir E', price: 78000, color: '#ff5fa2', speed: 345, fireRate: .25, bulletSpeed: 740, maxLives: 4, multishot: 1, bulletDamage: 3, unlockLevel: 55, specialAbility: 'repair', specialUses: 1 },
-  {id:'vortex',name:'Vortex',desc:'Onde gravitationnelle qui dissipe les tirs · pouvoir E',price:84000,color:'#a78bfa',speed:380,fireRate:.24,bulletSpeed:760,maxLives:4,multishot:2,bulletDamage:3,unlockLevel:60,specialAbility:'gravity',specialUses:2},
-  {id:'lumen',name:'Lumen',desc:'Rayon concentré qui frappe le boss · pouvoir E',price:90000,color:'#fff2a6',speed:355,fireRate:.25,bulletSpeed:820,maxLives:4,multishot:0,bulletDamage:5,unlockLevel:62,specialAbility:'beam',specialUses:2},
-  {id:'tempest',name:'Tempête',desc:'Déchaîne une rafale circulaire · pouvoir E',price:96000,color:'#42e8ff',speed:410,fireRate:.27,bulletSpeed:850,maxLives:3,multishot:2,bulletDamage:3,unlockLevel:65,specialAbility:'barrage',specialUses:2},
-  {id:'wraith',name:'Spectre noir',desc:'Saut de phase et invulnérabilité brève · pouvoir E',price:102000,color:'#c084fc',speed:430,fireRate:.23,bulletSpeed:900,maxLives:3,multishot:1,bulletDamage:4,unlockLevel:68,specialAbility:'phase',specialUses:2},
-  {id:'bastion_mk2',name:'Bastion MK-II',desc:'Déploie un drone qui neutralise les ennemis proches · pouvoir E',price:108000,color:'#76f7b2',speed:290,fireRate:.3,bulletSpeed:700,maxLives:6,multishot:1,bulletDamage:3,unlockLevel:70,specialAbility:'drone',specialUses:2},
-  {id:'sunlance',name:'Lance solaire',desc:'Tir chargé à trois projectiles et dissipation des tirs hostiles · pouvoir E',price:114000,color:'#ffb64d',speed:345,fireRate:.22,bulletSpeed:950,maxLives:4,multishot:0,bulletDamage:6,unlockLevel:73,specialAbility:'overdrive',specialUses:2},
+  { id: 'phantom', name: 'Fantôme', desc: 'Agile, coque légère et salves renforcées', price: 6500, color: '#8be9fd', speed: 405, fireRate: 0.22, bulletSpeed: 790, maxLives: 3, multishot: 1, bulletDamage: 3, unlockLevel: 3 },
+  { id: 'nova', name: 'Nova', desc: 'Salves explosives, cadence de rupture', price: 9000, color: '#ff7ad9', speed: 340, fireRate: 0.20, bulletSpeed: 720, maxLives: 4, multishot: 2, bulletDamage: 3, unlockLevel: 5 },
+  { id: 'vanguard', name: 'Avant-garde', desc: 'Blindage lourd et canons renforcés', price: 13500, color: '#a3ff12', speed: 285, fireRate: 0.19, bulletSpeed: 850, maxLives: 6, multishot: 1, bulletDamage: 4, unlockLevel: 7 },
+  { id: 'eclipse', name: 'Éclipse', desc: 'Chasseur d’élite polyvalent à salve rapide', price: 20000, color: '#b388ff', speed: 370, fireRate: 0.16, bulletSpeed: 940, maxLives: 5, multishot: 2, bulletDamage: 4, unlockLevel: 10 },
+  { id: 'manta', name: 'Manta', desc: 'Intercepteur rapide à rafales lourdes', price: 41000, color: '#22d3ee', speed: 435, fireRate: 0.20, bulletSpeed: 860, maxLives: 3, multishot: 1, bulletDamage: 4, unlockLevel: 20 },
+  { id: 'lance', name: 'Lance-Photon', desc: 'Canon perforant spécialisé contre les boss', price: 44500, color: '#fbbf24', speed: 320, fireRate: 0.26, bulletSpeed: 1200, maxLives: 4, multishot: 0, bulletDamage: 12, unlockLevel: 22 },
+  { id: 'trident', name: 'Trident', desc: 'Cinq trajectoires et couverture large', price: 48500, color: '#fb7185', speed: 360, fireRate: 0.22, bulletSpeed: 900, maxLives: 4, multishot: 3, bulletDamage: 3, unlockLevel: 24 },
+  { id: 'prism', name: 'Prisme Royal', desc: 'Cadence prismatique, coque lourde et large salve', price: 53000, color: '#c4b5fd', speed: 350, fireRate: 0.17, bulletSpeed: 980, maxLives: 7, multishot: 2, bulletDamage: 5, unlockLevel: 26 },
+  { id: 'bomber', name: 'Bombardier Nova', desc: 'Bombe à impulsion : touche les ennemis et le boss partout à l’écran · pouvoir E', price: 62000, color: '#ff8b45', speed: 315, fireRate: .27, bulletSpeed: 720, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel: 35, specialAbility: 'bomb', specialUses: 1 },
+  { id: 'aegis', name: 'Égide Spectrale', desc: 'Onde de défense : efface les tirs ennemis et protège brièvement · pouvoir E', price: 70000, color: '#55f6ff', speed: 360, fireRate: .24, bulletSpeed: 800, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel: 45, specialAbility: 'pulse', specialUses: 1 },
+  { id: 'medic', name: 'Phénix de Secours', desc: 'Réacteur médical : restaure une vie, une fois par niveau · pouvoir E', price: 78000, color: '#ff5fa2', speed: 345, fireRate: .25, bulletSpeed: 780, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel: 55, specialAbility: 'repair', specialUses: 1 },
+  {id:'vortex',name:'Vortex',desc:'Onde gravitationnelle qui dissipe les tirs · pouvoir E',price:84000,color:'#a78bfa',speed:380,fireRate:.24,bulletSpeed:800,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:60,specialAbility:'gravity',specialUses:2},
+  {id:'lumen',name:'Lumen',desc:'Rayon concentré qui frappe le boss · pouvoir E',price:90000,color:'#fff2a6',speed:355,fireRate:.25,bulletSpeed:900,maxLives:4,multishot:0,bulletDamage:14,unlockLevel:62,specialAbility:'beam',specialUses:2},
+  {id:'tempest',name:'Tempête',desc:'Déchaîne une rafale circulaire · pouvoir E',price:96000,color:'#42e8ff',speed:410,fireRate:.27,bulletSpeed:900,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:65,specialAbility:'barrage',specialUses:2},
+  {id:'wraith',name:'Spectre noir',desc:'Saut de phase et invulnérabilité brève · pouvoir E',price:102000,color:'#c084fc',speed:430,fireRate:.23,bulletSpeed:940,maxLives:3,multishot:1,bulletDamage:5,unlockLevel:68,specialAbility:'phase',specialUses:2},
+  {id:'bastion_mk2',name:'Bastion MK-II',desc:'Déploie un drone qui neutralise les ennemis proches · pouvoir E',price:108000,color:'#76f7b2',speed:290,fireRate:.3,bulletSpeed:760,maxLives:6,multishot:1,bulletDamage:4,unlockLevel:70,specialAbility:'drone',specialUses:2},
+  {id:'sunlance',name:'Lance solaire',desc:'Tir chargé à trois projectiles et dissipation des tirs hostiles · pouvoir E',price:114000,color:'#ffb64d',speed:345,fireRate:.22,bulletSpeed:1100,maxLives:4,multishot:0,bulletDamage:16,unlockLevel:73,specialAbility:'overdrive',specialUses:2},
   {id:'singularity',name:'Singularité',desc:'Onde qui dissipe les tirs et endommage le boss · pouvoir E',price:120000,color:'#ec6bff',speed:370,fireRate:.26,bulletSpeed:780,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:76,specialAbility:'gravity',specialUses:3},
   {id:'striker_x',name:'Striker X',desc:'Bombe tactique et salve de précision · pouvoir E',price:126000,color:'#ff6b6b',speed:390,fireRate:.2,bulletSpeed:880,maxLives:4,multishot:1,bulletDamage:5,unlockLevel:79,specialAbility:'bomb',specialUses:2},
   {id:'halo',name:'Halo',desc:'Bouclier d’urgence et onde anti-projectiles · pouvoir E',price:132000,color:'#8be9fd',speed:360,fireRate:.23,bulletSpeed:800,maxLives:5,multishot:1,bulletDamage:4,unlockLevel:82,specialAbility:'pulse',specialUses:2},
@@ -1014,7 +1014,7 @@ const SHIPS = [
   {id:'comet',name:'Comète',desc:'Accélération de phase pour éviter les attaques · pouvoir E',price:144000,color:'#ff8b45',speed:465,fireRate:.24,bulletSpeed:920,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:88,specialAbility:'phase',specialUses:3},
   {id:'omega_ship',name:'Omega-9',desc:'Onde de choc et rafale d’appoint · pouvoir E',price:150000,color:'#f0f4ff',speed:375,fireRate:.2,bulletSpeed:940,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:90,specialAbility:'barrage',specialUses:3},
   {id:'gravemaker',name:'Gravemaker',desc:'Onde gravitationnelle lourde · pouvoir E',price:156000,color:'#a78bfa',speed:320,fireRate:.25,bulletSpeed:820,maxLives:6,multishot:1,bulletDamage:5,unlockLevel:92,specialAbility:'gravity',specialUses:3},
-  {id:'needle_x',name:'Aiguille X',desc:'Rayon perforant contre les boss · pouvoir E',price:162000,color:'#fff2a6',speed:420,fireRate:.29,bulletSpeed:1200,maxLives:3,multishot:0,bulletDamage:8,unlockLevel:94,specialAbility:'beam',specialUses:3},
+  {id:'needle_x',name:'Aiguille X',desc:'Rayon perforant contre les boss · pouvoir E',price:162000,color:'#fff2a6',speed:420,fireRate:.29,bulletSpeed:1300,maxLives:3,multishot:0,bulletDamage:16,unlockLevel:94,specialAbility:'beam',specialUses:3},
   {id:'corsair',name:'Corsaire',desc:'Drone d’attaque et salve latérale · pouvoir E',price:168000,color:'#76f7b2',speed:390,fireRate:.22,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:5,unlockLevel:96,specialAbility:'drone',specialUses:3},
   {id:'frostbite',name:'Morsure Cryo',desc:'Onde défensive qui nettoie les tirs hostiles · pouvoir E',price:174000,color:'#9be7ff',speed:355,fireRate:.2,bulletSpeed:960,maxLives:5,multishot:1,bulletDamage:5,unlockLevel:97,specialAbility:'pulse',specialUses:3},
   {id:'empress',name:'Impératrice',desc:'Barrage radial de précision · pouvoir E',price:180000,color:'#ff75d8',speed:365,fireRate:.23,bulletSpeed:930,maxLives:4,multishot:3,bulletDamage:4,unlockLevel:98,specialAbility:'barrage',specialUses:3},
@@ -1031,16 +1031,6 @@ const UPGRADES = [
  {id:'pilot_zen',name:'Zhen Arclight — Percuteur',portrait:'🧑🏾‍🚀',desc:'Percuteur : chaque 4e salve est surchargée (+3 dégâts). +2 dégâts, vitesse −12 %.',price:7800,apply:s=>{s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.88;}},
  {id:'pilot_echo',name:'Echo Renn — Phaseur',portrait:'🧑🏼‍🚀',desc:'Déphasage : 1,2 s intouchable toutes les 6 s. Hitbox −8 %, vitesse +6 %.',price:9200,apply:s=>{s.speedMul=(s.speedMul||1)*1.06;s.damageReduction=(s.damageReduction||0)+.06;s.hitboxMul=(s.hitboxMul||1)*.92;}},
  {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Guidage ionique : les projectiles corrigent leur trajectoire vers une cible. +1 dégât.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}},
- {id:'pilot_kaori',name:'Kaori Venn — Éclaireuse',portrait:'👩🏽‍🚀',desc:'Vitesse +18 %, hitbox réduite et une vie bonus.',price:12500,apply:s=>{s.speedMul=(s.speedMul||1)*1.18;s.hitboxMul=(s.hitboxMul||1)*.82;s.extraLives=(s.extraLives||0)+1;}},
- {id:'pilot_mako',name:'Mako Rhee — Rempart',portrait:'🧑🏻‍🚀',desc:'Absorbe un impact sur quatre et ajoute une vie.',price:13800,apply:s=>{s.armorEvery=4;s.extraLives=(s.extraLives||0)+1;s.speedMul=(s.speedMul||1)*.92;}},
- {id:'pilot_solis',name:'Solis Nyx — Surchauffe',portrait:'🧑🏽‍🚀',desc:'Surcharge offensive cyclique et dégâts supplémentaires.',price:15000,apply:s=>{s.novaCycle=7;s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.94;}},
- {id:'pilot_rune',name:'Rune Calder — Phaseur',portrait:'👩🏻‍🚀',desc:'Déphasage plus fréquent et vitesse accrue.',price:16400,apply:s=>{s.phaseCycle=5;s.speedMul=(s.speedMul||1)*1.1;s.hitboxMul=(s.hitboxMul||1)*.9;}},
- {id:'pilot_tess',name:'Tess Ardent — Gardienne',portrait:'👩🏽‍🚀',desc:'Bouclier rechargé plus vite et coque renforcée.',price:17800,apply:s=>{s.shieldCycle=8;s.extraLives=(s.extraLives||0)+1;s.speedMul=(s.speedMul||1)*.9;}},
- {id:'pilot_jae',name:'Jae Orion — Tireur d’élite',portrait:'🧑🏼‍🚀',desc:'Tirs chargés, dégâts accrus et cadence plus lente.',price:19200,apply:s=>{s.chargedPilot=true;s.extraDamage=(s.extraDamage||0)+3;s.fireRateMul=(s.fireRateMul||1)*.86;s.speedMul=(s.speedMul||1)*.94;}},
- {id:'pilot_sable',name:'Sable Korr — Traqueuse',portrait:'👩🏽‍🚀',desc:'Projectiles guidés, cadence rapide et coque légère.',price:21000,apply:s=>{s.guidedPilot=true;s.fireRateMul=(s.fireRateMul||1)*.9;s.hitboxMul=(s.hitboxMul||1)*.92;}},
- {id:'pilot_oryx',name:'Oryx Dane — Bastion',portrait:'🧑🏽‍🚀',desc:'Absorbe un impact sur deux cycles, mais manœuvre plus lentement.',price:22500,apply:s=>{s.armorEvery=3;s.extraLives=(s.extraLives||0)+2;s.speedMul=(s.speedMul||1)*.84;}},
- {id:'pilot_yuna',name:'Yuna Vale — Voltigeuse',portrait:'👩🏻‍🚀',desc:'Déphasage fréquent et hitbox réduite.',price:24000,apply:s=>{s.phaseCycle=5;s.hitboxMul=(s.hitboxMul||1)*.78;s.speedMul=(s.speedMul||1)*1.07;}},
- {id:'pilot_dax',name:'Dax Ren — Artilleur',portrait:'🧑🏻‍🚀',desc:'Salve chargée et dégâts élevés, avec vitesse modérée.',price:25500,apply:s=>{s.chargedPilot=true;s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.9;}}
 ];
 
 
@@ -1082,6 +1072,7 @@ const PilotArt = {
       <text x="10" y="148" fill="${c}" font-size="6" font-family="monospace">NS // ${String(i+1).padStart(2,'0')} // ${UPGRADES[i].name.split(' — ')[1].toUpperCase()}</text></svg>`;
   }
 };
+const LEGACY_PILOT_REFUNDS = {pilot_kaori:12500,pilot_mako:13800,pilot_solis:15000,pilot_rune:16400,pilot_tess:17800,pilot_jae:19200,pilot_sable:21000,pilot_oryx:22500,pilot_yuna:24000,pilot_dax:25500};
 const PILOT_SIGNATURES = {
   pilot_spectre: {shipScale:.66, hitboxMul:.55},
   pilot_bastion: {armorEvery:3},
@@ -1090,7 +1081,7 @@ const PILOT_SIGNATURES = {
   pilot_vega: {shieldCycle:10},
   pilot_zen: {chargedPilot:true},
   pilot_echo: {phaseCycle:6},
-  pilot_ion: {guidedPilot:true},pilot_kaori:{phaseCycle:7},pilot_mako:{armorEvery:4},pilot_solis:{novaCycle:7},pilot_rune:{phaseCycle:5},pilot_tess:{shieldCycle:8},pilot_jae:{chargedPilot:true},pilot_sable:{guidedPilot:true},pilot_oryx:{armorEvery:3},pilot_yuna:{phaseCycle:5},pilot_dax:{chargedPilot:true}
+  pilot_ion: {guidedPilot:true}
 };
 
 // ===================== CONFIGURATION =====================
@@ -1849,7 +1840,7 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * 1.18 * (this.info.healthMul||1));
+    this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * (level <= 10 ? 1.62 : 1.82) * (this.info.healthMul||1));
     if(level>=90)this.maxHealth=Math.round(this.maxHealth*1.12);
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
@@ -1859,7 +1850,7 @@ class Boss {
     this.flash = 0;       // flash quand touché
     this.rage = false;
     this.rageText = 0;
-    this.diff = 1.18 + Math.min(level, 25) * 0.045; // difficulté qui monte doucement
+    this.diff = 1.38 + Math.min(level, 40) * 0.055; // vitesse et agressivité progressives
     this.st = {};         // état propre au type    this.setup();
   }
 
@@ -2152,15 +2143,17 @@ class Boss {
   }
 
   tick_custom(dt,W,P,game,R,sp){
-    const st=this.st,a=this.info.attack,m=this.info.movement;st.phaseT+=dt;st.timer-=dt;st.open=Math.max(0,st.open-dt);st.angle+=dt*(this.rage?2.5:1.45);const cx=W/2,span=Math.max(70,W*.32);
-    const mv=.08*Math.floor(this.info.attack/8);if(m===0){this.x=cx+Math.sin(this.t*(.72+mv))*span;this.y=this.targetY+Math.sin(this.t*1.7)*17;}
-    else if(m===1){this.x=cx+Math.sin(this.t*(1.2+mv))*span;this.y=this.targetY+Math.cos(this.t*.8)*35;}
-    else if(m===2){this.x=Utils.lerp(this.x,Utils.clamp(P.x+(this.rage?0:120),70,W-70),dt*(.36+mv*.1));this.y=this.targetY+Math.sin(this.t*2)*18;}
-    else if(m===3){this.x=cx+Math.sin(this.t*(.46+mv))*span;this.y=this.targetY+Math.sin(this.t*2.4)*27;}
-    else if(m===4){const k=(this.t*(.32+mv*.05))%2;this.x=Utils.lerp(65,W-65,k<1?k:2-k);this.y=this.targetY+Math.sin(this.t*1.3)*22;}
-    else if(m===5){this.x=cx+Math.sin(this.t*(1.6+mv))*span*.7;this.y=this.targetY+Math.sin(this.t*1.1)*40;}
-    else if(m===6){this.x=cx+Math.cos(this.t*(.65+mv))*span*.65;this.y=this.targetY+Math.sin(this.t*.65)*28;}
-    else{this.x=cx+Math.sin(this.t*(.9+mv)+(a%3))*span;this.y=this.targetY+Math.sin(this.t*2.7)*20;}
+    const st=this.st,a=this.info.attack,m=this.info.movement;st.phaseT+=dt;st.timer-=dt;st.open=Math.max(0,st.open-dt);st.angle+=dt*(this.rage?2.5:1.45);
+    const motion=a%8,center=W/2,span=Math.max(70,W*.34),rageSpeed=this.rage?1.35:1;
+    st.teleportFx=Math.max(0,(st.teleportFx||0)-dt);
+    if(motion===0){this.x=center+Math.sin(this.t*.9)*span;this.y=this.targetY+Math.sin(this.t*1.8)*22;}
+    else if(motion===1){st.motionCd=(st.motionCd??1.7)-dt;if(st.motionCd<=0){st.teleportX=Utils.clamp(P.x+(P.x<center?115:-115),55,W-55);st.teleportY=this.targetY+Utils.randRange(-8,42);this.x=st.teleportX;this.y=st.teleportY;st.teleportFx=.45;st.motionCd=this.rage?1.55:2.15;game.screenShake=.16;}else{this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
+    else if(motion===2){this.x=center+Math.sin(this.t*(2.2*rageSpeed))*span;this.y=this.targetY+Math.sin(this.t*3.8)*34;}
+    else if(motion===3){st.diveCd=(st.diveCd??1.8)-dt;if(st.diveCd<=0){st.diveCd=this.rage?1.65:2.4;st.diveX=Utils.clamp(P.x,55,W-55);st.diveTime=.62;game.screenShake=.12;}if(st.diveTime>0){st.diveTime-=dt;this.x=Utils.lerp(this.x,st.diveX,dt*5);this.y=Utils.lerp(this.y,Math.min(P.y-62,game.height-85),dt*2.8);}else{this.x=Utils.lerp(this.x,center+Math.sin(this.t*1.3)*span,dt*1.7);this.y=Utils.lerp(this.y,this.targetY+Math.sin(this.t*2)*18,dt*2);}}
+    else if(motion===4){const rearY=Math.min(P.y-56,game.height-82);this.x=Utils.lerp(this.x,Utils.clamp(P.x,55,W-55),dt*(this.rage?2.6:1.8));this.y=Utils.lerp(this.y,Math.max(this.targetY,rearY),dt*(this.rage?1.7:1.2));st.motionCd=(st.motionCd??2.5)-dt;if(st.motionCd<=0){st.motionCd=this.rage?2.4:3.25;this.y=this.targetY+12;st.teleportFx=.35;game.screenShake=.2;}}
+    else if(motion===5){st.orbit=(st.orbit||0)+dt*(this.rage?2.3:1.45);const radius=Math.min(155,W*.26);this.x=Utils.clamp(P.x+Math.cos(st.orbit)*radius,55,W-55);this.y=Utils.clamp(Math.min(P.y-68,this.targetY+70)+Math.sin(st.orbit*1.7)*45,this.targetY-5,game.height-90);}
+    else if(motion===6){st.jumpCd=(st.jumpCd??1.8)-dt;if(st.jumpCd<=0){st.jumpCd=this.rage?1.55:2.2;st.jumpX=Utils.clamp(P.x+Utils.randRange(-100,100),55,W-55);st.jumpTime=.58;game.screenShake=.13;}if(st.jumpTime>0){st.jumpTime-=dt;const k=1-st.jumpTime/.58;this.x=Utils.lerp(this.x,st.jumpX,k);this.y=this.targetY+Math.sin(k*Math.PI)*100;}else{this.x=Utils.lerp(this.x,center+Math.sin(this.t)*span,dt*2);this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
+    else{st.chargeCd=(st.chargeCd??1.5)-dt;if(st.chargeCd<=0){st.chargeCd=this.rage?1.35:1.9;st.chargeX=Utils.clamp(P.x,55,W-55);st.chargeTime=.42;game.screenShake=.18;}if(st.chargeTime>0){st.chargeTime-=dt;this.x=Utils.lerp(this.x,st.chargeX,dt*7);this.y=Utils.lerp(this.y,Math.min(P.y-52,game.height-82),dt*2.5);}else{this.x=center+Math.sin(this.t*1.6)*span;this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
     if(st.timer>0)return;const speed=sp*(this.info.damageMul||1),aim=Utils.angle(this.x,this.y,P.x,P.y),count=this.rage?1.2:1;
     const shot=(x,y,ang,v=speed,color=this.color,r=4,opts={})=>bossShoot(game,x,y,ang,v,color,{radius:r,...opts});
     switch(a){
@@ -2489,8 +2482,21 @@ class Boss {
   draw_architect(ctx,col){this.draw_frontier(ctx,col);}
   draw_omega(ctx,col){this.draw_frontier(ctx,col);}
   draw_frontier(ctx,col){const pattern=this.info.pattern,s=this.size*.52;ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rotation*.35);this.glow(ctx,this.color,32);ctx.strokeStyle=col;ctx.fillStyle='#080d20';ctx.lineWidth=4;ctx.beginPath();const n=pattern==='leviathan'?12:pattern==='hydra_prime'?9:pattern==='architect'?4:pattern==='maw'?7:pattern==='colossus'?6:pattern==='reaper'?3:pattern==='oracle'?8:pattern==='eclipse'?10:pattern==='omega'?12:5;for(let i=0;i<n;i++){const a=i*Math.PI*2/n,r=s*(i%2?.72:1.05);i?ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r):ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.stroke();ctx.rotate(-this.rotation*.7);if(pattern==='leviathan'||pattern==='hydra_prime'){for(let i=-1;i<=1;i++){ctx.beginPath();ctx.ellipse(i*s*.38,-s*.5,13,s*.55,i*.22,0,Math.PI*2);ctx.stroke();ctx.fillStyle=col;ctx.fillRect(i*s*.38-4,-s*.5-3,8,6);}}else if(pattern==='architect'){ctx.strokeRect(-s*.55,-s*.55,s*1.1,s*1.1);ctx.strokeRect(-s*.3,-s*.3,s*.6,s*.6);}else if(pattern==='colossus'){ctx.fillRect(-s*.95,-s*.2,s*.35,s*.85);ctx.fillRect(s*.6,-s*.2,s*.35,s*.85);}else{for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.beginPath();ctx.moveTo(0,-s*.22);ctx.lineTo(s*.7,0);ctx.lineTo(0,s*.22);ctx.stroke();}}ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,0,s*(pattern==='oracle'?.22:.16)*(1+Math.sin(this.t*5)*.12),0,Math.PI*2);ctx.fill();ctx.restore();}
-  draw_custom(ctx,col){const shape=this.info.shape,s=this.size*.52,n=5+(shape%11),cut=shape%4;ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rotation*(shape%2?.45:-.35));this.glow(ctx,this.color,24+shape);ctx.fillStyle=`rgba(5,12,28,${.84-(shape%4)*.06})`;ctx.strokeStyle=col;ctx.lineWidth=2.5+(shape%3);ctx.beginPath();for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2-Math.PI/2,spike=i%2===cut%2?(1.05+(shape%5)*.09):(.62+(shape%3)*.06),x=Math.cos(a)*s*spike,y=Math.sin(a)*s*spike;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();ctx.rotate(-this.rotation*.9);if(shape%4===0){for(let side of [-1,1]){ctx.beginPath();ctx.moveTo(side*s*.22,-s*.18);ctx.lineTo(side*s*.9,-s*.7);ctx.lineTo(side*s*.66,s*.12);ctx.closePath();ctx.stroke();}}else if(shape%4===1){for(let i=0;i<3;i++){ctx.strokeRect(-s*.22+i*s*.22,-s*.42,s*.18,s*.84);}}else if(shape%4===2){ctx.beginPath();ctx.ellipse(0,0,s*.82,s*.27,this.t*.25,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(0,0,s*.27,s*.82,-this.t*.25,0,Math.PI*2);ctx.stroke();}else{for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.beginPath();ctx.moveTo(0,-s*.18);ctx.lineTo(s*.83,0);ctx.lineTo(0,s*.18);ctx.stroke();}}ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,0,s*(.13+(shape%3)*.025)*(1+Math.sin(this.t*5)*.16),0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';for(let i=0;i<1+(shape%3);i++){const x=(i-(shape%3)/2)*10;ctx.fillRect(x-2,-s*.12,4,4);}ctx.restore();}
-
+  draw_custom(ctx,col){
+    const shape=this.info.shape,s=this.size*.52,n=5+(shape%11),style=Math.floor(shape/4);ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rotation*(shape%2?.45:-.35));this.glow(ctx,this.color,24+shape);ctx.fillStyle='rgba(5,12,28,.88)';ctx.strokeStyle=col;ctx.lineWidth=2.5+(shape%3);
+    ctx.beginPath();for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2-Math.PI/2,spike=i%2===shape%4?(1.08+(shape%5)*.08):(.62+(shape%3)*.06),x=Math.cos(a)*s*spike,y=Math.sin(a)*s*spike;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.rotate(-this.rotation*.9);ctx.lineWidth=2;
+    if(style===0){for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*s*.18,-s*.2);ctx.lineTo(side*s*1.12,-s*.72);ctx.lineTo(side*s*.82,s*.18);ctx.lineTo(side*s*.32,s*.1);ctx.closePath();ctx.stroke();}}
+    else if(style===1){for(let i=0;i<4;i++){const x=-s*.72+i*s*.48;ctx.strokeRect(x,-s*.5,s*.36,s);ctx.beginPath();ctx.moveTo(x,-s*.18);ctx.lineTo(x+s*.36,-s*.18);ctx.moveTo(x,s*.18);ctx.lineTo(x+s*.36,s*.18);ctx.stroke();}}
+    else if(style===2){ctx.beginPath();ctx.ellipse(0,0,s*.92,s*.28,this.t*.3,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(0,0,s*.3,s*.92,-this.t*.24,0,Math.PI*2);ctx.stroke();}
+    else if(style===3){for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(i*s*.28,s*.14);ctx.lineTo(i*s*.48,-s*.28);ctx.lineTo(i*s*.78,-s*.94);ctx.stroke();}}
+    else if(style===4){for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*s*.24,-s*.24);ctx.lineTo(side*s*.48,-s*.72);ctx.lineTo(side*s*.64,-s*.42);ctx.stroke();}ctx.beginPath();ctx.moveTo(-s*.42,s*.32);ctx.lineTo(0,s*.55);ctx.lineTo(s*.42,s*.32);ctx.stroke();}
+    else if(style===5){ctx.beginPath();ctx.ellipse(0,0,s*.78,s*.46,this.t*.45,0,Math.PI*2);ctx.stroke();for(let i=0;i<4;i++){const a=this.t*.45+i*Math.PI/2;ctx.beginPath();ctx.arc(Math.cos(a)*s*.78,Math.sin(a)*s*.46,5+(shape%3),0,Math.PI*2);ctx.stroke();}}
+    else if(style===6){for(let side of [-1,1]){ctx.beginPath();ctx.moveTo(side*s*.2,-s*.1);ctx.lineTo(side*s*.75,-s*.32);ctx.lineTo(side*s*.9,s*.1);ctx.lineTo(side*s*.62,s*.48);ctx.closePath();ctx.stroke();}ctx.strokeRect(-s*.18,-s*.55,s*.36,s*1.1);}
+    else{for(let i=0;i<6;i++){const a=i*Math.PI/3;ctx.save();ctx.rotate(a);ctx.beginPath();ctx.moveTo(0,-s*.22);ctx.lineTo(s*.95,0);ctx.lineTo(0,s*.22);ctx.stroke();ctx.restore();}}
+    const pulse=1+Math.sin(this.t*(4+shape%5))*.18;ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,0,s*(.13+(shape%3)*.025)*pulse,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';for(let i=0;i<1+(shape%3);i++){const x=(i-(shape%3)/2)*10;ctx.fillRect(x-2,-s*.12,4,4);}
+    if(this.st.teleportFx>0){ctx.save();ctx.globalAlpha=Math.min(1,this.st.teleportFx*2.4);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,s*(.6+(1-this.st.teleportFx)*.7),0,Math.PI*2);ctx.stroke();ctx.restore();}ctx.restore();
+  }
   drawBar(ctx) {
     const W = this.canvasW, barW = Math.min(300, W - 40), barH = 6;
     const barX = (W - barW) / 2, barY = 10;
@@ -2769,8 +2775,8 @@ const Game = {
     if(this.weeklyChallenge)return {enemyHealth:1.72,enemySpeed:1.34,spawn:.66,lives:0};
     return {
       easy:   {enemyHealth:.65, enemySpeed:.75, spawn:1.35, lives:2},
-      normal: {enemyHealth:1, enemySpeed:1, spawn:1, lives:0},
-      hard:   {enemyHealth:1.45, enemySpeed:1.28, spawn:.72, lives:-1}
+      normal: {enemyHealth:1.12, enemySpeed:1.08, spawn:.92, lives:0},
+      hard:   {enemyHealth:1.72, enemySpeed:1.42, spawn:.58, lives:-2}
     }[this.difficulty] || {enemyHealth:1,enemySpeed:1,spawn:1,lives:0};
   },
   beginEndless() {
@@ -3210,7 +3216,7 @@ const Game = {
     const mix = this.currentLevelData.enemyMix;
     const make = (x, y) => {
       const e = new Enemy(x, y, this.level, this.wave, mix); const dm=this.difficultyMods();
-      e.speed*=dm.enemySpeed; e.health=Math.max(1,Math.ceil(e.health*dm.enemyHealth)); e.maxHealth=e.health;
+      const levelPressure=1+Math.min(.78,Math.max(0,this.level-4)*.008);e.speed*=dm.enemySpeed*(1+Math.min(.28,Math.max(0,this.level-4)*.003));e.health=Math.max(1,Math.ceil(e.health*dm.enemyHealth*levelPressure));e.maxHealth=e.health;
       if (this.endlessRun) { const ramp=1+Math.min(2.6,Math.max(0,this.endlessDepth-1)*.035); e.speed*=ramp; e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(1.7,Math.max(0,this.endlessDepth-1)*.028)))); e.maxHealth=e.health; }
       if (typeof Coop !== 'undefined' && Coop.active && Versus.isHost) e.netId = Coop.nextEnemyId++;
       if (this.hasMod('speed')) e.speed *= 1.3;
@@ -4476,6 +4482,7 @@ const Save = {
       equippedShip: Game.creator && Creator.backup && !Creator.backup.ships.includes(Game.equippedShip) ? 'default' : Game.equippedShip,
       ownedUpgrades: Game.ownedUpgrades,
       equippedPilotId: Game.equippedPilotId,
+      pilotRefundVersion: Game.pilotRefundVersion,
       upgradeState: Game.upgradeState,
       shipUpgradeStates: Game.shipUpgradeStates,
       shipColors: Game.shipColors,
@@ -4501,7 +4508,7 @@ const Save = {
     clearTimeout(this.timer);
     Game.creator = false; Creator.backup = null; Game.devAccount = false;
     Game.credits = 0; Game.ownedShips = ['default']; Game.equippedShip = 'default';
-    Game.ownedUpgrades = []; Game.equippedPilotId = null; Game.upgradeState = {}; Game.shipUpgradeStates = {}; Game.shipColors = {}; Game.unlockedLevel = 0; Game.bestScores = {};
+    Game.ownedUpgrades = []; Game.equippedPilotId = null; Game.pilotRefundVersion = 1; Game.upgradeState = {}; Game.shipUpgradeStates = {}; Game.shipColors = {}; Game.unlockedLevel = 0; Game.bestScores = {};
     const d = res && res.data;
     if (d) {
       Game.devAccount = !!d.devAccount;
@@ -4514,8 +4521,8 @@ const Save = {
       Game.shipUpgradeStates = d.shipUpgradeStates && typeof d.shipUpgradeStates === 'object' ? d.shipUpgradeStates : {};
       const savedShip=Game.shipUpgradeStates[Game.equippedShip],allOwned=new Set(Array.isArray(d.ownedUpgrades)?d.ownedUpgrades:[]);
       for(const saved of Object.values(Game.shipUpgradeStates))if(saved&&Array.isArray(saved.owned))for(const id of saved.owned)allOwned.add(id);
-      Game.ownedUpgrades=UPGRADES.filter(upg=>allOwned.has(upg.id)).map(upg=>upg.id);
-      Game.equippedPilotId=d.equippedPilotId||savedShip?.pilot||null;Game.upgradeState={};const equipped=UPGRADES.find(upg=>upg.id===Game.equippedPilotId);if(equipped&&Game.ownedUpgrades.includes(equipped.id))equipped.apply(Game.upgradeState);
+      Game.ownedUpgrades=UPGRADES.filter(upg=>allOwned.has(upg.id)).map(upg=>upg.id);if(!d.devAccount&&d.pilotRefundVersion!==1)for(const [legacyId,refund] of Object.entries(LEGACY_PILOT_REFUNDS))if(allOwned.has(legacyId))Game.credits+=refund;Game.pilotRefundVersion=1;
+      const requestedPilot=d.equippedPilotId||savedShip?.pilot||null;Game.equippedPilotId=UPGRADES.some(upg=>upg.id===requestedPilot&&Game.ownedUpgrades.includes(upg.id))?requestedPilot:null;Game.upgradeState={};const equipped=UPGRADES.find(upg=>upg.id===Game.equippedPilotId);if(equipped)equipped.apply(Game.upgradeState);
       for(const [id,saved] of Object.entries(Game.shipUpgradeStates)){if(!saved||typeof saved!=='object')Game.shipUpgradeStates[id]={state:{},owned:[...Game.ownedUpgrades],pilot:Game.equippedPilotId,modules:[]};else{saved.state={};saved.owned=[...Game.ownedUpgrades];saved.pilot=Game.equippedPilotId;if(!Array.isArray(saved.modules))saved.modules=[];}}
       Game.shipUpgradeStates[Game.equippedShip]||=(Game.shipUpgradeStates[Game.equippedShip]={modules:[]});Game.shipUpgradeStates[Game.equippedShip].state={};Game.shipUpgradeStates[Game.equippedShip].owned=[...Game.ownedUpgrades];Game.shipUpgradeStates[Game.equippedShip].pilot=Game.equippedPilotId;
       Game.unlockedLevel = d.devAccount ? LEVELS.length - 1 : Utils.clamp(d.unlockedLevel | 0, 0, LEVELS.length - 1);
@@ -4524,6 +4531,7 @@ const Save = {
       Chests.last24h = d.devAccount ? 0 : (Number(d.chestLast24h) || 0);
     }
     if (res && res.creator) Creator.enable(false); // le serveur décide si le mode créateur est actif
+    if (d && d.pilotRefundVersion !== 1) this.save(); // migre une seule fois les pilotes retirés
   },
   // La progression invitée est sauvegardée sur le serveur avec l’identifiant de cet appareil
   load() {
@@ -6758,7 +6766,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261021b" defer></script>
+<script src="/expansion.js?build=20261022c" defer></script>
 </body>
 </html>
 
