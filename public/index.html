@@ -1860,8 +1860,7 @@ class Boss {
     this.rage = false;
     this.rageText = 0;
     this.diff = 1.18 + Math.min(level, 25) * 0.045; // difficulté qui monte doucement
-    this.st = {};         // état propre au type
-    this.setup();
+    this.st = {};         // état propre au type    this.setup();
   }
 
   // ---------- Préparation par type ----------
@@ -2138,7 +2137,7 @@ class Boss {
   tick_architect(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
   tick_omega(dt,W,P,game,R,sp){this.tick_frontier(dt,W,P,game,R,sp);}
   tick_frontier(dt,W,P,game,R,sp){
-    const st=this.st,pattern=this.info.pattern;this.x=W/2+Math.sin(this.t*(pattern==='leviathan'?.7:1.1))*(W*.29);this.y=this.targetY+Math.sin(this.t*1.7)*18;st.timer-=dt;st.angle+=dt*(this.rage?2.8:1.8);this.fire-=dt;
+    const st=this.st,pattern=this.type;this.x=W/2+Math.sin(this.t*(pattern==='leviathan'?.7:1.1))*(W*.29);this.y=this.targetY+Math.sin(this.t*1.7)*18;st.timer-=dt;st.angle+=dt*(this.rage?2.8:1.8);this.fire-=dt;
     if(pattern==='reaper'){st.charge-=dt;if(st.charge<=0){this.x=Utils.clamp(P.x,50,W-50);for(let i=-2;i<=2;i++)bossShoot(game,this.x,this.y,Math.PI/2+i*.2,sp*1.1,this.color);st.charge=2.4*R;}}
     if(pattern==='colossus'){if(st.timer<=0){for(let i=0;i<13;i++)bossShoot(game,(i/12)*(W-40)+20,this.y+25,Math.PI/2,sp*.65,'#ffbd55',{radius:6});game.screenShake=.28;st.timer=3.2*R;}}
     if(pattern==='oracle'&&st.timer<=0){st.open=1.2;st.timer=3.4*R;for(let i=0;i<5;i++)bossShoot(game,this.x+(i-2)*24,this.y+25,Math.PI/2,sp*.75,this.color,{radius:5});}
@@ -6759,7 +6758,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261020c" defer></script>
+<script src="/expansion.js?build=20261021b" defer></script>
 </body>
 </html>
 
