@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-22-boss-rework-v18';
+const RELEASE_ID = 'neon-2026-10-22-boss-tuning-v19';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -48,7 +48,7 @@ const RESTORE_FILE = path.join(DATA_DIR, 'restore.json');
 let db = null;
 
 function normalize(raw) {
-  const base = { v: 4, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 }, ranked: {}, dailyQuest: null, weeklyLevel: null, moderationNotices: {} };
+  const base = { v: 4, saves: {}, chats: {}, accounts: {}, sessions: {}, remember: {}, devSeen: {}, bans: {}, audit: [], feedback: [], announcements: { text: '', updatedAt: 0 }, ranked: {}, dailyQuest: null, weeklyLevel: null, moderationNotices: {}, bossTuning: {enabled:false,presetId:'B2',scope:'all',multiplier:1,updatedAt:0} };
   if (!raw || typeof raw !== 'object') return base;
   if (raw.v === 2 || raw.v === 3 || raw.v === 4) {
     for (const k of Object.keys(base)) if (k !== 'v' && raw[k] && typeof raw[k] === 'object') base[k] = raw[k];
@@ -414,6 +414,18 @@ function audit(action, actor='admin', target='', detail={}) {
 app.get('/api/daily-quest', (req,res) => res.json({ok:true,quest:activeDailyQuest()}));
 app.get('/api/admin/daily-quest', (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,quest:activeDailyQuest(),quests:DAILY_QUESTS}); });
 app.post('/api/admin/daily-quest', express.json({limit:'2kb'}), (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const quest=DAILY_QUESTS.find(q=>q.id===String(req.body?.questId||''));if(!quest)return res.status(400).json({ok:false,error:'Choisis une quête dans la liste.'});const day=dayKey();db.dailyQuest={day,questId:quest.id,source:'admin',updatedAt:Date.now()};audit('daily-quest','admin','all',{day,questId:quest.id});res.json({ok:true,quest:activeDailyQuest()}); });
+const BOSS_TUNING_PRESETS=[
+  {id:'B0',name:'Étalon doux',multiplier:.7,detail:'30 % moins de vie et des attaques moins pressantes que la base v19.'},
+  {id:'B1',name:'Accessible',multiplier:.85,detail:'15 % sous la base v19.'},
+  {id:'B2',name:'Base v19',multiplier:1,detail:'Réglage de référence de la livraison.'},
+  {id:'B3',name:'Soutenu',multiplier:1.2,detail:'20 % au-dessus de la base v19.'},
+  {id:'B4',name:'Brutal',multiplier:1.45,detail:'45 % au-dessus de la base v19.'},
+  {id:'B5',name:'Extrême',multiplier:1.75,detail:'75 % au-dessus de la base v19.'}
+];
+function currentBossTuning(){const raw=db.bossTuning||{},preset=BOSS_TUNING_PRESETS.find(x=>x.id===raw.presetId)||BOSS_TUNING_PRESETS[2],scope=['all','health','attacks'].includes(raw.scope)?raw.scope:'all',multiplier=raw.presetId==='CUSTOM'?Math.max(.65,Math.min(1.8,Number(raw.multiplier)||1)):preset.multiplier;return {enabled:raw.enabled===true,presetId:raw.presetId==='CUSTOM'?'CUSTOM':preset.id,scope,multiplier,updatedAt:Number(raw.updatedAt)||0};}
+app.get('/api/boss-tuning',(req,res)=>res.json({ok:true,tuning:currentBossTuning()}));
+app.get('/api/admin/boss-tuning',(req,res)=>{if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,tuning:currentBossTuning(),presets:BOSS_TUNING_PRESETS});});
+app.post('/api/admin/boss-tuning',express.json({limit:'2kb'}),(req,res)=>{if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const presetId=String(req.body?.presetId||'B2'),scope=String(req.body?.scope||'all'),enabled=req.body?.enabled===true;if(!['all','health','attacks'].includes(scope))return res.status(400).json({ok:false,error:'Mode de réglage invalide.'});let multiplier;if(presetId==='CUSTOM'){multiplier=Number(req.body?.multiplier);if(!Number.isFinite(multiplier)||multiplier<.65||multiplier>1.8)return res.status(400).json({ok:false,error:'La valeur personnalisée doit être entre 0,65 et 1,80.'});multiplier=Math.round(multiplier*100)/100;}else{const preset=BOSS_TUNING_PRESETS.find(x=>x.id===presetId);if(!preset)return res.status(400).json({ok:false,error:'Choisis un profil B0 à B5 ou une valeur personnalisée.'});multiplier=preset.multiplier;}db.bossTuning={enabled,presetId,scope,multiplier,updatedAt:Date.now()};persist();audit('boss-tuning','admin','test-accounts',{enabled,presetId,scope,multiplier});res.json({ok:true,tuning:currentBossTuning()});});
 app.get('/api/weekly-level', (req,res) => res.json({ok:true,level:activeWeeklyLevel()}));
 app.get('/api/admin/weekly-level', (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,level:activeWeeklyLevel(),levels:WEEKLY_LEVELS.map(x=>({...x,rewardCredits:5000,rewardTitle:'Vainqueur de la Faille'}))}); });
 app.post('/api/admin/weekly-level', express.json({limit:'2kb'}), (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const level=WEEKLY_LEVELS.find(x=>x.id===String(req.body?.levelId||''));if(!level)return res.status(400).json({ok:false,error:'Choisis un niveau dans la liste.'});const week=weekKey();db.weeklyLevel={week,levelId:level.id,source:'admin',updatedAt:Date.now()};audit('weekly-level','admin','all',{week,levelId:level.id});res.json({ok:true,level:activeWeeklyLevel()}); });
