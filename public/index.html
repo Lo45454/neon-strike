@@ -1843,7 +1843,7 @@ class Boss {
     this.size = 84; this.w = 84; this.h = 84;
     this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * (level < 10 ? 1.62 : 2.9) * (this.info.healthMul||1));
     if(level>=90)this.maxHealth=Math.round(this.maxHealth*1.18);
-    this.devBossTest=level>=10&&!!Game.devAccount&&Game.bossTuning?.enabled===true;this.devBossPreset=this.devBossTest?Game.bossTuning.presetId:'B2';this.devBossScale=this.devBossTest?Game.bossTuning.multiplier:1;this.devAttackScale=this.devBossTest&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='attacks')?this.devBossScale:1;if(this.devBossTest&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='health'))this.maxHealth=Math.round(this.maxHealth*this.devBossScale);
+    this.bossTuneActive=level>=10&&Game.bossTuning?.enabled===true&&(Game.bossTuning.audience==='everyone'||!!Game.devAccount);this.devBossPreset=this.bossTuneActive?Game.bossTuning.presetId:'B2';this.devBossScale=this.bossTuneActive?Game.bossTuning.multiplier:1;this.devAttackScale=this.bossTuneActive&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='attacks')?this.devBossScale:1;if(this.bossTuneActive&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='health'))this.maxHealth=Math.round(this.maxHealth*this.devBossScale);
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
     this.t = 0; this.rotation = 0;
@@ -2569,7 +2569,7 @@ class Boss {
     ctx.font = 'bold 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = this.color;
-    ctx.fillText(`${this.name} • ${this.info.label.toUpperCase()}${this.rage ? ' • ENRAGÉ' : ''}${this.devBossTest ? ` • ESSAI ${this.devBossPreset}` : ''}`, W / 2, barY + barH + 14);
+    ctx.fillText(`${this.name} • ${this.info.label.toUpperCase()}${this.rage ? ' • ENRAGÉ' : ''}${this.bossTuneActive ? ` • ${this.devBossPreset}` : ''}`, W / 2, barY + barH + 14);
     ctx.font = (W < 460 ? '8px' : '9px') + ' "JetBrains Mono", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.fillText((W < 460 ? '' : 'Faiblesse : ') + this.info.weak, W / 2, barY + barH + 27);
@@ -2699,7 +2699,7 @@ const Game = {
   player: null, enemies: [], bullets: [], enemyBullets: [], powerUps: [], scoreTexts: [],
   particles: null, stars: [], specialEffects: [],
   boss: null,
-  bossTuning: {enabled:false,presetId:'B2',scope:'all',multiplier:1},bossTuningTimer:null,
+  bossTuning: {enabled:false,audience:'test',presetId:'B2',scope:'all',multiplier:1},bossTuningTimer:null,
 
   score: 0, credits: 0, level: 0, wave: 1, enemiesSpawned: 0, enemiesKilled: 0,
   spawnTimer: 0, waveBreakTimer: 0, levelTransitionTimer: 0,
@@ -2776,7 +2776,7 @@ const Game = {
     Creator.init();
     Auth.init();
     Save.load();
-    this.refreshBossTuning();clearInterval(this.bossTuningTimer);this.bossTuningTimer=setInterval(()=>this.refreshBossTuning(),10000);
+    this.refreshBossTuning();clearInterval(this.bossTuningTimer);this.bossTuningTimer=setInterval(()=>this.refreshBossTuning(),30000);
     Chests.init();
     document.getElementById('resumeBtn').addEventListener('click', () => {
       if (this.state === GameState.MULTI) Versus.togglePause(); else this.togglePause();
@@ -2938,7 +2938,7 @@ const Game = {
     playWaveStart();
   },
 
-  async refreshBossTuning(){if(!this.devAccount){this.bossTuning={enabled:false,presetId:'B2',scope:'all',multiplier:1};return;}try{const r=await fetch('/api/boss-tuning',{cache:'no-store'}),j=await r.json();if(r.ok&&j.ok&&this.devAccount&&j.tuning)this.bossTuning=j.tuning;}catch{}},
+  async refreshBossTuning(){try{const r=await fetch('/api/boss-tuning',{cache:'no-store'}),j=await r.json();if(r.ok&&j.ok&&j.tuning)this.bossTuning=j.tuning;}catch{}},
 
   refreshShipAbilityButton() {
     const button=document.getElementById('shipAbilityBtn');if(!button)return;
@@ -6848,7 +6848,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261022e" defer></script>
+<script src="/expansion.js?build=20261022f" defer></script>
 </body>
 </html>
 
