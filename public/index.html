@@ -1843,6 +1843,7 @@ class Boss {
     this.size = 84; this.w = 84; this.h = 84;
     this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * (level < 10 ? 1.62 : 2.9) * (this.info.healthMul||1));
     if(level>=90)this.maxHealth=Math.round(this.maxHealth*1.18);
+    this.devBossTest=level>=10&&!!Game.devAccount&&Game.bossTuning?.enabled===true;this.devBossPreset=this.devBossTest?Game.bossTuning.presetId:'B2';this.devBossScale=this.devBossTest?Game.bossTuning.multiplier:1;this.devAttackScale=this.devBossTest&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='attacks')?this.devBossScale:1;if(this.devBossTest&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='health'))this.maxHealth=Math.round(this.maxHealth*this.devBossScale);
     this.health = this.maxHealth;
     this.phase = 0; this.deathTimer = 0;
     this.t = 0; this.rotation = 0;
@@ -1901,7 +1902,7 @@ class Boss {
       game.screenShake = 0.4; playBossSpawn();
     }
     if (!this.phaseThree && this.health < this.maxHealth * 0.25) { this.phaseThree = true; this.rage = true; this.rageText = 3; this.color = '#ffffff'; game.scoreTexts.push(new ScoreText(this.x, this.y + 78, 'PHASE FINALE', '#ffffff')); game.screenShake = 0.55; playBossSpawn(); }
-    const advanced=this.level>=10,R=advanced?(this.phaseThree?.42:this.rage?.62:.82):(this.phaseThree?.48:this.rage?.7:1),speed=CONFIG.enemy.bulletSpeed*Math.min(advanced?1.8:1.35,this.diff),P=player;
+    const advanced=this.level>=10,baseR=advanced?(this.phaseThree?.42:this.rage?.62:.82):(this.phaseThree?.48:this.rage?.7:1),R=Math.max(.22,baseR/this.devAttackScale),speed=CONFIG.enemy.bulletSpeed*Math.min(advanced?1.8:1.35,this.diff)*this.devAttackScale,P=player;
     if(this.level>=10)this.tick_advanced(dt,canvasW,P,game,R,speed);else{const tick=this['tick_'+this.type]||this.tick_custom;tick.call(this,dt,canvasW,P,game,R,speed);}
     return false;
   }
@@ -2568,7 +2569,7 @@ class Boss {
     ctx.font = 'bold 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = this.color;
-    ctx.fillText(`${this.name} • ${this.info.label.toUpperCase()}${this.rage ? ' • ENRAGÉ' : ''}`, W / 2, barY + barH + 14);
+    ctx.fillText(`${this.name} • ${this.info.label.toUpperCase()}${this.rage ? ' • ENRAGÉ' : ''}${this.devBossTest ? ` • ESSAI ${this.devBossPreset}` : ''}`, W / 2, barY + barH + 14);
     ctx.font = (W < 460 ? '8px' : '9px') + ' "JetBrains Mono", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.fillText((W < 460 ? '' : 'Faiblesse : ') + this.info.weak, W / 2, barY + barH + 27);
@@ -2698,6 +2699,7 @@ const Game = {
   player: null, enemies: [], bullets: [], enemyBullets: [], powerUps: [], scoreTexts: [],
   particles: null, stars: [], specialEffects: [],
   boss: null,
+  bossTuning: {enabled:false,presetId:'B2',scope:'all',multiplier:1},bossTuningTimer:null,
 
   score: 0, credits: 0, level: 0, wave: 1, enemiesSpawned: 0, enemiesKilled: 0,
   spawnTimer: 0, waveBreakTimer: 0, levelTransitionTimer: 0,
@@ -2774,6 +2776,7 @@ const Game = {
     Creator.init();
     Auth.init();
     Save.load();
+    this.refreshBossTuning();clearInterval(this.bossTuningTimer);this.bossTuningTimer=setInterval(()=>this.refreshBossTuning(),10000);
     Chests.init();
     document.getElementById('resumeBtn').addEventListener('click', () => {
       if (this.state === GameState.MULTI) Versus.togglePause(); else this.togglePause();
@@ -2934,6 +2937,8 @@ const Game = {
     this.hideAllOverlays();
     playWaveStart();
   },
+
+  async refreshBossTuning(){if(!this.devAccount){this.bossTuning={enabled:false,presetId:'B2',scope:'all',multiplier:1};return;}try{const r=await fetch('/api/boss-tuning',{cache:'no-store'}),j=await r.json();if(r.ok&&j.ok&&this.devAccount&&j.tuning)this.bossTuning=j.tuning;}catch{}},
 
   refreshShipAbilityButton() {
     const button=document.getElementById('shipAbilityBtn');if(!button)return;
@@ -4606,6 +4611,7 @@ const Save = {
       Chests.last6h = d.devAccount ? 0 : (Number(d.chestLast6h) || 0);
       Chests.last24h = d.devAccount ? 0 : (Number(d.chestLast24h) || 0);
     }
+    Game.refreshBossTuning();
     if (res && res.creator) Creator.enable(false); // le serveur décide si le mode créateur est actif
     if (d && d.pilotRefundVersion !== 1) this.save(); // migre une seule fois les pilotes retirés
   },
@@ -6842,7 +6848,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261022d" defer></script>
+<script src="/expansion.js?build=20261022e" defer></script>
 </body>
 </html>
 
