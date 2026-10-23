@@ -3628,7 +3628,7 @@ const Game = {
 
     // Check wave complete
     if (!this.endlessRun) {
-      const baseEnemies=this.currentLevelData.enemiesPerWave+(this.wave-1)*this.currentLevelData.waveIncrement;const enemiesThisWave=Math.ceil(baseEnemies*(this.difficulty==='hard'?1.38:this.difficulty==='normal'?1.14:1));
+      const enemiesThisWave = this.currentLevelData.enemiesPerWave + (this.wave - 1) * this.currentLevelData.waveIncrement;
       if ((!Coop.active || Versus.isHost) && this.enemiesSpawned >= enemiesThisWave && this.enemies.length === 0) {
       this.state = GameState.WAVE_BREAK;
       this.waveBreakTimer = CONFIG.wave.breakTime || 3.0;
@@ -6848,7 +6848,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261022g" defer></script>
+<script src="/expansion.js?build=20261023a" defer></script>
 </body>
 </html>
 
