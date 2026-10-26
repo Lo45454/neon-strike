@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-23-wave-fix-v22';
+const RELEASE_ID = 'neon-2026-10-25-boss-balance-endless-v23';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -415,17 +415,17 @@ app.get('/api/daily-quest', (req,res) => res.json({ok:true,quest:activeDailyQues
 app.get('/api/admin/daily-quest', (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,quest:activeDailyQuest(),quests:DAILY_QUESTS}); });
 app.post('/api/admin/daily-quest', express.json({limit:'2kb'}), (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const quest=DAILY_QUESTS.find(q=>q.id===String(req.body?.questId||''));if(!quest)return res.status(400).json({ok:false,error:'Choisis une quête dans la liste.'});const day=dayKey();db.dailyQuest={day,questId:quest.id,source:'admin',updatedAt:Date.now()};audit('daily-quest','admin','all',{day,questId:quest.id});res.json({ok:true,quest:activeDailyQuest()}); });
 const BOSS_TUNING_PRESETS=[
-  {id:'B0',name:'Étalon doux',multiplier:.7,detail:'30 % moins de vie et des attaques moins pressantes que la base v19.'},
-  {id:'B1',name:'Accessible',multiplier:.85,detail:'15 % sous la base v19.'},
-  {id:'B2',name:'Base v19',multiplier:1,detail:'Réglage de référence de la livraison.'},
-  {id:'B3',name:'Soutenu',multiplier:1.2,detail:'20 % au-dessus de la base v19.'},
-  {id:'B4',name:'Brutal',multiplier:1.45,detail:'45 % au-dessus de la base v19.'},
-  {id:'B5',name:'Extrême',multiplier:1.75,detail:'75 % au-dessus de la base v19.'}
+  {id:'B0',name:'Très accessible',multiplier:.3,detail:'Profil le plus doux : vie réduite et attaques nettement ralenties.'},
+  {id:'B1',name:'Accessible',multiplier:.45,detail:'Boss plus indulgents, avec des attaques moins pressantes.'},
+  {id:'B2',name:'Équilibré',multiplier:.6,detail:'Réglage conseillé : difficile, mais nettement moins punitif.'},
+  {id:'B3',name:'Soutenu',multiplier:.75,detail:'Un défi exigeant sans le profil extrême précédent.'},
+  {id:'B4',name:'Difficile',multiplier:.9,detail:'Près de la base, avec une pression accrue.'},
+  {id:'B5',name:'Maximum',multiplier:1.05,detail:'Valeur maximale du nouveau dial.'}
 ];
-function currentBossTuning(){const raw=db.bossTuning||{},preset=BOSS_TUNING_PRESETS.find(x=>x.id===raw.presetId)||BOSS_TUNING_PRESETS[2],scope=['all','health','attacks'].includes(raw.scope)?raw.scope:'all',multiplier=raw.presetId==='CUSTOM'?Math.max(.65,Math.min(1.8,Number(raw.multiplier)||1)):preset.multiplier;return {enabled:raw.enabled===true,audience:raw.audience==='everyone'?'everyone':'test',presetId:raw.presetId==='CUSTOM'?'CUSTOM':preset.id,scope,multiplier,updatedAt:Number(raw.updatedAt)||0};}
+function currentBossTuning(){const raw=db.bossTuning||{},preset=BOSS_TUNING_PRESETS.find(x=>x.id===raw.presetId)||BOSS_TUNING_PRESETS[2],scope=['all','health','attacks'].includes(raw.scope)?raw.scope:'all',multiplier=raw.presetId==='CUSTOM'?Math.max(.3,Math.min(1.05,Number(raw.multiplier)||.6)):preset.multiplier;return {enabled:raw.enabled===true,audience:raw.audience==='everyone'?'everyone':'test',presetId:raw.presetId==='CUSTOM'?'CUSTOM':preset.id,scope,multiplier,updatedAt:Number(raw.updatedAt)||0};}
 app.get('/api/boss-tuning',(req,res)=>res.json({ok:true,tuning:currentBossTuning()}));
 app.get('/api/admin/boss-tuning',(req,res)=>{if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,tuning:currentBossTuning(),presets:BOSS_TUNING_PRESETS});});
-app.post('/api/admin/boss-tuning',express.json({limit:'2kb'}),(req,res)=>{if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const presetId=String(req.body?.presetId||'B2'),scope=String(req.body?.scope||'all'),audience=String(req.body?.audience||'test'),enabled=req.body?.enabled===true;if(!['test','everyone'].includes(audience))return res.status(400).json({ok:false,error:'Choisis les comptes test ou tous les joueurs.'});if(!['all','health','attacks'].includes(scope))return res.status(400).json({ok:false,error:'Mode de réglage invalide.'});let multiplier;if(presetId==='CUSTOM'){multiplier=Number(req.body?.multiplier);if(!Number.isFinite(multiplier)||multiplier<.65||multiplier>1.8)return res.status(400).json({ok:false,error:'La valeur personnalisée doit être entre 0,65 et 1,80.'});multiplier=Math.round(multiplier*100)/100;}else{const preset=BOSS_TUNING_PRESETS.find(x=>x.id===presetId);if(!preset)return res.status(400).json({ok:false,error:'Choisis un profil B0 à B5 ou une valeur personnalisée.'});multiplier=preset.multiplier;}db.bossTuning={enabled,audience,presetId,scope,multiplier,updatedAt:Date.now()};persist();audit('boss-tuning','admin',audience==='everyone'?'all-players':'test-accounts',{enabled,audience,presetId,scope,multiplier});res.json({ok:true,tuning:currentBossTuning()});});
+app.post('/api/admin/boss-tuning',express.json({limit:'2kb'}),(req,res)=>{if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const presetId=String(req.body?.presetId||'B2'),scope=String(req.body?.scope||'all'),audience=String(req.body?.audience||'test'),enabled=req.body?.enabled===true;if(!['test','everyone'].includes(audience))return res.status(400).json({ok:false,error:'Choisis les comptes test ou tous les joueurs.'});if(!['all','health','attacks'].includes(scope))return res.status(400).json({ok:false,error:'Mode de réglage invalide.'});let multiplier;if(presetId==='CUSTOM'){multiplier=Number(req.body?.multiplier);if(!Number.isFinite(multiplier)||multiplier<.3||multiplier>1.05)return res.status(400).json({ok:false,error:'La valeur personnalisée doit être entre 0,30 et 1,05.'});multiplier=Math.round(multiplier*100)/100;}else{const preset=BOSS_TUNING_PRESETS.find(x=>x.id===presetId);if(!preset)return res.status(400).json({ok:false,error:'Choisis un profil B0 à B5 ou une valeur personnalisée.'});multiplier=preset.multiplier;}db.bossTuning={enabled,audience,presetId,scope,multiplier,updatedAt:Date.now()};persist();audit('boss-tuning','admin',audience==='everyone'?'all-players':'test-accounts',{enabled,audience,presetId,scope,multiplier});res.json({ok:true,tuning:currentBossTuning()});});
 app.get('/api/weekly-level', (req,res) => res.json({ok:true,level:activeWeeklyLevel()}));
 app.get('/api/admin/weekly-level', (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});res.json({ok:true,level:activeWeeklyLevel(),levels:WEEKLY_LEVELS.map(x=>({...x,rewardCredits:5000,rewardTitle:'Vainqueur de la Faille'}))}); });
 app.post('/api/admin/weekly-level', express.json({limit:'2kb'}), (req,res) => { if(!adminAllowed(req))return res.status(403).json({ok:false,error:'Accès refusé.'});const level=WEEKLY_LEVELS.find(x=>x.id===String(req.body?.levelId||''));if(!level)return res.status(400).json({ok:false,error:'Choisis un niveau dans la liste.'});const week=weekKey();db.weeklyLevel={week,levelId:level.id,source:'admin',updatedAt:Date.now()};audit('weekly-level','admin','all',{week,levelId:level.id});res.json({ok:true,level:activeWeeklyLevel()}); });
@@ -921,7 +921,7 @@ io.on('connection', (socket) => {
       if (!me.profile || !me.friends.includes(friendCode)) return ack({ok:false,error:'Ajoute ce joueur comme ami avant de lui envoyer des crédits.'});
       if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) return ack({ok:false,error:'Montant invalide (1 à 1 000 000).'});
       const targetId=codeIndex.get(friendCode); if(!targetId) return ack({ok:false,error:'Joueur introuvable.'});
-      const from=rec(vid), to=rec(targetId); from.data=from.data||{}; to.data=to.data||{};
+      const from=rec(vid), to=rec(targetId); from.data=from.data||{}; to.data=to.data||{}; const fromTest=!!(from.data.devAccount||from.data.devTest),toTest=!!(to.data.devAccount||to.data.devTest); if(fromTest&&!toTest)return ack({ok:false,error:'Les comptes test peuvent envoyer des crédits uniquement à d’autres comptes test.'});
       const balance=Math.max(0,Number(from.data.credits)||0);
       if(balance<amount) return ack({ok:false,error:'Tu n’as pas assez de crédits.'});
       from.data.credits=balance-amount; to.data.credits=Math.min(2147483647,(Number(to.data.credits)||0)+amount);
