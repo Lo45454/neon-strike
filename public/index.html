@@ -1841,7 +1841,7 @@ class Boss {
     this.canvasW = canvasW;
     this.x = canvasW / 2; this.y = -120; this.targetY = 110;
     this.size = 84; this.w = 84; this.h = 84;
-    this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * (level < 10 ? 1.62 : 2.9) * (this.info.healthMul||1));
+    this.maxHealth = Math.round((level <= 5 ? (44 + level * 17) : (105 + (level - 5) * 29 + Math.pow(level - 5, 1.18) * 4)) * (level < 10 ? 1.4 : 2.0) * (this.info.healthMul||1));
     if(level>=90)this.maxHealth=Math.round(this.maxHealth*1.18);
     this.bossTuneActive=level>=10&&Game.bossTuning?.enabled===true&&(Game.bossTuning.audience==='everyone'||!!Game.devAccount);this.devBossPreset=this.bossTuneActive?Game.bossTuning.presetId:'B2';this.devBossScale=this.bossTuneActive?Game.bossTuning.multiplier:1;this.devAttackScale=this.bossTuneActive&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='attacks')?this.devBossScale:1;if(this.bossTuneActive&&(Game.bossTuning.scope==='all'||Game.bossTuning.scope==='health'))this.maxHealth=Math.round(this.maxHealth*this.devBossScale);
     this.health = this.maxHealth;
@@ -1852,7 +1852,7 @@ class Boss {
     this.flash = 0;       // flash quand touché
     this.rage = false;
     this.rageText = 0;
-    this.diff = level < 10 ? 1.38 + Math.min(level,40)*.055 : 1.62 + Math.min(level,40)*.065; // profil renforcé réservé aux boss tardifs
+    this.diff = level < 10 ? 1.22 + Math.min(level,40)*.04 : 1.35 + Math.min(level,40)*.045; // profil renforcé réservé aux boss tardifs
     this.st = {};         // état propre au type    this.setup();
   }
 
@@ -2149,11 +2149,11 @@ class Boss {
     if(motion===0){this.x=center+Math.sin(this.t*.9)*span;this.y=this.targetY+Math.sin(this.t*1.8)*22;}
     else if(motion===1){st.motionCd=(st.motionCd??1.7)-dt;if(st.motionCd<=0){st.teleportX=Utils.clamp(P.x+(P.x<center?115:-115),55,W-55);st.teleportY=this.targetY+Utils.randRange(-8,42);this.x=st.teleportX;this.y=st.teleportY;st.teleportFx=.45;st.motionCd=this.rage?1.55:2.15;game.screenShake=.16;}else{this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
     else if(motion===2){this.x=center+Math.sin(this.t*(2.2*rageSpeed))*span;this.y=this.targetY+Math.sin(this.t*3.8)*34;}
-    else if(motion===3){st.diveCd=(st.diveCd??1.8)-dt;if(st.diveCd<=0){st.diveCd=this.rage?1.65:2.4;st.diveX=Utils.clamp(P.x,55,W-55);st.diveTime=.62;game.screenShake=.12;}if(st.diveTime>0){st.diveTime-=dt;this.x=Utils.lerp(this.x,st.diveX,dt*5);this.y=Utils.lerp(this.y,Math.min(P.y-62,game.height-85),dt*2.8);}else{this.x=Utils.lerp(this.x,center+Math.sin(this.t*1.3)*span,dt*1.7);this.y=Utils.lerp(this.y,this.targetY+Math.sin(this.t*2)*18,dt*2);}}
+    else if(motion===3){st.diveCd=(st.diveCd??1.8)-dt;if(st.diveCd<=0){st.diveCd=this.rage?1.65:2.4;st.diveX=Utils.clamp(P.x,55,W-55);st.diveTime=.7;game.screenShake=.12;}if(st.diveTime>0){st.diveTime-=dt;this.x=Utils.lerp(this.x,st.diveX,dt*9);this.y=Utils.lerp(this.y,Math.min(P.y-28,game.height-58),dt*7);}else{this.x=Utils.lerp(this.x,center+Math.sin(this.t*1.3)*span,dt*1.7);this.y=Utils.lerp(this.y,this.targetY+Math.sin(this.t*2)*18,dt*2);}}
     else if(motion===4){const rearY=Math.min(P.y-56,game.height-82);this.x=Utils.lerp(this.x,Utils.clamp(P.x,55,W-55),dt*(this.rage?2.6:1.8));this.y=Utils.lerp(this.y,Math.max(this.targetY,rearY),dt*(this.rage?1.7:1.2));st.motionCd=(st.motionCd??2.5)-dt;if(st.motionCd<=0){st.motionCd=this.rage?2.4:3.25;this.y=this.targetY+12;st.teleportFx=.35;game.screenShake=.2;}}
     else if(motion===5){st.orbit=(st.orbit||0)+dt*(this.rage?2.3:1.45);const radius=Math.min(155,W*.26);this.x=Utils.clamp(P.x+Math.cos(st.orbit)*radius,55,W-55);this.y=Utils.clamp(Math.min(P.y-68,this.targetY+70)+Math.sin(st.orbit*1.7)*45,this.targetY-5,game.height-90);}
     else if(motion===6){st.jumpCd=(st.jumpCd??1.8)-dt;if(st.jumpCd<=0){st.jumpCd=this.rage?1.55:2.2;st.jumpX=Utils.clamp(P.x+Utils.randRange(-100,100),55,W-55);st.jumpTime=.58;game.screenShake=.13;}if(st.jumpTime>0){st.jumpTime-=dt;const k=1-st.jumpTime/.58;this.x=Utils.lerp(this.x,st.jumpX,k);this.y=this.targetY+Math.sin(k*Math.PI)*100;}else{this.x=Utils.lerp(this.x,center+Math.sin(this.t)*span,dt*2);this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
-    else{st.chargeCd=(st.chargeCd??1.5)-dt;if(st.chargeCd<=0){st.chargeCd=this.rage?1.35:1.9;st.chargeX=Utils.clamp(P.x,55,W-55);st.chargeTime=.42;game.screenShake=.18;}if(st.chargeTime>0){st.chargeTime-=dt;this.x=Utils.lerp(this.x,st.chargeX,dt*7);this.y=Utils.lerp(this.y,Math.min(P.y-52,game.height-82),dt*2.5);}else{this.x=center+Math.sin(this.t*1.6)*span;this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
+    else{st.chargeCd=(st.chargeCd??1.5)-dt;if(st.chargeCd<=0){st.chargeCd=this.rage?1.35:1.9;st.chargeX=Utils.clamp(P.x,55,W-55);st.chargeTime=.65;game.screenShake=.18;}if(st.chargeTime>0){st.chargeTime-=dt;this.x=Utils.lerp(this.x,st.chargeX,dt*10);this.y=Utils.lerp(this.y,Math.min(P.y-28,game.height-58),dt*7);}else{this.x=center+Math.sin(this.t*1.6)*span;this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
     if(st.timer>0)return;const speed=sp*(this.info.damageMul||1),aim=Utils.angle(this.x,this.y,P.x,P.y),count=this.rage?1.2:1;
     const shot=(x,y,ang,v=speed,color=this.color,r=4,opts={})=>bossShoot(game,x,y,ang,v,color,{radius:r,...opts});
     switch(a){
@@ -2204,7 +2204,7 @@ class Boss {
     else if(m===5){s.mc=(s.mc??1)-dt;if(s.mc<=0){s.mc=this.rage?1:1.5;s.dir=(s.dir||1)*-1;s.dash=.42;s.warn=.3;s.warnX=s.dir>0?65:W-65;}if(s.dash>0){s.dash-=dt;this.x=Utils.clamp(this.x+s.dir*W*2.2*dt,48,W-48);}else this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.8)*span,dt*1.3);}
     else if(m===6){s.mc=(s.mc??1.7)-dt;if(s.mc<=0){s.mc=this.rage?1.3:1.9;s.jump=.6;s.jx=Utils.clamp(P.x+Utils.randRange(-100,100),55,W-55);s.warn=.4;s.warnX=s.jx;}if(s.jump>0){s.jump-=dt;this.x=Utils.lerp(this.x,s.jx,dt*6);this.y=this.targetY+Math.sin((1-s.jump/.6)*Math.PI)*125;}else this.y=Utils.lerp(this.y,this.targetY,dt*2);}
     else if(m===7){this.x=Utils.lerp(this.x,Utils.clamp(P.x,60,W-60),dt*1.4);s.mc=Math.max(0,(s.mc||0)-dt);if(!s.mc&&!s.warn){s.warn=.7;s.warnX=P.x;s.mc=.7;}}
-    else if(m===8){s.mc=(s.mc??2)-dt;if(s.mc<=0){s.mc=this.rage?1.6:2.2;s.ram=.55;s.rx=Utils.clamp(P.x,55,W-55);s.warn=.42;s.warnX=s.rx;game.screenShake=.18;}if(s.ram>0){s.ram-=dt;this.x=Utils.lerp(this.x,s.rx,dt*7);this.y=Utils.lerp(this.y,Math.min(P.y-58,game.height-88),dt*3);}else{this.y=Utils.lerp(this.y,this.targetY,dt*2);this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span,dt*1.5);}}
+    else if(m===8){s.mc=(s.mc??2)-dt;if(s.mc<=0){s.mc=this.rage?1.6:2.2;s.ram=.72;s.rx=Utils.clamp(P.x,55,W-55);s.warn=.42;s.warnX=s.rx;game.screenShake=.18;}if(s.ram>0){s.ram-=dt;this.x=Utils.lerp(this.x,s.rx,dt*10);this.y=Utils.lerp(this.y,Math.min(P.y-28,game.height-58),dt*7);}else{this.y=Utils.lerp(this.y,this.targetY,dt*2);this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span,dt*1.5);}}
     else{const side=Math.sin(this.t*1.7)>0?1:-1;this.x=Utils.lerp(this.x,side>0?W-70:70,dt*1.7);s.mc=(s.mc??1.5)-dt;if(s.mc<=0){s.mc=this.rage?1.1:1.7;s.cross=-side;s.crossT=.55;}if(s.crossT>0){s.crossT-=dt;this.x=Utils.clamp(this.x+s.cross*W*1.45*dt,55,W-55);}}
     if(s.warn>0)s.warn-=dt;if(s.timer>0)return;
     const aim=Utils.angle(this.x,this.y,P.x,P.y),q=(x,y,t,speed=v,col=this.color,r=5,o={})=>bossShoot(game,x,y,t,speed,col,{radius:r,...o});
@@ -2314,7 +2314,8 @@ class Boss {
     if (this.type === 'serpent') { if (hitC(this.x, this.y, 20)) return true; return this.segments().some(s => hitC(s.x, s.y, s.r * 0.8)); }
     if (this.type === 'titan') { for (const h of this.st.hands) if (hitC(h.x, h.y, 24)) return true; }
     const b = this.getBounds();
-    return b.x < pb.x + pb.w && b.x + b.w > pb.x && b.y < pb.y + pb.h && b.y + b.h > pb.y;
+    const padding = (this.st.ram > 0 || this.st.chargeTime > 0 || this.st.dive > 0 || this.st.diveTime > 0) ? 24 : 0;
+    return b.x - padding < pb.x + pb.w && b.x + b.w + padding > pb.x && b.y - padding < pb.y + pb.h && b.y + b.h + padding > pb.y;
   }
 
   // ---------- Dessin ----------
@@ -2870,8 +2871,10 @@ const Game = {
       ['#0f0a04','#24180a','#100a04','#ffaa00','#ff6b35']
     ];
     const p = palettes[Math.floor(rand()*palettes.length)];
-    const stage = Math.min(1, (depth-1)/30);
-    const mix = {normal:.64-stage*.26, fast:.12+stage*.16, tank:.07+stage*.13, splitter:.07+stage*.08, shooter:.1+stage*.15};
+    const stage = Math.min(1, (depth-1)/24);
+    const weights = {normal:.64-stage*.34, fast:.12+stage*.12, tank:.07+stage*.12, splitter:.07+stage*.03, shooter:.1+stage*.07};
+    const weightTotal = Object.values(weights).reduce((sum,value)=>sum+value,0);
+    const mix = Object.fromEntries(Object.entries(weights).map(([type,value])=>[type,value/weightTotal]));
     return {
       name: 'ABYSSE INFINI',
       bgColors: [p[0],p[1],p[2]], starColors: ['#ffffff',p[3],p[4]],
@@ -2880,8 +2883,8 @@ const Game = {
       wavesCount: Infinity,
       enemiesPerWave: Infinity,
       waveIncrement: 0,
-      spawnInterval: Math.max(.24, 1.15-depth*.032),
-      enemySpeed: 68+depth*3.8,
+      spawnInterval: Math.max(.2, 1.15-depth*.04),
+      enemySpeed: 68+depth*4.2,
       bossColor: p[4], bossName: 'ABYSSE',
       endless: true, endlessDepth: depth,
       mods: depth>=6 ? [['asteroids','drift','fog','swarm','ice','station','gravity','storm'][Math.floor(rand()*8)]] : []
@@ -3290,7 +3293,7 @@ const Game = {
     const make = (x, y) => {
       const e = new Enemy(x, y, this.level, this.wave, mix); const dm=this.difficultyMods();
       e.speed*=dm.enemySpeed; e.health=Math.max(1,Math.ceil(e.health*dm.enemyHealth)); e.maxHealth=e.health;
-      if (this.endlessRun) { const ramp=1+Math.min(2.6,Math.max(0,this.endlessDepth-1)*.035); e.speed*=ramp; e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(1.7,Math.max(0,this.endlessDepth-1)*.028)))); e.maxHealth=e.health; }
+      if (this.endlessRun) { const ramp=1+Math.min(4.0,Math.max(0,this.endlessDepth-1)*.06); e.speed*=ramp; e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(2.7,Math.max(0,this.endlessDepth-1)*.05)))); e.maxHealth=e.health; }
       if (typeof Coop !== 'undefined' && Coop.active && Versus.isHost) e.netId = Coop.nextEnemyId++;
       if (this.hasMod('speed')) e.speed *= 1.3;
       if (this.hasMod('elite') && Math.random() < 0.25) { e.elite = true; e.health = e.health * 2 + 1; e.maxHealth = e.health; }
@@ -3371,8 +3374,9 @@ const Game = {
   addScore(amount, x, y) {
     this.combo++;
     this.comboTimer = 2.0;
-    const multiplier = 1 + Math.floor(this.combo / 5) * 0.5;
-    const finalScore = Math.floor(amount * multiplier * (this.hasMod('speed') ? 1.5 : 1));
+    const comboMultiplier = 1 + Math.floor(this.combo / 5) * 0.5;
+    const multiplier = this.endlessRun ? Math.min(3, comboMultiplier) : comboMultiplier;
+    const finalScore = Math.floor(amount * multiplier * (this.hasMod('speed') ? 1.5 : 1) * (this.endlessRun ? 0.55 : 1));
     this.score += finalScore;
     const color = this.combo >= 10 ? '#ffdd00' : this.combo >= 5 ? '#00ff88' : this.currentLevelData.accentColor;
     this.scoreTexts.push(new ScoreText(x, y, `+${finalScore}`, color));
@@ -3600,7 +3604,7 @@ const Game = {
         this.endlessSpawnClock = 0;
         this.spawnEnemy(1);
       }
-      this.endlessDepth = 1 + Math.floor(this.endlessRunTime / 20);
+      this.endlessDepth = 1 + Math.floor(this.endlessRunTime / 15);
       if (this.endlessDepth !== this.currentLevelData.endlessDepth) this.currentLevelData = this.makeEndlessLevel(this.endlessDepth);
     } else {
     const enemiesThisWave = this.currentLevelData.enemiesPerWave + (this.wave - 1) * this.currentLevelData.waveIncrement;
@@ -3758,7 +3762,7 @@ const Game = {
             playExplosion();
             this.screenShake = Math.max(this.screenShake, 0.15);
             if (Math.random() < (enemy.elite ? 1 : 0.12)) {
-              const types = ['rapid', 'shield', 'multi', 'heal'];
+              const types = this.endlessRun ? ['rapid', 'shield', 'multi'] : ['rapid', 'shield', 'multi', 'heal'];
               this.powerUps.push(new PowerUp(enemy.x, enemy.y, types[Math.floor(Math.random() * types.length)]));
             }
           }
@@ -6848,7 +6852,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261023a" defer></script>
+<script src="/expansion.js?build=20261025a" defer></script>
 </body>
 </html>
 
