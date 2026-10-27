@@ -1021,7 +1021,20 @@ const SHIPS = [
   {id:'phoenix_prime',name:'Phénix Prime',desc:'Réacteur de réparation avec réserve supplémentaire · pouvoir E',price:186000,color:'#ff9c66',speed:400,fireRate:.21,bulletSpeed:980,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:99,specialAbility:'repair',specialUses:3},
 ];
 
-// ===================== AMÉLIORATIONS =====================
+function shipBaseStatRating(ship){
+  const bullets=ship.multishot>=3?5:ship.multishot>=2?4:ship.multishot>=1?3:1;
+  const dps=(Number(ship.bulletDamage)||1)*bullets/Math.max(.12,Number(ship.fireRate)||.3);
+  return dps*.22+(Number(ship.maxLives)||3)*2.2+(Number(ship.speed)||340)*.04+(Number(ship.bulletSpeed)||700)*.012;
+}
+function shipPriceFromBaseStats(ship){
+  if(ship.id==='default')return 0;
+  const delta=Math.max(0,shipBaseStatRating(ship)-28);
+  const raw=Math.pow(delta,2)*32;
+  return Math.max(500,Math.min(200000,Math.round(raw/500)*500));
+}
+function shipCategoryName(ship){
+  return ({bomb:'Bombardiers',pulse:'Boucliers et interception',repair:'Réparation',gravity:'Gravité',beam:'Rayons',barrage:'Rafales',phase:'Phase',drone:'Drones',overdrive:'Surcharge'})[ship.specialAbility]||'Sans pouvoir spécial';
+}// ===================== AMÉLIORATIONS =====================
 const UPGRADES = [
  {id:'pilot_spectre',name:'Kael Veyron — Spectre',portrait:'🧑🏻‍🚀',desc:'Miniaturisation : vaisseau −34 %, hitbox −45 %, vitesse +12 %.',price:1800,apply:s=>{s.speedMul=(s.speedMul||1)*1.12;s.hitboxMul=(s.hitboxMul||1)*.72;s.shipScale=(s.shipScale||1)*.82;}},
  {id:'pilot_bastion',name:'Orin Valek — Bastion',portrait:'🧑🏽‍🚀',desc:'Blindage réactif : absorbe chaque 3e impact reçu. +2 vies, vitesse −22 %.',price:2600,apply:s=>{s.extraLives=(s.extraLives||0)+2;s.speedMul=(s.speedMul||1)*.78;s.damageReduction=(s.damageReduction||0)+.18;}},
@@ -1030,7 +1043,7 @@ const UPGRADES = [
  {id:'pilot_vega',name:'Vega Thorne — Égide',portrait:'👩🏽‍🚀',desc:'Égide : un bouclier absorbe un impact et se recharge en 10 s. +1 vie.',price:6400,apply:s=>{s.extraLives=(s.extraLives||0)+1;s.damageReduction=(s.damageReduction||0)+.12;}},
  {id:'pilot_zen',name:'Zhen Arclight — Percuteur',portrait:'🧑🏾‍🚀',desc:'Percuteur : chaque 4e salve est surchargée (+3 dégâts). +2 dégâts, vitesse −12 %.',price:7800,apply:s=>{s.extraDamage=(s.extraDamage||0)+2;s.fireRateMul=(s.fireRateMul||1)*.9;s.speedMul=(s.speedMul||1)*.88;}},
  {id:'pilot_echo',name:'Echo Renn — Phaseur',portrait:'🧑🏼‍🚀',desc:'Déphasage : 1,2 s intouchable toutes les 6 s. Hitbox −8 %, vitesse +6 %.',price:9200,apply:s=>{s.speedMul=(s.speedMul||1)*1.06;s.damageReduction=(s.damageReduction||0)+.06;s.hitboxMul=(s.hitboxMul||1)*.92;}},
- {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Guidage ionique : les projectiles corrigent leur trajectoire vers une cible. +1 dégât.',price:10800,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}},
+ {id:'pilot_ion',name:'Iona Kest — Artificière',portrait:'👩🏻‍🚀',desc:'Guidage ionique : les projectiles corrigent leur trajectoire vers une cible. +1 dégât.',price:21600,apply:s=>{s.extraDamage=(s.extraDamage||0)+1;s.fireRateMul=(s.fireRateMul||1)*.84;s.speedMul=(s.speedMul||1)*.94;}},
 ];
 
 
@@ -2153,7 +2166,7 @@ class Boss {
     else if(motion===4){const rearY=Math.min(P.y-56,game.height-82);this.x=Utils.lerp(this.x,Utils.clamp(P.x,55,W-55),dt*(this.rage?2.6:1.8));this.y=Utils.lerp(this.y,Math.max(this.targetY,rearY),dt*(this.rage?1.7:1.2));st.motionCd=(st.motionCd??2.5)-dt;if(st.motionCd<=0){st.motionCd=this.rage?2.4:3.25;this.y=this.targetY+12;st.teleportFx=.35;game.screenShake=.2;}}
     else if(motion===5){st.orbit=(st.orbit||0)+dt*(this.rage?2.3:1.45);const radius=Math.min(155,W*.26);this.x=Utils.clamp(P.x+Math.cos(st.orbit)*radius,55,W-55);this.y=Utils.clamp(Math.min(P.y-68,this.targetY+70)+Math.sin(st.orbit*1.7)*45,this.targetY-5,game.height-90);}
     else if(motion===6){st.jumpCd=(st.jumpCd??1.8)-dt;if(st.jumpCd<=0){st.jumpCd=this.rage?1.55:2.2;st.jumpX=Utils.clamp(P.x+Utils.randRange(-100,100),55,W-55);st.jumpTime=.58;game.screenShake=.13;}if(st.jumpTime>0){st.jumpTime-=dt;const k=1-st.jumpTime/.58;this.x=Utils.lerp(this.x,st.jumpX,k);this.y=this.targetY+Math.sin(k*Math.PI)*100;}else{this.x=Utils.lerp(this.x,center+Math.sin(this.t)*span,dt*2);this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
-    else{st.chargeCd=(st.chargeCd??1.5)-dt;if(st.chargeCd<=0){st.chargeCd=this.rage?1.35:1.9;st.chargeX=Utils.clamp(P.x,55,W-55);st.chargeTime=.65;game.screenShake=.18;}if(st.chargeTime>0){st.chargeTime-=dt;this.x=Utils.lerp(this.x,st.chargeX,dt*10);this.y=Utils.lerp(this.y,Math.min(P.y-28,game.height-58),dt*7);}else{this.x=center+Math.sin(this.t*1.6)*span;this.y=Utils.lerp(this.y,this.targetY,dt*2);}}
+    else{st.chargeCd=(st.chargeCd??1.5)-dt;if(st.chargeCd<=0){st.chargeCd=this.rage?2.8:3.8;st.chargeX=Utils.clamp(P.x,55,W-55);st.chargeTime=.48;game.screenShake=.18;}if(st.chargeTime>0){st.chargeTime-=dt;this.x=Utils.lerp(this.x,st.chargeX,dt*8);this.y=Utils.lerp(this.y,Math.min(P.y-92,game.height-118),dt*6.5);}else{this.x=center+Math.sin(this.t*1.6)*span;this.y=Utils.lerp(this.y,this.targetY,dt*6);}}
     if(st.timer>0)return;const speed=sp*(this.info.damageMul||1),aim=Utils.angle(this.x,this.y,P.x,P.y),count=this.rage?1.2:1;
     const shot=(x,y,ang,v=speed,color=this.color,r=4,opts={})=>bossShoot(game,x,y,ang,v,color,{radius:r,...opts});
     switch(a){
@@ -2204,7 +2217,7 @@ class Boss {
     else if(m===5){s.mc=(s.mc??1)-dt;if(s.mc<=0){s.mc=this.rage?1:1.5;s.dir=(s.dir||1)*-1;s.dash=.42;s.warn=.3;s.warnX=s.dir>0?65:W-65;}if(s.dash>0){s.dash-=dt;this.x=Utils.clamp(this.x+s.dir*W*2.2*dt,48,W-48);}else this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.8)*span,dt*1.3);}
     else if(m===6){s.mc=(s.mc??1.7)-dt;if(s.mc<=0){s.mc=this.rage?1.3:1.9;s.jump=.6;s.jx=Utils.clamp(P.x+Utils.randRange(-100,100),55,W-55);s.warn=.4;s.warnX=s.jx;}if(s.jump>0){s.jump-=dt;this.x=Utils.lerp(this.x,s.jx,dt*6);this.y=this.targetY+Math.sin((1-s.jump/.6)*Math.PI)*125;}else this.y=Utils.lerp(this.y,this.targetY,dt*2);}
     else if(m===7){this.x=Utils.lerp(this.x,Utils.clamp(P.x,60,W-60),dt*1.4);s.mc=Math.max(0,(s.mc||0)-dt);if(!s.mc&&!s.warn){s.warn=.7;s.warnX=P.x;s.mc=.7;}}
-    else if(m===8){s.mc=(s.mc??2)-dt;if(s.mc<=0){s.mc=this.rage?1.6:2.2;s.ram=.72;s.rx=Utils.clamp(P.x,55,W-55);s.warn=.42;s.warnX=s.rx;game.screenShake=.18;}if(s.ram>0){s.ram-=dt;this.x=Utils.lerp(this.x,s.rx,dt*10);this.y=Utils.lerp(this.y,Math.min(P.y-28,game.height-58),dt*7);}else{this.y=Utils.lerp(this.y,this.targetY,dt*2);this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span,dt*1.5);}}
+    else if(m===8){s.mc=(s.mc??2)-dt;if(s.mc<=0){s.mc=this.rage?2.8:3.8;s.ram=.48;s.rx=Utils.clamp(P.x,55,W-55);s.warn=.42;s.warnX=s.rx;game.screenShake=.18;}if(s.ram>0){s.ram-=dt;this.x=Utils.lerp(this.x,s.rx,dt*8);this.y=Utils.lerp(this.y,Math.min(P.y-92,game.height-118),dt*6.5);}else{this.y=Utils.lerp(this.y,this.targetY,dt*6);this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span,dt*3);}}
     else{const side=Math.sin(this.t*1.7)>0?1:-1;this.x=Utils.lerp(this.x,side>0?W-70:70,dt*1.7);s.mc=(s.mc??1.5)-dt;if(s.mc<=0){s.mc=this.rage?1.1:1.7;s.cross=-side;s.crossT=.55;}if(s.crossT>0){s.crossT-=dt;this.x=Utils.clamp(this.x+s.cross*W*1.45*dt,55,W-55);}}
     if(s.warn>0)s.warn-=dt;if(s.timer>0)return;
     const aim=Utils.angle(this.x,this.y,P.x,P.y),q=(x,y,t,speed=v,col=this.color,r=5,o={})=>bossShoot(game,x,y,t,speed,col,{radius:r,...o});
@@ -2314,7 +2327,7 @@ class Boss {
     if (this.type === 'serpent') { if (hitC(this.x, this.y, 20)) return true; return this.segments().some(s => hitC(s.x, s.y, s.r * 0.8)); }
     if (this.type === 'titan') { for (const h of this.st.hands) if (hitC(h.x, h.y, 24)) return true; }
     const b = this.getBounds();
-    const padding = (this.st.ram > 0 || this.st.chargeTime > 0 || this.st.dive > 0 || this.st.diveTime > 0) ? 24 : 0;
+    const padding = (this.st.ram > 0 || this.st.chargeTime > 0 || this.st.dive > 0 || this.st.diveTime > 0) ? 18 : 0;
     return b.x - padding < pb.x + pb.w && b.x + b.w + padding > pb.x && b.y - padding < pb.y + pb.h && b.y + b.h + padding > pb.y;
   }
 
@@ -2734,6 +2747,7 @@ const Game = {
   endlessDepth: 0,
   endlessSpawnClock: 0,
   endlessRunTime: 0,
+  infiniteTuning:{enabled:false,audience:"test",presetId:"I2",multiplier:1},infiniteTuningTimer:null,
 
   init() {
     this.canvas = document.getElementById('gameCanvas');
@@ -2777,7 +2791,7 @@ const Game = {
     Creator.init();
     Auth.init();
     Save.load();
-    this.refreshBossTuning();clearInterval(this.bossTuningTimer);this.bossTuningTimer=setInterval(()=>this.refreshBossTuning(),30000);
+    this.refreshBossTuning();clearInterval(this.bossTuningTimer);this.bossTuningTimer=setInterval(()=>this.refreshBossTuning(),30000);this.refreshInfiniteTuning();clearInterval(this.infiniteTuningTimer);this.infiniteTuningTimer=setInterval(()=>this.refreshInfiniteTuning(),30000);
     Chests.init();
     document.getElementById('resumeBtn').addEventListener('click', () => {
       if (this.state === GameState.MULTI) Versus.togglePause(); else this.togglePause();
@@ -2871,7 +2885,8 @@ const Game = {
       ['#0f0a04','#24180a','#100a04','#ffaa00','#ff6b35']
     ];
     const p = palettes[Math.floor(rand()*palettes.length)];
-    const stage = Math.min(1, (depth-1)/24);
+    const scale=this.activeInfiniteScale();
+    const stage = Math.min(1, (depth-1)/(24/Math.sqrt(scale)));
     const weights = {normal:.64-stage*.34, fast:.12+stage*.12, tank:.07+stage*.12, splitter:.07+stage*.03, shooter:.1+stage*.07};
     const weightTotal = Object.values(weights).reduce((sum,value)=>sum+value,0);
     const mix = Object.fromEntries(Object.entries(weights).map(([type,value])=>[type,value/weightTotal]));
@@ -2883,8 +2898,8 @@ const Game = {
       wavesCount: Infinity,
       enemiesPerWave: Infinity,
       waveIncrement: 0,
-      spawnInterval: Math.max(.2, 1.15-depth*.04),
-      enemySpeed: 68+depth*4.2,
+      spawnInterval: Math.max(.12, (1.15-depth*.045)/(.8+scale*.2)),
+      enemySpeed: (68+depth*4.2)*Math.pow(scale,.3),
       bossColor: p[4], bossName: 'ABYSSE',
       endless: true, endlessDepth: depth,
       mods: depth>=6 ? [['asteroids','drift','fog','swarm','ice','station','gravity','storm'][Math.floor(rand()*8)]] : []
@@ -2943,6 +2958,9 @@ const Game = {
 
   async refreshBossTuning(){try{const r=await fetch('/api/boss-tuning',{cache:'no-store'}),j=await r.json();if(r.ok&&j.ok&&j.tuning)this.bossTuning=j.tuning;}catch{}},
 
+  async refreshInfiniteTuning(){try{const r=await fetch("/api/infinite-tuning",{cache:"no-store"}),j=await r.json();if(r.ok&&j.ok&&j.tuning)this.infiniteTuning=j.tuning;}catch{}},
+  activeInfiniteScale(){const t=this.infiniteTuning||{};return t.enabled&&(t.audience==="everyone"||this.devAccount)?Utils.clamp(Number(t.multiplier)||1,.5,2.5):1;},
+
   refreshShipAbilityButton() {
     const button=document.getElementById('shipAbilityBtn');if(!button)return;
     const ship=this.player?.shipData,active=!!ship?.specialAbility&&[GameState.PLAYING,GameState.BOSS_FIGHT,GameState.WAVE_BREAK].includes(this.state);
@@ -2957,8 +2975,8 @@ const Game = {
     if(type==='bomb'){
       this.specialEffects.push({type:'bomb',x:p.x,y:p.y,color:p.shipData.color,start:performance.now(),duration:1050});
       this.enemyBullets=[];
-      for(let i=this.enemies.length-1;i>=0;i--){const enemy=this.enemies[i],killed=enemy.hit(3);this.particles.emit(enemy.x,enemy.y,8,{speedMin:70,speedMax:220,lifeMin:.25,lifeMax:.55,color:p.shipData.color,sizeMin:2,sizeMax:5});if(killed){const points=enemy.type==='tank'?30:enemy.type==='fast'?20:enemy.type==='splitter'?25:enemy.type==='shooter'?35:10;this.addScore(points,enemy.x,enemy.y);this.enemies.splice(i,1);this.enemiesKilled++;}}
-      if(this.boss&&this.boss.phase===1){this.boss.applyDamage(Math.max(8,Math.round(this.boss.maxHealth*.12)),this);this.boss.flash=.3;this.emitExplosion(this.boss.x,this.boss.y,'#fff2a6');}
+      for(let i=this.enemies.length-1;i>=0;i--){const enemy=this.enemies[i],killed=enemy.hit(Math.max(3,Math.ceil((enemy.maxHealth||enemy.health||1)*.5)));this.particles.emit(enemy.x,enemy.y,8,{speedMin:70,speedMax:220,lifeMin:.25,lifeMax:.55,color:p.shipData.color,sizeMin:2,sizeMax:5});if(killed){const points=enemy.type==='tank'?30:enemy.type==='fast'?20:enemy.type==='splitter'?25:enemy.type==='shooter'?35:10;this.addScore(points,enemy.x,enemy.y);this.enemies.splice(i,1);this.enemiesKilled++;}}
+      if(this.boss&&this.boss.phase===1){this.boss.applyDamage(Math.max(8,Math.round(this.boss.maxHealth*.25)),this);this.boss.flash=.3;this.emitExplosion(this.boss.x,this.boss.y,'#fff2a6');}
       this.emitExplosion(p.x,p.y,p.shipData.color);this.screenShake=.65;
     }else if(type==='pulse'){
       this.specialEffects.push({type:'pulse',x:p.x,y:p.y,color:p.shipData.color,start:performance.now(),duration:700});
@@ -2968,22 +2986,23 @@ const Game = {
       if(p.lives>=Math.min(8,p.maxLives+2))return false;p.lives++;this.particles.emit(p.x,p.y,18,{speedMin:35,speedMax:150,lifeMin:.3,lifeMax:.8,color:'#ff5fa2',sizeMin:2,sizeMax:5});
     }else if(type==='beam'){
       this.specialEffects.push({type:'beam',x:p.x,y:p.y,color:'#fff2a6',start:performance.now(),duration:700});
-      if(this.boss&&this.boss.phase===1){this.boss.applyDamage(Math.max(14,Math.round(this.boss.maxHealth*.16)),this);this.boss.flash=.3;}for(let i=this.enemies.length-1;i>=0;i--){const e=this.enemies[i];if(e.hit(4)){this.addScore(10,e.x,e.y);this.enemies.splice(i,1);this.enemiesKilled++;}}this.particles.emit(p.x,p.y,36,{speedMin:160,speedMax:520,lifeMin:.2,lifeMax:.7,color:'#fff2a6',sizeMin:3,sizeMax:8});
+      if(this.boss&&this.boss.phase===1){this.boss.applyDamage(Math.max(14,Math.round(this.boss.maxHealth*.25)),this);this.boss.flash=.3;}for(let i=this.enemies.length-1;i>=0;i--){const e=this.enemies[i];if(e.hit(Math.max(4,Math.ceil((e.maxHealth||e.health||1)*.5)))){this.addScore(10,e.x,e.y);this.enemies.splice(i,1);this.enemiesKilled++;}}this.particles.emit(p.x,p.y,36,{speedMin:160,speedMax:520,lifeMin:.2,lifeMax:.7,color:'#fff2a6',sizeMin:3,sizeMax:8});
     }else if(type==='barrage'){
       this.specialEffects.push({type:'barrage',x:p.x,y:p.y,color:p.shipData.color,start:performance.now(),duration:700});
-      for(let i=0;i<18;i++){const a=(i/18)*Math.PI*2,b=new Bullet(p.x,p.y,Math.cos(a)*p.shipData.bulletSpeed*.8,Math.sin(a)*p.shipData.bulletSpeed*.8,true,p.shipData.color);b.damage=Math.max(1,p.bulletDamage);this.bullets.push(b);}
+      for(let i=0;i<18;i++){const a=(i/18)*Math.PI*2,b=new Bullet(p.x,p.y,Math.cos(a)*p.shipData.bulletSpeed*.8,Math.sin(a)*p.shipData.bulletSpeed*.8,true,p.shipData.color);b.damage=Math.max(1,p.bulletDamage);b.specialAbilityDamage=true;this.bullets.push(b);}
+      if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.ceil(this.boss.maxHealth*.25),this);
     }else if(type==='phase'){
       this.specialEffects.push({type:'phase',x:p.x,y:p.y,color:p.shipData.color,start:performance.now(),duration:700});
       p.invincibleTimer=Math.max(p.invincibleTimer,2.6);p.x=Utils.clamp(p.x+(Math.random()<.5?-1:1)*90,30,this.width-30);this.particles.emit(p.x,p.y,24,{speedMin:80,speedMax:260,lifeMin:.25,lifeMax:.65,color:p.shipData.color,sizeMin:2,sizeMax:6});
     }else if(type==='gravity'){
       this.specialEffects.push({type:'gravity',x:p.x,y:p.y,color:p.shipData.color,start:performance.now(),duration:700});
-      this.enemyBullets=[];if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.max(8,Math.round(this.boss.maxHealth*.08)),this);this.particles.emit(p.x,p.y,32,{speedMin:50,speedMax:320,lifeMin:.3,lifeMax:.8,color:p.shipData.color,sizeMin:3,sizeMax:8});
+      this.enemyBullets=[];if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.max(8,Math.round(this.boss.maxHealth*.25)),this);this.particles.emit(p.x,p.y,32,{speedMin:50,speedMax:320,lifeMin:.3,lifeMax:.8,color:p.shipData.color,sizeMin:3,sizeMax:8});
     }else if(type==='drone'){
       this.specialEffects.push({type:'drone',x:p.x,y:p.y,color:'#76f7b2',start:performance.now(),duration:700});
-      const targets=[...this.enemies].sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,5);for(const e of targets){if(e.hit(4)){this.addScore(10,e.x,e.y);this.enemies.splice(this.enemies.indexOf(e),1);this.enemiesKilled++;}this.particles.emit(e.x,e.y,9,{speedMin:60,speedMax:180,lifeMin:.2,lifeMax:.5,color:'#76f7b2',sizeMin:2,sizeMax:5});}if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.max(7,Math.round(this.boss.maxHealth*.07)),this);
+      const targets=[...this.enemies].sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,5);for(const e of targets){if(e.hit(Math.max(4,Math.ceil((e.maxHealth||e.health||1)*.5)))){this.addScore(10,e.x,e.y);this.enemies.splice(this.enemies.indexOf(e),1);this.enemiesKilled++;}this.particles.emit(e.x,e.y,9,{speedMin:60,speedMax:180,lifeMin:.2,lifeMax:.5,color:'#76f7b2',sizeMin:2,sizeMax:5});}if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.max(7,Math.round(this.boss.maxHealth*.25)),this);
     }else if(type==='overdrive'){
       this.specialEffects.push({type:'overdrive',x:p.x,y:p.y,color:p.shipData.color,start:performance.now(),duration:700});
-      const old=p.bulletDamage;p.bulletDamage+=3;for(let i=0;i<3;i++){const b=new Bullet(p.x+(i-1)*8,p.y-20,0,-p.shipData.bulletSpeed,false,p.shipData.color);b.damage=p.bulletDamage;this.bullets.push(b);}p.bulletDamage=old;this.enemyBullets=this.enemyBullets.filter((_,i)=>i%2===0);
+      const old=p.bulletDamage;p.bulletDamage+=3;for(let i=0;i<3;i++){const b=new Bullet(p.x+(i-1)*8,p.y-20,0,-p.shipData.bulletSpeed,false,p.shipData.color);b.damage=p.bulletDamage;b.specialAbilityDamage=true;this.bullets.push(b);}p.bulletDamage=old;this.enemyBullets=this.enemyBullets.filter((_,i)=>i%2===0);if(this.boss&&this.boss.phase===1)this.boss.applyDamage(Math.ceil(this.boss.maxHealth*.25),this);
     }else return false;
     p.specialUses--;playPurchase();this.refreshShipAbilityButton();return true;
   },
@@ -3097,42 +3116,33 @@ const Game = {
     document.getElementById('shopCredits').innerHTML = `${this.formatCredits(this.credits)}<small>CRÉDITS</small>`;
     document.getElementById('creatorBadge').classList.toggle('hidden', !this.creator);
 
-    // Render ships
+    // Regrouper les vaisseaux par type de pouvoir; trier chaque groupe par statistiques de base.
     const shipGrid = document.getElementById('shipGrid');
     shipGrid.innerHTML = '';
+    const shipGroups = new Map();
     for (const ship of SHIPS) {
-      const item = document.createElement('div');
-      item.className = 'shop-item';
-      const owned = this.ownedShips.includes(ship.id);
-      const equipped = this.equippedShip === ship.id;
-      const canAfford = this.credits >= this.priceOf(ship);
-      if (ship.secret && !owned) continue;
-
-      if (equipped) item.classList.add('equipped');
-      else if (owned) item.classList.add('owned');
-      else if (!canAfford) item.classList.add('cant-afford');
-
-      let status = '';
-      if (equipped) status = '<span class="shop-item-status equipped">Équipé</span>';
-      else if (owned) status = `<span class="shop-item-status owned" style="cursor:pointer;">Équiper</span>`;
-      else status = `<span class="shop-item-price">${ship.price.toLocaleString('fr-CA')} crédits</span>` + (ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount ? `<span class="shop-item-missing">Niveau ${ship.unlockLevel + 1} requis</span>` : (canAfford ? '' : `<span class="shop-item-missing">Il te manque ${this.formatCredits(ship.price - this.credits)} crédits</span>`));
-
-      item.classList.add('ship-item');
-      item.innerHTML = `
-        <canvas class="ship-preview" width="72" height="72"></canvas>
-        <div class="ship-info">
-          <div class="shop-item-name" style="color:${this.shipColors[ship.id] || ship.color}; text-shadow: 0 0 8px ${this.shipColors[ship.id] || ship.color};">${ship.name}</div>
-          <div class="shop-item-desc">${ship.desc} | Vies:${ship.maxLives} Cadence:${ship.fireRate}s${ship.unlockLevel ? ` | Niveau ${ship.unlockLevel + 1}+` : ''}</div>
-          ${status}
-        </div>
-      `;
-      this.drawShipPreview(item.querySelector('canvas'), {...ship, color:this.shipColors[ship.id] || ship.color});
-
-      if (!equipped) { item.addEventListener('click', () => { if (!owned && (ship.secret || ship.unlockLevel && this.unlockedLevel < ship.unlockLevel && !this.devAccount)) return; this.buyOrEquipShip(ship.id); }); }
-
-      shipGrid.appendChild(item);
+      if (ship.secret && !this.ownedShips.includes(ship.id)) continue;
+      const category=shipCategoryName(ship);
+      if(!shipGroups.has(category))shipGroups.set(category,[]);
+      shipGroups.get(category).push(ship);
     }
-
+    const orderedGroups=[...shipGroups.entries()].sort((a,b)=>Math.min(...a[1].map(x=>this.priceOf(x)))-Math.min(...b[1].map(x=>this.priceOf(x)))||a[0].localeCompare(b[0],'fr'));
+    for(const [category,ships] of orderedGroups){
+      const heading=document.createElement('div');heading.textContent=category;heading.style.cssText='grid-column:1/-1;margin:12px 0 0;padding:8px 10px;border-bottom:1px solid rgba(0,240,255,.25);color:var(--neon-cyan);font-family:var(--font-display);letter-spacing:.12em;text-transform:uppercase;font-size:.78rem';shipGrid.appendChild(heading);
+      for(const ship of ships.sort((a,b)=>this.priceOf(a)-this.priceOf(b)||a.name.localeCompare(b.name,'fr'))){
+        const item=document.createElement('div');item.className='shop-item ship-item';
+        const owned=this.ownedShips.includes(ship.id),equipped=this.equippedShip===ship.id,price=this.priceOf(ship),canAfford=this.credits>=price;
+        if(equipped)item.classList.add('equipped');else if(owned)item.classList.add('owned');else if(!canAfford)item.classList.add('cant-afford');
+        let status='';
+        if(equipped)status='<span class="shop-item-status equipped">Équipé</span>';
+        else if(owned)status='<span class="shop-item-status owned" style="cursor:pointer;">Équiper</span>';
+        else status=`<span class="shop-item-price">${price.toLocaleString('fr-CA')} crédits</span>`+(ship.unlockLevel&&this.unlockedLevel<ship.unlockLevel&&!this.devAccount?`<span class="shop-item-missing">Niveau ${ship.unlockLevel+1} requis</span>`:(canAfford?'':`<span class="shop-item-missing">Il te manque ${this.formatCredits(price-this.credits)} crédits</span>`));
+        item.innerHTML=`<canvas class="ship-preview" width="72" height="72"></canvas><div class="ship-info"><div class="shop-item-name" style="color:${this.shipColors[ship.id]||ship.color};text-shadow:0 0 8px ${this.shipColors[ship.id]||ship.color};">${ship.name}</div><div class="shop-item-desc">${ship.desc} | Vies:${ship.maxLives} · Dégâts:${ship.bulletDamage} · Tirs:${ship.multishot>=3?5:ship.multishot>=2?4:ship.multishot>=1?3:1} · Cadence:${ship.fireRate}s · Vitesse:${ship.speed}${ship.unlockLevel?` · Niveau ${ship.unlockLevel+1}+`:''}</div>${status}</div>`;
+        this.drawShipPreview(item.querySelector('canvas'),{...ship,color:this.shipColors[ship.id]||ship.color});
+        if(!equipped)item.addEventListener('click',()=>{if(!owned&&(ship.secret||ship.unlockLevel&&this.unlockedLevel<ship.unlockLevel&&!this.devAccount))return;this.buyOrEquipShip(ship.id)});
+        shipGrid.appendChild(item);
+      }
+    }
     // Couleurs personnalisées par vaisseau
     const colorGrid = document.getElementById('shipColorChoices');
     if (colorGrid) {
@@ -3154,10 +3164,10 @@ const Game = {
       if (owned && !equipped) item.addEventListener('click',()=>this.equipPilot(upg.id)); else if (!owned && canAfford) item.addEventListener('click',()=>this.buyUpgrade(upg.id));
       upgradeGrid.appendChild(item);
     }
-    const moduleGrid=document.getElementById('moduleGrid');if(moduleGrid){moduleGrid.innerHTML='';const ship=this.getShipData(this.equippedShip),state=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});if(!Array.isArray(state.modules))state.modules=[];for(const module of SHIP_MODULES){const cost=this.creator?0:Math.max(module.min,Math.round(Math.max(1200,ship.price||0)*module.factor));const owned=state.modules.includes(module.id),item=document.createElement('div');item.className='shop-item'+(owned?' owned':'')+(this.credits<cost&&!owned?' cant-afford':'');item.innerHTML=`<div class="shop-item-name">${module.name}</div><div class="shop-item-desc">${module.desc}</div>${owned?'<span class="shop-item-status owned">Installé sur ce vaisseau</span>':`<span class="shop-item-price">${this.formatCredits(cost)} crédits</span>`}`;if(!owned&&this.credits>=cost)item.addEventListener('click',()=>this.buyModule(module.id));moduleGrid.appendChild(item);}}
+    const moduleGrid=document.getElementById('moduleGrid');if(moduleGrid){moduleGrid.innerHTML='';const ship=this.getShipData(this.equippedShip),state=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});if(!Array.isArray(state.modules))state.modules=[];for(const module of SHIP_MODULES){const cost=this.creator?0:Math.max(module.min,Math.round(Math.max(1200,this.priceOf(ship))*module.factor));const owned=state.modules.includes(module.id),item=document.createElement('div');item.className='shop-item'+(owned?' owned':'')+(this.credits<cost&&!owned?' cant-afford':'');item.innerHTML=`<div class="shop-item-name">${module.name}</div><div class="shop-item-desc">${module.desc}</div>${owned?'<span class="shop-item-status owned">Installé sur ce vaisseau</span>':`<span class="shop-item-price">${this.formatCredits(cost)} crédits</span>`}`;if(!owned&&this.credits>=cost)item.addEventListener('click',()=>this.buyModule(module.id));moduleGrid.appendChild(item);}}
   },
 
-  priceOf(item) { return this.creator ? 0 : item.price; },
+  priceOf(item) { return this.creator ? 0 : SHIPS.includes(item) ? shipPriceFromBaseStats(item) : item.price; },
 
   drawShipPreview(canvas, ship) {
     const c = canvas.getContext('2d');
@@ -3169,7 +3179,7 @@ const Game = {
     c.restore();
   },
 
-  buyModule(moduleId){const module=SHIP_MODULES.find(m=>m.id===moduleId);if(!module)return;const ship=this.getShipData(this.equippedShip),state=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});if(!Array.isArray(state.modules))state.modules=[];if(state.modules.includes(moduleId))return;const cost=this.creator?0:Math.max(module.min,Math.round(Math.max(1200,ship.price||0)*module.factor));if(this.credits<cost)return;state.modules.push(moduleId);this.credits-=cost;Save.save();this.renderShop();if(cost)this.flashWallet(-cost);},
+  buyModule(moduleId){const module=SHIP_MODULES.find(m=>m.id===moduleId);if(!module)return;const ship=this.getShipData(this.equippedShip),state=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});if(!Array.isArray(state.modules))state.modules=[];if(state.modules.includes(moduleId))return;const cost=this.creator?0:Math.max(module.min,Math.round(Math.max(1200,this.priceOf(ship))*module.factor));if(this.credits<cost)return;state.modules.push(moduleId);this.credits-=cost;Save.save();this.renderShop();if(cost)this.flashWallet(-cost);},
 
   buyOrEquipShip(shipId) {
     const ship=this.getShipData(shipId),current=this.shipUpgradeStates[this.equippedShip]||(this.shipUpgradeStates[this.equippedShip]={state:{},owned:[...this.ownedUpgrades],modules:[]});
@@ -3293,7 +3303,7 @@ const Game = {
     const make = (x, y) => {
       const e = new Enemy(x, y, this.level, this.wave, mix); const dm=this.difficultyMods();
       e.speed*=dm.enemySpeed; e.health=Math.max(1,Math.ceil(e.health*dm.enemyHealth)); e.maxHealth=e.health;
-      if (this.endlessRun) { const ramp=1+Math.min(4.0,Math.max(0,this.endlessDepth-1)*.06); e.speed*=ramp; e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(2.7,Math.max(0,this.endlessDepth-1)*.05)))); e.maxHealth=e.health; }
+      if (this.endlessRun) { const scale=this.activeInfiniteScale(),depth=Math.max(0,this.endlessDepth-1),ramp=1+Math.min(5.5,depth*.085*scale); e.speed*=ramp*Math.pow(scale,.32); e.fireRate=Math.max(.3,(e.fireRate||1)/Math.pow(scale,.42)); e.fireTimer=Math.min(e.fireTimer||e.fireRate,e.fireRate); e.health=Math.max(1,Math.ceil(e.health*(1+Math.min(4,depth*.075*scale))*Math.pow(scale,.7))); e.maxHealth=e.health; }
       if (typeof Coop !== 'undefined' && Coop.active && Versus.isHost) e.netId = Coop.nextEnemyId++;
       if (this.hasMod('speed')) e.speed *= 1.3;
       if (this.hasMod('elite') && Math.random() < 0.25) { e.elite = true; e.health = e.health * 2 + 1; e.maxHealth = e.health; }
@@ -3315,7 +3325,7 @@ const Game = {
   },
 
   spawnBoss() {
-    this.boss = new Boss(this.level, this.width); if (this.infiniteMode) { const ramp=1+Math.min(2.2,Math.max(0,this.wave-1)*0.04); this.boss.maxHealth=Math.ceil(this.boss.maxHealth*ramp); this.boss.health=this.boss.maxHealth; this.boss.speed*=1+Math.min(.45,Math.max(0,this.wave-1)*.008); }
+    this.boss = new Boss(this.level, this.width); if (this.infiniteMode) { const scale=this.activeInfiniteScale(),ramp=1+Math.min(3.5,Math.max(0,this.wave-1)*0.06*scale); this.boss.maxHealth=Math.ceil(this.boss.maxHealth*ramp*Math.pow(scale,.75)); this.boss.health=this.boss.maxHealth; this.boss.speed*=(1+Math.min(.65,Math.max(0,this.wave-1)*.01*scale))*Math.pow(scale,.2); }
     this.state = GameState.BOSS_FIGHT;
     playBossSpawn();
   },
@@ -3599,12 +3609,12 @@ const Game = {
     if (this.endlessRun) {
       this.endlessRunTime += dt;
       this.endlessSpawnClock += dt;
-      const interval = Math.max(.18, this.currentLevelData.spawnInterval * this.difficultyMods().spawn);
+      const interval = Math.max(.12, this.currentLevelData.spawnInterval * this.difficultyMods().spawn);
       if (this.endlessSpawnClock >= interval) {
         this.endlessSpawnClock = 0;
         this.spawnEnemy(1);
       }
-      this.endlessDepth = 1 + Math.floor(this.endlessRunTime / 15);
+      this.endlessDepth = 1 + Math.floor(this.endlessRunTime / Math.max(7,15/Math.sqrt(this.activeInfiniteScale())));
       if (this.endlessDepth !== this.currentLevelData.endlessDepth) this.currentLevelData = this.makeEndlessLevel(this.endlessDepth);
     } else {
     const enemiesThisWave = this.currentLevelData.enemiesPerWave + (this.wave - 1) * this.currentLevelData.waveIncrement;
@@ -3731,11 +3741,13 @@ const Game = {
         const dy = bullet.y - (eb.y + eb.h / 2);
         if (Math.abs(dx) < eb.w / 2 && Math.abs(dy) < eb.h / 2) {
           if (Coop.active && !Versus.isHost) {
-            Coop.requestEnemyHit(enemy.netId, (bullet.damage || this.player.bulletDamage));
+            const hitDamage=bullet.specialAbilityDamage?Math.max(bullet.damage||this.player.bulletDamage,Math.ceil((enemy.maxHealth||enemy.health||1)*.5)):(bullet.damage||this.player.bulletDamage);
+            Coop.requestEnemyHit(enemy.netId, hitDamage);
             this.bullets.splice(i, 1);
             break;
           }
-          const killed = enemy.hit((bullet.damage || this.player.bulletDamage));
+          const hitDamage=bullet.specialAbilityDamage?Math.max(bullet.damage||this.player.bulletDamage,Math.ceil((enemy.maxHealth||enemy.health||1)*.5)):(bullet.damage||this.player.bulletDamage);
+          const killed = enemy.hit(hitDamage);
           this.particles.emit(bullet.x, bullet.y, 5, { speedMin: 50, speedMax: 150, lifeMin: 0.2, lifeMax: 0.4, color: enemy.color, sizeMin: 1, sizeMax: 3 });
           if (killed) {
             const points = (enemy.type === 'tank' ? 30 : enemy.type === 'fast' ? 20 : enemy.type === 'splitter' ? 25 : enemy.type === 'shooter' ? 35 : 10) * (enemy.elite ? 2 : 1);
@@ -6643,7 +6655,8 @@ Game.init();
       totalBytes += approxBytes;
       inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
     }
-    return inlined.length > 0 ? inlined.join("\n") : null;
+    return inlined.length > 0 ? inlined.join("
+") : null;
   }
 
   function stripExternal(clone) {
@@ -6852,7 +6865,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261025a" defer></script>
+<script src="/expansion.js?build=20261026a" defer></script>
 </body>
 </html>
 
