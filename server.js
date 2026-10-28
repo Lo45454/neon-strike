@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-27-boss-multishot-v27';
+const RELEASE_ID = 'neon-2026-10-27-boss-backline-v28';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
