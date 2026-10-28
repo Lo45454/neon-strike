@@ -2214,7 +2214,7 @@ class Boss {
     if(m===0){this.x=c+Math.sin(this.t*2.4)*span;this.y=this.targetY+Math.sin(this.t*3)*25;}
     else if(m===1){s.mc=(s.mc??1.3)-dt;if(s.mc<=0){this.x=Utils.clamp(P.x+(i%2?-1:1)*145,55,W-55);this.y=this.targetY+Utils.randRange(-12,38);s.mc=this.rage?1.1:1.65;s.teleportFx=.55;game.screenShake=.14;}}
     else if(m===2){s.mc=(s.mc??2.5)-dt;if(s.mc<=0){s.mc=this.rage?3.8:4.8;s.dive=.62;s.dx=Utils.clamp(P.x+(P.x<c?1:-1)*Math.max(105,this.w*.72),55,W-55);s.warn=.8;s.warnX=s.dx;}if(s.dive>0){s.dive-=dt;this.x=Utils.lerp(this.x,s.dx,dt*5);this.y=Utils.lerp(this.y,Math.min(P.y-118,game.height-135),dt*3.5);}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span,dt*3.5);this.y=Utils.lerp(this.y,this.targetY,dt*4.5);}}
-    else if(m===3){this.x=Utils.lerp(this.x,Utils.clamp(P.x,55,W-55),dt*2);this.y=Utils.lerp(this.y,Utils.clamp(P.y-110,this.targetY,game.height-130),dt*1.15);}
+    else if(m===3){s.mc=(s.mc??4)-dt;if(s.warn>0){this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.2)*span*.4,dt*2.5);this.y=Utils.lerp(this.y,this.targetY,dt*3);}else if(s.passX!=null){s.passTime=(s.passTime??.65)-dt;this.x=Utils.lerp(this.x,s.passX,dt*8);this.y=Utils.lerp(this.y,Math.min(P.y-94,game.height-115),dt*7);if(s.passTime<=0){s.passX=null;s.passTime=0;s.returning=true;}}else if(s.returning){this.x=Utils.lerp(this.x,c,dt*5);this.y=Utils.lerp(this.y,this.targetY,dt*5);if(Math.abs(this.x-c)<8&&Math.abs(this.y-this.targetY)<8)s.returning=false;}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.2)*span*.4,dt*2.5);this.y=Utils.lerp(this.y,this.targetY+Math.sin(this.t*1.8)*10,dt*2.5);if(s.mc<=0){s.mc=this.rage?4.2:5.2;s.passX=Utils.clamp(P.x,55,W-55);s.warn=.9;s.warnX=s.passX;}}}
     else if(m===4){s.orbit=(s.orbit||0)+dt*1.7;this.x=Utils.clamp(P.x+Math.cos(s.orbit)*Math.min(165,W*.28),55,W-55);this.y=Utils.clamp(P.y-135+Math.sin(s.orbit*1.5)*95,this.targetY,game.height-135);}
     else if(m===5){s.mc=(s.mc??1)-dt;if(s.mc<=0){s.mc=this.rage?1:1.5;s.dir=(s.dir||1)*-1;s.dash=.42;s.warn=.3;s.warnX=s.dir>0?65:W-65;}if(s.dash>0){s.dash-=dt;this.x=Utils.clamp(this.x+s.dir*W*2.2*dt,48,W-48);}else this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.8)*span,dt*1.3);}
     else if(m===6){s.mc=(s.mc??1.7)-dt;if(s.mc<=0){s.mc=this.rage?1.3:1.9;s.jump=.6;s.jx=Utils.clamp(P.x+Utils.randRange(-100,100),55,W-55);s.warn=.4;s.warnX=s.jx;}if(s.jump>0){s.jump-=dt;this.x=Utils.lerp(this.x,s.jx,dt*6);this.y=this.targetY+Math.sin((1-s.jump/.6)*Math.PI)*125;}else this.y=Utils.lerp(this.y,this.targetY,dt*2);}
@@ -6855,7 +6855,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261027e" defer></script>
+<script src="/expansion.js?build=20261027f" defer></script>
 </body>
 </html>
 
