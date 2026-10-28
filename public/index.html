@@ -998,27 +998,27 @@ const SHIPS = [
   { id: 'lance', name: 'Lance-Photon', desc: 'Canon perforant spécialisé contre les boss', price: 44500, color: '#fbbf24', speed: 320, fireRate: 0.26, bulletSpeed: 1200, maxLives: 4, multishot: 0, bulletDamage: 12, unlockLevel: 22 },
   { id: 'trident', name: 'Trident', desc: 'Cinq trajectoires et couverture large', price: 48500, color: '#fb7185', speed: 360, fireRate: 0.22, bulletSpeed: 900, maxLives: 4, multishot: 3, bulletDamage: 3, unlockLevel: 24 },
   { id: 'prism', name: 'Prisme Royal', desc: 'Cadence prismatique, coque lourde et large salve', price: 53000, color: '#c4b5fd', speed: 350, fireRate: 0.17, bulletSpeed: 980, maxLives: 7, multishot: 2, bulletDamage: 5, unlockLevel: 26 },
-  { id: 'bomber', name: 'Bombardier Nova', desc: 'Bombe à impulsion : touche les ennemis et le boss partout à l’écran · pouvoir E', price: 62000, color: '#ff8b45', speed: 315, fireRate: .27, bulletSpeed: 720, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel: 35, specialAbility: 'bomb', specialUses: 1 },
-  { id: 'aegis', name: 'Égide Spectrale', desc: 'Onde de défense : efface les tirs ennemis et protège brièvement · pouvoir E', price: 70000, color: '#55f6ff', speed: 360, fireRate: .24, bulletSpeed: 800, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel: 45, specialAbility: 'pulse', specialUses: 1 },
-  { id: 'medic', name: 'Phénix de Secours', desc: 'Réacteur médical : restaure une vie, une fois par niveau · pouvoir E', price: 78000, color: '#ff5fa2', speed: 345, fireRate: .25, bulletSpeed: 780, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel: 55, specialAbility: 'repair', specialUses: 1 },
-  {id:'vortex',name:'Vortex',desc:'Onde gravitationnelle qui dissipe les tirs · pouvoir E',price:84000,color:'#a78bfa',speed:380,fireRate:.24,bulletSpeed:800,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:60,specialAbility:'gravity',specialUses:2},
-  {id:'lumen',name:'Lumen',desc:'Rayon concentré qui frappe le boss · pouvoir E',price:90000,color:'#fff2a6',speed:355,fireRate:.25,bulletSpeed:900,maxLives:4,multishot:0,bulletDamage:14,unlockLevel:62,specialAbility:'beam',specialUses:2},
-  {id:'tempest',name:'Tempête',desc:'Déchaîne une rafale circulaire · pouvoir E',price:96000,color:'#42e8ff',speed:410,fireRate:.27,bulletSpeed:900,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:65,specialAbility:'barrage',specialUses:2},
-  {id:'wraith',name:'Spectre noir',desc:'Saut de phase et invulnérabilité brève · pouvoir E',price:102000,color:'#c084fc',speed:430,fireRate:.23,bulletSpeed:940,maxLives:3,multishot:1,bulletDamage:5,unlockLevel:68,specialAbility:'phase',specialUses:2},
-  {id:'bastion_mk2',name:'Bastion MK-II',desc:'Déploie un drone qui neutralise les ennemis proches · pouvoir E',price:108000,color:'#76f7b2',speed:290,fireRate:.3,bulletSpeed:760,maxLives:6,multishot:1,bulletDamage:4,unlockLevel:70,specialAbility:'drone',specialUses:2},
-  {id:'sunlance',name:'Lance solaire',desc:'Tir chargé à trois projectiles et dissipation des tirs hostiles · pouvoir E',price:114000,color:'#ffb64d',speed:345,fireRate:.22,bulletSpeed:1100,maxLives:4,multishot:0,bulletDamage:16,unlockLevel:73,specialAbility:'overdrive',specialUses:2},
-  {id:'singularity',name:'Singularité',desc:'Onde qui dissipe les tirs et endommage le boss · pouvoir E',price:120000,color:'#ec6bff',speed:370,fireRate:.26,bulletSpeed:780,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:76,specialAbility:'gravity',specialUses:3},
-  {id:'striker_x',name:'Striker X',desc:'Bombe tactique et salve de précision · pouvoir E',price:126000,color:'#ff6b6b',speed:390,fireRate:.2,bulletSpeed:880,maxLives:4,multishot:1,bulletDamage:5,unlockLevel:79,specialAbility:'bomb',specialUses:2},
-  {id:'halo',name:'Halo',desc:'Bouclier d’urgence et onde anti-projectiles · pouvoir E',price:132000,color:'#8be9fd',speed:360,fireRate:.23,bulletSpeed:800,maxLives:5,multishot:1,bulletDamage:4,unlockLevel:82,specialAbility:'pulse',specialUses:2},
-  {id:'seraph',name:'Séraphin',desc:'Répare la coque et recharge une protection · pouvoir E',price:138000,color:'#ffd6f3',speed:400,fireRate:.21,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:85,specialAbility:'repair',specialUses:2},
-  {id:'comet',name:'Comète',desc:'Accélération de phase pour éviter les attaques · pouvoir E',price:144000,color:'#ff8b45',speed:465,fireRate:.24,bulletSpeed:920,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:88,specialAbility:'phase',specialUses:3},
-  {id:'omega_ship',name:'Omega-9',desc:'Onde de choc et rafale d’appoint · pouvoir E',price:150000,color:'#f0f4ff',speed:375,fireRate:.2,bulletSpeed:940,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:90,specialAbility:'barrage',specialUses:3},
-  {id:'gravemaker',name:'Gravemaker',desc:'Onde gravitationnelle lourde · pouvoir E',price:156000,color:'#a78bfa',speed:320,fireRate:.25,bulletSpeed:820,maxLives:6,multishot:1,bulletDamage:5,unlockLevel:92,specialAbility:'gravity',specialUses:3},
-  {id:'needle_x',name:'Aiguille X',desc:'Rayon perforant contre les boss · pouvoir E',price:162000,color:'#fff2a6',speed:420,fireRate:.29,bulletSpeed:1300,maxLives:3,multishot:0,bulletDamage:16,unlockLevel:94,specialAbility:'beam',specialUses:3},
-  {id:'corsair',name:'Corsaire',desc:'Drone d’attaque et salve latérale · pouvoir E',price:168000,color:'#76f7b2',speed:390,fireRate:.22,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:5,unlockLevel:96,specialAbility:'drone',specialUses:3},
-  {id:'frostbite',name:'Morsure Cryo',desc:'Onde défensive qui nettoie les tirs hostiles · pouvoir E',price:174000,color:'#9be7ff',speed:355,fireRate:.2,bulletSpeed:960,maxLives:5,multishot:1,bulletDamage:5,unlockLevel:97,specialAbility:'pulse',specialUses:3},
-  {id:'empress',name:'Impératrice',desc:'Barrage radial de précision · pouvoir E',price:180000,color:'#ff75d8',speed:365,fireRate:.23,bulletSpeed:930,maxLives:4,multishot:3,bulletDamage:4,unlockLevel:98,specialAbility:'barrage',specialUses:3},
-  {id:'phoenix_prime',name:'Phénix Prime',desc:'Réacteur de réparation avec réserve supplémentaire · pouvoir E',price:186000,color:'#ff9c66',speed:400,fireRate:.21,bulletSpeed:980,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:99,specialAbility:'repair',specialUses:3},
+  { id: 'bomber', name: 'Bombardier Nova', desc: 'Bombe à impulsion : touche les ennemis et le boss partout à l’écran · pouvoir E', price: 62000, color: '#ff8b45', speed: 315, fireRate: .27, bulletSpeed: 720, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel:4, specialAbility: 'bomb', specialUses: 1 },
+  { id: 'aegis', name: 'Égide Spectrale', desc: 'Onde de défense : efface les tirs ennemis et protège brièvement · pouvoir E', price: 70000, color: '#55f6ff', speed: 360, fireRate: .24, bulletSpeed: 800, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel:7, specialAbility: 'pulse', specialUses: 1 },
+  { id: 'medic', name: 'Phénix de Secours', desc: 'Réacteur médical : restaure une vie, une fois par niveau · pouvoir E', price: 78000, color: '#ff5fa2', speed: 345, fireRate: .25, bulletSpeed: 780, maxLives: 4, multishot: 1, bulletDamage: 4, unlockLevel:11, specialAbility: 'repair', specialUses: 1 },
+  {id:'vortex',name:'Vortex',desc:'Onde gravitationnelle qui dissipe les tirs · pouvoir E',price:84000,color:'#a78bfa',speed:380,fireRate:.24,bulletSpeed:800,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:13,specialAbility:'gravity',specialUses:2},
+  {id:'lumen',name:'Lumen',desc:'Rayon concentré qui frappe le boss · pouvoir E',price:90000,color:'#fff2a6',speed:355,fireRate:.25,bulletSpeed:900,maxLives:4,multishot:0,bulletDamage:14,unlockLevel:15,specialAbility:'beam',specialUses:2},
+  {id:'tempest',name:'Tempête',desc:'Déchaîne une rafale circulaire · pouvoir E',price:96000,color:'#42e8ff',speed:410,fireRate:.27,bulletSpeed:900,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:17,specialAbility:'barrage',specialUses:2},
+  {id:'wraith',name:'Spectre noir',desc:'Saut de phase et invulnérabilité brève · pouvoir E',price:102000,color:'#c084fc',speed:430,fireRate:.23,bulletSpeed:940,maxLives:3,multishot:1,bulletDamage:5,unlockLevel:19,specialAbility:'phase',specialUses:2},
+  {id:'bastion_mk2',name:'Bastion MK-II',desc:'Déploie un drone qui neutralise les ennemis proches · pouvoir E',price:108000,color:'#76f7b2',speed:290,fireRate:.3,bulletSpeed:760,maxLives:6,multishot:1,bulletDamage:4,unlockLevel:21,specialAbility:'drone',specialUses:2},
+  {id:'sunlance',name:'Lance solaire',desc:'Tir chargé à trois projectiles et dissipation des tirs hostiles · pouvoir E',price:114000,color:'#ffb64d',speed:345,fireRate:.22,bulletSpeed:1100,maxLives:4,multishot:0,bulletDamage:16,unlockLevel:23,specialAbility:'overdrive',specialUses:2},
+  {id:'singularity',name:'Singularité',desc:'Onde qui dissipe les tirs et endommage le boss · pouvoir E',price:120000,color:'#ec6bff',speed:370,fireRate:.26,bulletSpeed:780,maxLives:4,multishot:2,bulletDamage:4,specialAbility:'gravity',specialUses:3},
+  {id:'striker_x',name:'Striker X',desc:'Bombe tactique et salve de précision · pouvoir E',price:126000,color:'#ff6b6b',speed:390,fireRate:.2,bulletSpeed:880,maxLives:4,multishot:1,bulletDamage:5,unlockLevel:17,specialAbility:'bomb',specialUses:2},
+  {id:'halo',name:'Halo',desc:'Bouclier d’urgence et onde anti-projectiles · pouvoir E',price:132000,color:'#8be9fd',speed:360,fireRate:.23,bulletSpeed:800,maxLives:5,multishot:1,bulletDamage:4,specialAbility:'pulse',specialUses:2},
+  {id:'seraph',name:'Séraphin',desc:'Répare la coque et recharge une protection · pouvoir E',price:138000,color:'#ffd6f3',speed:400,fireRate:.21,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:4,unlockLevel:24,specialAbility:'repair',specialUses:2},
+  {id:'comet',name:'Comète',desc:'Accélération de phase pour éviter les attaques · pouvoir E',price:144000,color:'#ff8b45',speed:465,fireRate:.24,bulletSpeed:920,maxLives:3,multishot:2,bulletDamage:4,unlockLevel:9,specialAbility:'phase',specialUses:3},
+  {id:'omega_ship',name:'Omega-9',desc:'Onde de choc et rafale d’appoint · pouvoir E',price:150000,color:'#f0f4ff',speed:375,fireRate:.2,bulletSpeed:940,maxLives:5,multishot:2,bulletDamage:5,unlockLevel:27,specialAbility:'barrage',specialUses:3},
+  {id:'gravemaker',name:'Gravemaker',desc:'Onde gravitationnelle lourde · pouvoir E',price:156000,color:'#a78bfa',speed:320,fireRate:.25,bulletSpeed:820,maxLives:6,multishot:1,bulletDamage:5,unlockLevel:19,specialAbility:'gravity',specialUses:3},
+  {id:'needle_x',name:'Aiguille X',desc:'Rayon perforant contre les boss · pouvoir E',price:162000,color:'#fff2a6',speed:420,fireRate:.29,bulletSpeed:1300,maxLives:3,multishot:0,bulletDamage:16,unlockLevel:25,specialAbility:'beam',specialUses:3},
+  {id:'corsair',name:'Corsaire',desc:'Drone d’attaque et salve latérale · pouvoir E',price:168000,color:'#76f7b2',speed:390,fireRate:.22,bulletSpeed:900,maxLives:4,multishot:2,bulletDamage:5,unlockLevel:14,specialAbility:'drone',specialUses:3},
+  {id:'frostbite',name:'Morsure Cryo',desc:'Onde défensive qui nettoie les tirs hostiles · pouvoir E',price:174000,color:'#9be7ff',speed:355,fireRate:.2,bulletSpeed:960,maxLives:5,multishot:1,bulletDamage:5,unlockLevel:21,specialAbility:'pulse',specialUses:3},
+  {id:'empress',name:'Impératrice',desc:'Barrage radial de précision · pouvoir E',price:180000,color:'#ff75d8',speed:365,fireRate:.23,bulletSpeed:930,maxLives:4,multishot:3,bulletDamage:4,unlockLevel:27,specialAbility:'barrage',specialUses:3},
+  {id:'phoenix_prime',name:'Phénix Prime',desc:'Réacteur de réparation avec réserve supplémentaire · pouvoir E',price:186000,color:'#ff9c66',speed:400,fireRate:.21,bulletSpeed:980,maxLives:5,multishot:2,bulletDamage:5,specialAbility:'repair',specialUses:3},
 ];
 
 function shipBaseStatRating(ship){
@@ -1029,9 +1029,9 @@ function shipBaseStatRating(ship){
 function shipPriceFromBaseStats(ship){
   if(ship.id==='default')return 0;
   const delta=Math.max(0,shipBaseStatRating(ship)-28);
-  const raw=Math.pow(delta,2)*32;
-  return Math.max(500,Math.min(200000,Math.round(raw/500)*500));
-}
+  const raw=Math.pow(delta,2)*32*1.35;
+  const basePrice=Math.max(1000,Math.min(200000,Math.round(raw/500)*500));
+  return ship.specialAbility?Math.max(10000,basePrice):basePrice;
 function shipCategoryName(ship){
   return ({bomb:'Bombardiers',pulse:'Boucliers et interception',repair:'Réparation',gravity:'Gravité',beam:'Rayons',barrage:'Rafales',phase:'Phase',drone:'Drones',overdrive:'Surcharge'})[ship.specialAbility]||'Sans pouvoir spécial';
 }// ===================== AMÉLIORATIONS =====================
@@ -1866,7 +1866,8 @@ class Boss {
     this.rage = false;
     this.rageText = 0;
     this.diff = level < 10 ? 1.22 + Math.min(level,40)*.04 : 1.35 + Math.min(level,40)*.045; // profil renforcé réservé aux boss tardifs
-    this.st = {};         // état propre au type    this.setup();
+    this.st = {};         // état propre au type
+    this.setup();
   }
 
   // ---------- Préparation par type ----------
