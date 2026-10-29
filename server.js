@@ -12,7 +12,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 5000;
-const RELEASE_ID = 'neon-2026-10-28-multishot-boss-return-v29';
+const RELEASE_ID = 'neon-2026-10-28-multi-fps-v30';
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -624,7 +624,7 @@ io.on('connection', (socket) => {
   socket.data.chatTimes = []; socket.data.screenWatch=false; socket.data.lastFrameAt=0;
   for(const notice of (db.moderationNotices[vid]||[])) socket.emit('admin:notice',notice);
   socket.on('admin:notice:ack',noticeId=>{const queue=db.moderationNotices[vid]||[];db.moderationNotices[vid]=queue.filter(n=>n.id!==String(noticeId||''));if(!db.moderationNotices[vid].length)delete db.moderationNotices[vid];persist();});
-  socket.on('screen:frame',payload=>{const now=Date.now(),image=payload&&payload.version===9?payload.image:null;if(!socket.data.screenWatch||now-socket.data.lastFrameAt<300||typeof image!=='string'||image.length>390000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image))return;socket.data.lastFrameAt=now;liveFrames.set(vid,{id:vid,name:(accIndex.get(vid)||{}).name||(rec(vid).profile||{}).name||'Invité',at:now,image});});
+  socket.on('screen:frame',payload=>{const now=Date.now(),image=payload&&payload.version===9?payload.image:null;if(!socket.data.screenWatch||now-socket.data.lastFrameAt<60||typeof image!=='string'||image.length>390000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image))return;socket.data.lastFrameAt=now;liveFrames.set(vid,{id:vid,name:(accIndex.get(vid)||{}).name||(rec(vid).profile||{}).name||'Invité',at:now,image});});
   if (!online.has(vid)) online.set(vid, new Set());
   const wasOffline = online.get(vid).size === 0;
   online.get(vid).add(socket.id);
