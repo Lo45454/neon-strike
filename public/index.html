@@ -2213,13 +2213,13 @@ class Boss {
     s.angle=(s.angle||0)+dt*(this.rage?3.2:2);s.timer=(s.timer??.8)-dt;s.open=Math.max(0,(s.open||0)-dt);s.warn=Math.max(0,(s.warn||0)-dt);s.teleportFx=Math.max(0,(s.teleportFx||0)-dt);
     if(m===0){this.x=c+Math.sin(this.t*2.4)*span;this.y=this.targetY+Math.sin(this.t*3)*25;}
     else if(m===1){s.mc=(s.mc??1.3)-dt;if(s.mc<=0){this.x=Utils.clamp(P.x+(i%2?-1:1)*145,55,W-55);this.y=this.targetY+Utils.randRange(-12,38);s.mc=this.rage?1.1:1.65;s.teleportFx=.55;game.screenShake=.14;}}
-    else if(m===2){s.mc=(s.mc??2.5)-dt;if(s.mc<=0){s.mc=this.rage?3.8:4.8;s.dive=.62;s.dx=Utils.clamp(P.x+(P.x<c?1:-1)*Math.max(105,this.w*.72),55,W-55);s.warn=.8;s.warnX=s.dx;}if(s.dive>0){s.dive-=dt;this.x=Utils.lerp(this.x,s.dx,dt*5);this.y=Utils.lerp(this.y,Math.min(P.y-118,game.height-135),dt*3.5);}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span,dt*3.5);this.y=Utils.lerp(this.y,this.targetY,dt*4.5);}}
-    else if(m===3){s.mc=(s.mc??4)-dt;if(s.warn>0){this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.2)*span*.4,dt*2.5);this.y=Utils.lerp(this.y,this.targetY,dt*3);}else if(s.passX!=null){s.passTime=(s.passTime??.65)-dt;this.x=Utils.lerp(this.x,s.passX,dt*8);this.y=Utils.lerp(this.y,Math.min(P.y-94,game.height-115),dt*7);if(s.passTime<=0){s.passX=null;s.passTime=0;s.returning=true;}}else if(s.returning){this.x=Utils.lerp(this.x,c,dt*5);this.y=Utils.lerp(this.y,this.targetY,dt*5);if(Math.abs(this.x-c)<8&&Math.abs(this.y-this.targetY)<8)s.returning=false;}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.2)*span*.4,dt*2.5);this.y=Utils.lerp(this.y,this.targetY+Math.sin(this.t*1.8)*10,dt*2.5);if(s.mc<=0){s.mc=this.rage?4.2:5.2;s.passX=Utils.clamp(P.x,55,W-55);s.warn=.9;s.warnX=s.passX;}}}
-    else if(m===4){s.orbit=(s.orbit||0)+dt*1.7;this.x=Utils.clamp(P.x+Math.cos(s.orbit)*Math.min(165,W*.28),55,W-55);this.y=Utils.clamp(P.y-135+Math.sin(s.orbit*1.5)*95,this.targetY,game.height-135);}
+    else if(m===2){s.mc=(s.mc??2.5)-dt;if(s.returning){const hx=s.homeX??c;this.x=Utils.lerp(this.x,hx,dt*5);this.y=Utils.lerp(this.y,this.targetY,dt*5);if(Math.abs(this.x-hx)<10&&Math.abs(this.y-this.targetY)<10)s.returning=false;}else if(s.dive>0){s.dive-=dt;this.x=Utils.lerp(this.x,s.dx,dt*5);this.y=Utils.lerp(this.y,this.targetY+48,dt*5);if(s.dive<=0)s.returning=true;}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span*.55,dt*3.5);this.y=Utils.lerp(this.y,this.targetY,dt*4.5);if(s.mc<=0){s.mc=this.rage?3.8:4.8;s.homeX=this.x;s.dive=.48;s.dx=Utils.clamp(P.x+(P.x<c?1:-1)*Math.max(105,this.w*.72),55,W-55);s.warn=.8;s.warnX=s.dx;}}}
+    else if(m===3){s.mc=(s.mc??4)-dt;if(s.returning){const hx=s.homeX??c;this.x=Utils.lerp(this.x,hx,dt*5);this.y=Utils.lerp(this.y,this.targetY,dt*5);if(Math.abs(this.x-hx)<8&&Math.abs(this.y-this.targetY)<8)s.returning=false;}else if(s.warn>0){this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.2)*span*.4,dt*2.5);this.y=Utils.lerp(this.y,this.targetY,dt*3);}else if(s.passX!=null){s.passTime=(s.passTime??.48)-dt;this.x=Utils.lerp(this.x,s.passX,dt*8);this.y=Utils.lerp(this.y,this.targetY+48,dt*6);if(s.passTime<=0){s.passX=null;s.passTime=0;s.returning=true;}}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.2)*span*.4,dt*2.5);this.y=Utils.lerp(this.y,this.targetY+Math.sin(this.t*1.8)*8,dt*2.5);if(s.mc<=0){s.mc=this.rage?4.2:5.2;s.homeX=this.x;s.passX=Utils.clamp(P.x,55,W-55);s.warn=.9;s.warnX=s.passX;}}}
+    else if(m===4){s.orbit=(s.orbit||0)+dt*1.7;this.x=Utils.clamp(c+Math.cos(s.orbit)*Math.min(165,W*.28),55,W-55);this.y=Utils.clamp(this.targetY+38+Math.sin(s.orbit*1.5)*18,this.targetY,this.targetY+62);}
     else if(m===5){s.mc=(s.mc??1)-dt;if(s.mc<=0){s.mc=this.rage?1:1.5;s.dir=(s.dir||1)*-1;s.dash=.42;s.warn=.3;s.warnX=s.dir>0?65:W-65;}if(s.dash>0){s.dash-=dt;this.x=Utils.clamp(this.x+s.dir*W*2.2*dt,48,W-48);}else this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.8)*span,dt*1.3);}
     else if(m===6){s.mc=(s.mc??1.7)-dt;if(s.mc<=0){s.mc=this.rage?1.3:1.9;s.jump=.6;s.jx=Utils.clamp(P.x+Utils.randRange(-100,100),55,W-55);s.warn=.4;s.warnX=s.jx;}if(s.jump>0){s.jump-=dt;this.x=Utils.lerp(this.x,s.jx,dt*6);this.y=this.targetY+Math.sin((1-s.jump/.6)*Math.PI)*125;}else this.y=Utils.lerp(this.y,this.targetY,dt*2);}
-    else if(m===7){s.mc=(s.mc??4)-dt;if(s.mc<=0&&s.targetX==null){s.mc=this.rage?4.3:5.3;s.targetX=Utils.clamp(P.x+(P.x<c?1:-1)*Math.max(105,this.w*.72),60,W-60);s.warn=.85;s.warnX=s.targetX;}if(s.warn>0){this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.5)*span,dt*2.5);this.y=Utils.lerp(this.y,this.targetY,dt*2.5);}else if(s.targetX!=null){s.passTime=(s.passTime??.62)-dt;this.x=Utils.lerp(this.x,s.targetX,dt*6);this.y=Utils.lerp(this.y,Math.min(P.y-118,game.height-135),dt*4);if(s.passTime<=0){s.targetX=null;s.passTime=0;}}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.5)*span,dt*3.5);this.y=Utils.lerp(this.y,this.targetY,dt*4.5);}}
-    else if(m===8){s.mc=(s.mc??2.5)-dt;if(s.mc<=0){s.mc=this.rage?4.2:5.2;s.ram=.58;s.rx=Utils.clamp(P.x+(P.x<c?1:-1)*Math.max(110,this.w*.72),55,W-55);s.warn=.9;s.warnX=s.rx;game.screenShake=.12;}if(s.ram>0){s.ram-=dt;this.x=Utils.lerp(this.x,s.rx,dt*6);this.y=Utils.lerp(this.y,Math.min(P.y-118,game.height-135),dt*4.5);}else{this.y=Utils.lerp(this.y,this.targetY,dt*4.5);this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span,dt*3.5);}}
+    else if(m===7){s.mc=(s.mc??4)-dt;if(s.returning){const hx=s.homeX??c;this.x=Utils.lerp(this.x,hx,dt*5);this.y=Utils.lerp(this.y,this.targetY,dt*5);if(Math.abs(this.x-hx)<10&&Math.abs(this.y-this.targetY)<10)s.returning=false;}else if(s.mc<=0&&s.targetX==null){s.mc=this.rage?4.3:5.3;s.homeX=this.x;s.targetX=Utils.clamp(P.x+(P.x<c?1:-1)*Math.max(105,this.w*.72),60,W-60);s.warn=.85;s.warnX=s.targetX;}else if(s.warn>0){this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.5)*span,dt*2.5);this.y=Utils.lerp(this.y,this.targetY,dt*2.5);}else if(s.targetX!=null){s.passTime=(s.passTime??.48)-dt;this.x=Utils.lerp(this.x,s.targetX,dt*6);this.y=Utils.lerp(this.y,this.targetY+48,dt*5);if(s.passTime<=0){s.targetX=null;s.passTime=0;s.returning=true;}}else{this.x=Utils.lerp(this.x,c+Math.sin(this.t*1.5)*span,dt*3.5);this.y=Utils.lerp(this.y,this.targetY,dt*4.5);}}
+    else if(m===8){s.mc=(s.mc??2.5)-dt;if(s.returning){const hx=s.homeX??c;this.x=Utils.lerp(this.x,hx,dt*5);this.y=Utils.lerp(this.y,this.targetY,dt*5);if(Math.abs(this.x-hx)<10&&Math.abs(this.y-this.targetY)<10)s.returning=false;}else if(s.ram>0){s.ram-=dt;this.x=Utils.lerp(this.x,s.rx,dt*6);this.y=Utils.lerp(this.y,this.targetY+48,dt*5);if(s.ram<=0)s.returning=true;}else{this.y=Utils.lerp(this.y,this.targetY,dt*4.5);this.x=Utils.lerp(this.x,c+Math.sin(this.t)*span*.65,dt*3.5);if(s.mc<=0){s.mc=this.rage?4.2:5.2;s.homeX=this.x;s.ram=.45;s.rx=Utils.clamp(P.x+(P.x<c?1:-1)*Math.max(110,this.w*.72),55,W-55);s.warn=.9;s.warnX=s.rx;game.screenShake=.12;}}}
     else{const side=Math.sin(this.t*1.7)>0?1:-1;this.x=Utils.lerp(this.x,side>0?W-70:70,dt*1.7);s.mc=(s.mc??1.5)-dt;if(s.mc<=0){s.mc=this.rage?1.1:1.7;s.cross=-side;s.crossT=.55;}if(s.crossT>0){s.crossT-=dt;this.x=Utils.clamp(this.x+s.cross*W*1.45*dt,55,W-55);}}
     if(s.timer>0)return;
     const aim=Utils.angle(this.x,this.y,P.x,P.y),q=(x,y,t,speed=v,col=this.color,r=5,o={})=>bossShoot(game,x,y,t,speed,col,{radius:r,...o});
@@ -2720,7 +2720,7 @@ const Game = {
   score: 0, credits: 0, level: 0, wave: 1, enemiesSpawned: 0, enemiesKilled: 0,
   spawnTimer: 0, waveBreakTimer: 0, levelTransitionTimer: 0,
   screenShake: 0, shakeX: 0, shakeY: 0,
-  powerUp: { rapid: 0, shield: 0, multi: 0, multiStacks: 0 },
+  powerUp: { rapid: 0, shield: 0, multi: 0, multiStacks: 0, multiOverdrive: 0 },
   combo: 0, comboTimer: 0,
   currentLevelData: null,
   bossDeathTimer: 0,
@@ -2941,7 +2941,7 @@ const Game = {
     this.waveBreakTimer = 0;
     this.combo = 0;
     this.comboTimer = 0;
-    this.powerUp = { rapid: 0, shield: 0, multi: 0, multiStacks: 0 };
+    this.powerUp = { rapid: 0, shield: 0, multi: 0, multiStacks: 0, multiOverdrive: 0 };
     this.enemiesSpawned = 0;
     this.enemiesKilled = 0;
 
@@ -3426,8 +3426,8 @@ const Game = {
     const p=this.player;
     const us=p.upgradeState;
     const baseShots=p.multishot>=3?5:p.multishot>=2?4:p.multishot>=1?3:1;
-    const bonusShots=this.powerUp.multi>0?Math.max(1,Math.floor(Number(this.powerUp.multiStacks)||0)):0;
-    const shotCount=baseShots+bonusShots;
+    const bonusShots=this.powerUp.multi>0?Math.min(Math.max(0,5-baseShots),Math.max(1,Math.floor(Number(this.powerUp.multiStacks)||0))):0;
+    const shotCount=Math.min(5,baseShots+bonusShots);
     const spread=Math.min(1.5,Math.max(0,shotCount-1)*.16);
     for(let i=0;i<shotCount;i++){
       const offset=i-(shotCount-1)/2;
@@ -3502,7 +3502,7 @@ const Game = {
     if (this.state !== GameState.WAVE_BREAK) {
       if (this.powerUp.rapid > 0) this.powerUp.rapid = Math.max(0, this.powerUp.rapid - dt);
       if (this.powerUp.shield > 0) this.powerUp.shield = Math.max(0, this.powerUp.shield - dt);
-      if (this.powerUp.multi > 0) { this.powerUp.multi = Math.max(0, this.powerUp.multi - dt); if (!this.powerUp.multi) this.powerUp.multiStacks = 0; }
+      if (this.powerUp.multi > 0) { this.powerUp.multi = Math.max(0, this.powerUp.multi - dt); if (!this.powerUp.multi) { this.powerUp.multiStacks = 0; this.powerUp.multiOverdrive = 0; } }
     }
 
     // WAVE BREAK
@@ -3550,7 +3550,7 @@ const Game = {
       // Player update during boss fight
       const playerFired = (!Coop.active || !Coop.playerDead) ? this.player.update(dt, this.width, this.height) : false;
       if (playerFired) {
-        const fireRate = this.powerUp.rapid > 0 ? this.player.fireRate * 0.4 : this.player.fireRate;
+        const fireRate = this.powerUp.rapid > 0 ? this.player.fireRate * 0.4 : this.player.fireRate * (this.powerUp.multiOverdrive ? 0.75 : 1);
         this.player.fireTimer = fireRate;
         playShoot();
         this.firePlayerBullets();
@@ -3590,7 +3590,7 @@ const Game = {
     // NORMAL PLAY
     const fired = (!Coop.active || !Coop.playerDead) ? this.player.update(dt, this.width, this.height) : false;
     if (fired) {
-      const fireRate = this.powerUp.rapid > 0 ? this.player.fireRate * 0.4 : this.player.fireRate;
+      const fireRate = this.powerUp.rapid > 0 ? this.player.fireRate * 0.4 : this.player.fireRate * (this.powerUp.multiOverdrive ? 0.75 : 1);
       this.player.fireTimer = fireRate;
       playShoot();
       this.firePlayerBullets();
@@ -3830,7 +3830,7 @@ const Game = {
         const duration = 8;
         if (pu.type === 'rapid') this.powerUp.rapid = duration;
         else if (pu.type === 'shield') this.powerUp.shield = duration;
-        else if (pu.type === 'multi') { this.powerUp.multi = duration; this.powerUp.multiStacks = (this.powerUp.multiStacks || 0) + 1; }
+        else if (pu.type === 'multi') { const baseShots=this.player.multishot>=3?5:this.player.multishot>=2?4:this.player.multishot>=1?3:1; this.powerUp.multi = duration; this.powerUp.multiStacks = Math.min(Math.max(0,5-baseShots),(this.powerUp.multiStacks||0)+1); this.powerUp.multiOverdrive = baseShots>=5?1:0; }
         else if (pu.type === 'heal') { const gain=Math.min(1,this.player.maxLives-this.player.lives);this.player.lives+=gain;Social.toast(gain?'❤️ +1 vie':'❤️ Vies déjà au maximum'); }
         playPowerUp();
         this.particles.emit(pu.x, pu.y, 15, { speedMin: 60, speedMax: 180, lifeMin: 0.3, lifeMax: 0.6, color: pu.color, sizeMin: 2, sizeMax: 4 });
@@ -4071,7 +4071,7 @@ const Game = {
     let puY = 92;
     if (this.powerUp.rapid > 0) { this.drawPowerUpBar(ctx, 'RAPID', this.powerUp.rapid / 8, '#ffdd00', puY); puY += 16; }
     if (this.powerUp.shield > 0) { this.drawPowerUpBar(ctx, 'BOUCLIER', this.powerUp.shield / 8, '#00ff88', puY); puY += 16; }
-    if (this.powerUp.multi > 0) { this.drawPowerUpBar(ctx, 'MULTI ×'+(this.powerUp.multiStacks||1), this.powerUp.multi / 8, '#9d00ff', puY); puY += 16; }
+    if (this.powerUp.multi > 0) { const shipShots=this.player?(this.player.multishot>=3?5:this.player.multishot>=2?4:this.player.multishot>=1?3:1):1; this.drawPowerUpBar(ctx, this.powerUp.multiOverdrive?'MULTI MAX · SURCHARGE':'MULTI · '+Math.min(5,shipShots+(this.powerUp.multiStacks||0))+' TIRS', this.powerUp.multi / 8, '#9d00ff', puY); puY += 16; }
 
     ctx.restore();
   },
@@ -4862,7 +4862,7 @@ const Versus = {
   me: null, hp: 0, maxHp: 0, dead: false, damage: 1,
   oppShip: null, opp: null,
   myBullets: [], oppBullets: [], powerUps: [], oppPowerUps: [], particles: null, texts: [],
-  powerUp: { rapid: 0, shield: 0, multi: 0, multiStacks: 0 },
+  powerUp: { rapid: 0, shield: 0, multi: 0, multiStacks: 0, multiOverdrive: 0 },
   bulletSeq: 0, sendTimer: 0, puTimer: 6, puSeq: 0, shake: 0, lastMsg: 0,
   rematchMe: false, rematchOpp: false, matchOver: false,
   roundBanner: '',
@@ -5385,7 +5385,7 @@ const Versus = {
     this.myBullets = []; this.oppBullets = []; this.powerUps = []; this.oppPowerUps = []; this.texts = [];
     this.pendingShots = []; this.snaps = [];
     this.particles.clear();
-    this.powerUp = { rapid: 0, shield: 0, multi: 0, multiStacks: 0, giant: 0 };
+    this.powerUp = { rapid: 0, shield: 0, multi: 0, multiStacks: 0, multiOverdrive: 0, giant: 0 };
     this.puTimer = this.mode === 'chaos' ? 2 : 5;
     this.fightT = 0; this.bubbles = {};
     this.me.x = Game.width / 2; this.me.y = Game.height - 80;
@@ -5543,7 +5543,7 @@ const Versus = {
       }
       this.me.y = Utils.clamp(this.me.y, H * 0.52 + this.me.h / 2, H - this.me.h / 2 - 48);
       if (fired && canFire) {
-        this.me.fireTimer = this.powerUp.rapid > 0 ? this.me.fireRate * 0.45 : this.me.fireRate;
+        this.me.fireTimer = this.powerUp.rapid > 0 ? this.me.fireRate * 0.45 : this.me.fireRate * (this.powerUp.multiOverdrive ? 0.75 : 1);
         this.fire();
       } else if (fired) {
         this.me.fireTimer = 0;
@@ -5554,7 +5554,7 @@ const Versus = {
 
     if (this.powerUp.rapid > 0) this.powerUp.rapid -= dt;
     if (this.powerUp.shield > 0) this.powerUp.shield -= dt;
-    if (this.powerUp.multi > 0) { this.powerUp.multi = Math.max(0, this.powerUp.multi - dt); if (!this.powerUp.multi) this.powerUp.multiStacks = 0; }
+    if (this.powerUp.multi > 0) { this.powerUp.multi = Math.max(0, this.powerUp.multi - dt); if (!this.powerUp.multi) { this.powerUp.multiStacks = 0; this.powerUp.multiOverdrive = 0; } }
     if (this.powerUp.giant > 0) this.powerUp.giant -= dt;
     const rocks = this.rocks();
 
@@ -5619,7 +5619,7 @@ const Versus = {
       if (!this.dead && this.phase === 'fight' && Game.checkCollision(pu.getBounds(), this.me.getBounds())) {
         let label;
         if (pu.type === 'heal') { const gain = Math.min(this.maxHp - this.hp, Math.ceil(this.maxHp * 0.3)); this.hp += gain; label = `SOIN +${gain}`; }
-        else { this.powerUp[pu.type] = 8; if(pu.type==='multi'){this.powerUp.multiStacks=(this.powerUp.multiStacks||0)+1;label='MULTI ×'+this.powerUp.multiStacks;}else label={ rapid: 'RAPIDE', shield: 'BOUCLIER', giant: 'BALLES GÉANTES' }[pu.type]; }
+        else { this.powerUp[pu.type] = 8; if(pu.type==='multi'){const baseShots=this.me.shipData.multishot>=3?5:this.me.shipData.multishot>=2?4:this.me.shipData.multishot>=1?3:1;this.powerUp.multiStacks=Math.min(Math.max(0,5-baseShots),(this.powerUp.multiStacks||0)+1);this.powerUp.multiOverdrive=baseShots>=5?1:0;label=this.powerUp.multiOverdrive?'MULTI MAX · SURCHARGE':'MULTI · '+Math.min(5,baseShots+this.powerUp.multiStacks)+' TIRS';}else label={ rapid: 'RAPIDE', shield: 'BOUCLIER', giant: 'BALLES GÉANTES' }[pu.type]; }
         playPowerUp();
         this.particles.emit(pu.x, pu.y, 15, { speedMin: 60, speedMax: 180, lifeMin: 0.3, lifeMax: 0.6, color: pu.color, sizeMin: 2, sizeMax: 4 });
         this.texts.push(new ScoreText(pu.x, pu.y, label, pu.color));
@@ -5639,8 +5639,8 @@ const Versus = {
     const W = Game.width, H = Game.height;
     const p = this.me, bs = p.bulletSpeed, color = p.color;
     const baseShots=p.multishot>=3?5:p.multishot>=2?4:p.multishot>=1?3:1;
-    const bonusShots=this.powerUp.multi>0?Math.max(1,Math.floor(Number(this.powerUp.multiStacks)||0)):0;
-    const shotCount=baseShots+bonusShots;
+    const bonusShots=this.powerUp.multi>0?Math.min(Math.max(0,5-baseShots),Math.max(1,Math.floor(Number(this.powerUp.multiStacks)||0))):0;
+    const shotCount=Math.min(5,baseShots+bonusShots);
     const spread=Math.min(1.5,Math.max(0,shotCount-1)*.16);
     const shots=[];
     for(let i=0;i<shotCount;i++){
@@ -5875,7 +5875,7 @@ const Versus = {
     let y = H - 70;
     if (this.powerUp.rapid > 0) { Game.drawPowerUpBar(ctx, 'RAPID', this.powerUp.rapid / 8, '#ffdd00', y); y -= 16; }
     if (this.powerUp.shield > 0) { Game.drawPowerUpBar(ctx, 'BOUCLIER', this.powerUp.shield / 8, '#00ff88', y); y -= 16; }
-    if (this.powerUp.multi > 0) { Game.drawPowerUpBar(ctx, 'MULTI ×'+(this.powerUp.multiStacks||1), this.powerUp.multi / 8, '#9d00ff', y); y -= 16; }
+    if (this.powerUp.multi > 0) { Game.drawPowerUpBar(ctx, this.powerUp.multiOverdrive?'MULTI MAX · SURCHARGE':'MULTI · '+Math.min(5,(this.me.shipData.multishot>=3?5:this.me.shipData.multishot>=2?4:this.me.shipData.multishot>=1?3:1)+(this.powerUp.multiStacks||0))+' TIRS', this.powerUp.multi / 8, '#9d00ff', y); y -= 16; }
     if (this.powerUp.giant > 0) { Game.drawPowerUpBar(ctx, 'GÉANT', this.powerUp.giant / 8, '#ff6b35', y); y -= 16; }
     ctx.restore();
   },
@@ -6855,7 +6855,7 @@ const RankedUI = (() => {
 })();
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
-<script src="/expansion.js?build=20261027f" defer></script>
+<script src="/expansion.js?build=20261028a" defer></script>
 </body>
 </html>
 
